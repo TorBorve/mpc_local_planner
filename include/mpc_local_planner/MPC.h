@@ -5,18 +5,14 @@
 
 namespace mpc {
     struct State {
-    public:
         double x;
         double y;
         double psi;
-        double v;
-        double cte;
-        double epsi;
     };
 
     struct Input {
-        double delta;
-        double accel;
+        double vel;
+        double omega;
     };
 
     struct OptVariables {
@@ -28,6 +24,7 @@ namespace mpc {
         Input u0;
         std::vector<OptVariables> mpcHorizon;
         double computeTime;
+        bool success;
     };
 
     struct Bounds {
@@ -47,10 +44,10 @@ namespace mpc {
         MPCReturn solve(const State& x0);
         MPCReturn solve(const State& x0, const Eigen::Vector3d& coeff);
     private:
-        Bounds bounds_;
-        Model model_;
-        Cost cost_;
-        Constraints constraints_;
-        Track track_;
+        // Bounds bounds_;
+        // Model model_;
+        // Cost cost_;
+        // Constraints constraints_;
+        // Track track_;
     };
 } 
