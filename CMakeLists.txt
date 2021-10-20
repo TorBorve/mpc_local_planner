@@ -208,5 +208,5 @@ include_directories(
 include_directories(/usr/local/include)
 link_directories(/usr/local/lib)
 
-add_executable(main src/main.cpp src/CppADMPC.cpp)
+add_executable(main src/main.cpp src/CppADMPC.cpp src/utilities.cpp)
 target_link_libraries(main ${catkin_LIBRARIES} ipopt)

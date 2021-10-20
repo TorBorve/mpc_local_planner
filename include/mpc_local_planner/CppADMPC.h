@@ -27,7 +27,7 @@ namespace mpc {
             }
             MPCReturn solve(const State& state);
 
-            MPCReturn toMPCReturn(const CppAD::ipopt::solve_result<Dvector>& solution, double time);
+            MPCReturn static toMPCReturn(const CppAD::ipopt::solve_result<Dvector>& solution, double time);
         private:
             State refState;
         };
