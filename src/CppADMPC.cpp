@@ -11,6 +11,7 @@ namespace mpc {
             state.x += input.vel * std::cos(state.psi) * dt;
             state.y += input.vel * std::sin(state.psi) * dt;
             state.psi += input.omega * dt;
+            // state.psi += input.vel * std::tan(input.omega) / 1.0 * dt;
         }
 
         constexpr size_t N = 30;
@@ -58,6 +59,7 @@ namespace mpc {
                     fg[2 + x_start + i] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
                     fg[2 + y_start + i] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
                     fg[2 + psi_start + i] = psi1 - (psi0 + omega0 * dt);
+                    // fg[2 + psi_start + i] = psi1 - (psi0 + v0 * CppAD::tan(omega0) / 1.0 * dt);
 
                 }
                 return;
@@ -65,20 +67,6 @@ namespace mpc {
         private:
             State refState;
         };
-
-        void saveSolution(const CppAD::ipopt::solve_result<CppAD::vector<double>>& solution){
-            std::ofstream outFile{"solution.txt"};
-            if (!outFile){
-                throw std::runtime_error{"failed to open file solution.txt"};
-            }
-            for(unsigned int i = 0; i < 2; i++){
-                for (unsigned int j = 0; j < N; j++){
-                    outFile << solution.x[j + i*N] << ' ';
-                }
-                outFile << std::endl;
-            }
-
-        }
 
         MPCReturn MPC::solve(const State& state){
             auto start = std::chrono::high_resolution_clock::now();
@@ -155,15 +143,6 @@ namespace mpc {
             if (!solution.status == CppAD::ipopt::solve_result<Dvector>::success){
                 std::cout << "Error: Failed to solve nlp\n";
             }
-            // std::cout << "x, y, psi, v, omega\n";
-            // for (unsigned int i = 0; i < N; i++){
-            //     std::cout << solution.x[x_start + i] << ", " 
-            //         << solution.x[y_start + i] << ", "
-            //         << solution.x[psi_start + i]  << ", "
-            //         << solution.x[v_start + i] << ", "
-            //         << solution.x[omega_start + i] << "\n";
-            // }
-            // saveSolution(solution);
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
             return toMPCReturn(solution, duration.count());
@@ -179,6 +158,7 @@ namespace mpc {
                 Input input{x[v_start + i], x[omega_start + i]};
                 ret.mpcHorizon[i] = OptVariables{state, input};
             }
+            ret.cost = solution.obj_value;
             ret.success = solution.success;
             ret.computeTime = time;
             return ret;

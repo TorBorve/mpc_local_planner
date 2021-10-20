@@ -24,6 +24,7 @@ namespace mpc {
         Input u0;
         std::vector<OptVariables> mpcHorizon;
         double computeTime;
+        double cost;
         bool success;
     };
 
