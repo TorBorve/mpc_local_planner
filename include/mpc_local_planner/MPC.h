@@ -1,54 +1,41 @@
 #pragma once
 
-#include <vector>
-#include <eigen3/Eigen/Core>
+#include "eigen3/Eigen/Core"
+#include <cppad/cppad.hpp>
+#include <cppad/ipopt/solve.hpp>
+#include "mpc_local_planner/MPC.h"
 
 namespace mpc {
-    struct State {
-        double x;
-        double y;
-        double psi;
-    };
+    namespace nonlinear {
+        namespace TrajectoryTracking {
 
-    struct Input {
-        double vel;
-        double omega;
-    };
+            class MPC {
+            public:
+                using Dvector = CPPAD_TESTVECTOR(double);
 
-    struct OptVariables {
-        State x;
-        Input u;
-    };
+                MPC(const Eigen::Vector4d& coeffs) : coeffs{coeffs}
+                {
 
-    struct MPCReturn {
-        Input u0;
-        std::vector<OptVariables> mpcHorizon;
-        double computeTime;
-        double cost;
-        bool success;
-    };
+                }
+                void setPath(const Eigen::Vector4d& newCoeffs){
+                    coeffs = newCoeffs;
+                }
+                
+                Eigen::Vector4d getPath() const {
+                    return coeffs;
+                }
+                
+                Eigen::VectorXd calcState(const State& state) const;
 
-    struct Bounds {
-        OptVariables lower;
-        OptVariables upper;
-    };
+                MPCReturn solve(const Eigen::VectorXd& state);
 
-    struct Model;
-    struct Cost;
-    struct Constraints;
-    struct Track;
-
-    class MPC {
-    public:
-        MPC() = default;
-        void setPath(); // TODO define input
-        MPCReturn solve(const State& x0);
-        MPCReturn solve(const State& x0, const Eigen::Vector3d& coeff);
-    private:
-        // Bounds bounds_;
-        // Model model_;
-        // Cost cost_;
-        // Constraints constraints_;
-        // Track track_;
-    };
-} 
+                MPCReturn static toMPCReturn(const CppAD::ipopt::solve_result<Dvector>& solution, double time);
+            private:
+                double polyEval(double x) const {
+                    return coeffs[0] + coeffs[1] * x + coeffs[2] * x * x + coeffs[3] * x * x * x; 
+                }
+                Eigen::Vector4d coeffs;
+            };
+        }
+    }
+}
