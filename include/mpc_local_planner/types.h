@@ -13,6 +13,16 @@ namespace mpc {
 
         }
 
+        State(const std::array<double, 6>& arr) :
+            State{arr[0], arr[1], arr[2], arr[3], arr[4], arr[5]}
+        {
+
+        }
+
+        std::array<double, 6> toArray() const {
+            return std::array<double, 6>{x, y, psi, vel, cte, epsi};
+        }
+
         double x;
         double y;
         double psi;
@@ -62,7 +72,7 @@ namespace mpc {
                 double computeTime, double cost, bool success) :
                 MPCReturn{mpcHorizon.at(0).u, mpcHorizon, computeTime, cost, success}
         {
-            
+
         }
 
         Input u0;
