@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="rviz" default="true" />
+
+    <!-- launch mpc file -->
+    <node pkg="mpc_local_planner" type="main" name="mpc" output="screen" />
+
+    <!-- launch rviz for visualization -->
+    <group if="$(arg rviz)">
+        <node pkg="rviz" type="rviz" name="rviz" args="-d $(find mpc_local_planner)/rviz/mpc_viz.rviz" />
+    </group>
+</launch>
