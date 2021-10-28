@@ -172,13 +172,14 @@ namespace mpc {
         for (unsigned int i = 0; i < n_vars; i++) {
             vars[i] = 0;
         }
-
-        vars[x_start] = x;
-        vars[y_start] = y;
-        vars[psi_start] = psi;
-        vars[v_start] = v;
-        vars[cte_start] = cte;
-        vars[epsi_start] = epsi;
+        for (unsigned int i = 0; i < N; i++) {
+            vars[x_start + i] = x;
+            vars[y_start + i] = y;
+            vars[psi_start + i] = psi;
+            vars[v_start + i] = v;
+            vars[cte_start + i] = cte;
+            vars[epsi_start + i] = epsi;
+        }
 
         BoundVector varBounds(n_vars, Bound::noBound());
 
