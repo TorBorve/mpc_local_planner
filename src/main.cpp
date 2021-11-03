@@ -36,30 +36,31 @@ int main(int argc, char** argv){
     ros::Publisher pathPub;
     pathPub = nh.advertise<nav_msgs::Path>("global_path", 1);
     Eigen::Vector4d coeffs;
-    coeffs << 0, 1, 0.1, -0.01;
+    coeffs << 0, 0, 0.1, 0;
     auto globalPath = getPathFromPoly(coeffs);
     mpc::State state{-15, 10, 0, 0, 0, 0};
-    mpc::MPC MPC{coeffs};
+    mpc::MPC MPC{mpc::getTestTrack(), 30, 0.1};
     std::cout << "x\ty\tpsi\tvel\tcost\n";
-    auto refresh = std::chrono::high_resolution_clock::now();
-    while(true){
-        MPC.calcState(state);
+    auto refresh = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds{100};
+    while(ros::ok()){
         auto solution = MPC.solve(state);
         mpc::logSolution(solution, state, "log.txt");
         if (solution.cost == 0) {
             mpc::logSolution(solution, state, "logZeroCost.txt");
         }
-        mpc::model(state, solution.u0);
+        MPC.model(state, solution.u0);
         std::cout << state.x << '\t' << state.y << '\t' << state.psi 
             << '\t' << state.vel << '\t' << solution.cost << std::endl;
         std::cout << "Time: " << solution.computeTime << " [ms]\n";
         mpcPathPub.publish(getPathMsg(solution));
         if (solution.cost < 100 && solution.cost > 0.1){
-            state = mpc::State{0, 2, 0, 0, 0, 0};
+            state = mpc::State{-15, 20, 0, 0, 0, 0};
         }
         pathPub.publish(globalPath);
-        refresh += std::chrono::milliseconds{100};
         std::this_thread::sleep_until(refresh);
+        refresh = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds{100};
+        std::string s;
+        std::cin >> s;
     }
     return 0;
 }

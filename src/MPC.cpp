@@ -9,36 +9,16 @@
 
 namespace mpc {
 
-    constexpr size_t N = 30;
-    constexpr double dt = 0.1;
-
-    constexpr size_t x_start = 0;
-    constexpr size_t y_start = x_start + N;
-    constexpr size_t psi_start = y_start + N;
-    constexpr size_t v_start = psi_start + N;
-    constexpr size_t cte_start = v_start + N;
-    constexpr size_t epsi_start = cte_start + N;
-    constexpr size_t delta_start = epsi_start + N;
-    constexpr size_t a_start = delta_start + N - 1;
-
-    constexpr double Lf = 2.67;
-    constexpr static double ref_cte = 0;
-    constexpr static double ref_epsi = 0;
-    constexpr static double ref_v = 10; 
-
-    void model(State& state, const Input& u) {
-        state.x += state.vel * cos(state.psi) * dt;
-        state.y += state.vel * sin(state.psi) * dt;
-        state.psi += state.vel * u.delta / Lf * dt;
-        state.vel += u.a * dt;
-    }
-
     class FG_eval {
     public:
         using ADvector = CPPAD_TESTVECTOR(CppAD::AD<double>);
         
-        FG_eval(const Eigen::Vector4d& coeffs) {
-            this->coeffs = coeffs;
+        FG_eval(const Eigen::Vector4d& coeffs, size_t N, double dt) :
+            coeffs{coeffs}, N{N}, dt{dt}, x_start{0}, y_start{N}, 
+            psi_start{2*N}, v_start{3*N}, cte_start{4*N}, epsi_start{5*N}, 
+            delta_start{6*N}, a_start{7*N - 1} 
+        {
+
         }
         
         void operator()(ADvector& fg, const ADvector& vars) {
@@ -136,15 +116,46 @@ namespace mpc {
         }
     private:
         Eigen::Vector4d coeffs;
+        const size_t N;
+        const double dt;
+
+        const size_t x_start;
+        const size_t y_start;
+        const size_t psi_start;
+        const size_t v_start;
+        const size_t cte_start;
+        const size_t epsi_start;
+        const size_t delta_start;
+        const size_t a_start;
+
+        const double Lf = 2.67;
+        const double ref_cte = 0;
+        const double ref_epsi = 0;
+        const double ref_v = 10; 
     };
 
-    void MPC::calcState(State& state) const {
-        state.cte = state.y - polyEval(state.x);
-        state.epsi = state.psi - atan(coeffs[1] + 2 * state.x * coeffs[2] + 3 * coeffs[3] * state.x * state.x);
-        return;
+    MPCReturn MPC::solve(const State& state) {
+        auto coeffs = calcCoeffs(state);
+        State tranformedState{0, 0, 0, state.vel, 0, 0};
+        calcState(tranformedState, coeffs);
+        auto res = solve(tranformedState, coeffs);
+        auto& x = res.mpcHorizon;
+        for (unsigned int i = 0; i < x.size(); i++) {
+            // rotate back
+            double dx = x[i].x.x;
+            double dy = x[i].x.y;
+            x[i].x.x = dx * cos(state.psi) - dy * sin(state.psi);
+            x[i].x.y = dx * sin(state.psi) + dy * cos(state.psi);
+            
+            // // shift coordinates
+            x[i].x.x += state.x;
+            x[i].x.y += state.y;         
+        }
+        
+        return res;
     }
 
-    MPCReturn MPC::solve(const State& state){
+    MPCReturn MPC::solve(const State& state, const Eigen::Vector4d& coeffs){
         using Dvector = CPPAD_TESTVECTOR(double);
 
         auto start = std::chrono::high_resolution_clock::now();
@@ -207,7 +218,7 @@ namespace mpc {
         constraintBounds[epsi_start] = Bound{epsi, epsi};
 
         // object that computes objective and constraints
-        FG_eval fg_eval(coeffs);
+        FG_eval fg_eval(coeffs, N, dt);
 
         //
         // NOTE: You don't have to worry about these options
@@ -225,7 +236,7 @@ namespace mpc {
         options += "Sparse  true        reverse\n";
         // NOTE: Currently the solver has a maximum time limit of 0.5 seconds.
         // Change this as you see fit.
-        options += "Numeric max_cpu_time          0.25\n";
+        options += "Numeric max_cpu_time          10.0\n";
 
         // place to return solution
         CppAD::ipopt::solve_result<Dvector> solution;
@@ -262,5 +273,62 @@ namespace mpc {
         ret.success = solution.success;
         ret.computeTime = time;
         return ret;
+    }
+
+    void MPC::calcState(State& state, const Eigen::Vector4d& coeffs) const {
+        state.cte = state.y - polyEval(state.x, coeffs);
+        state.epsi = state.psi - atan(coeffs[1] + 2 * state.x * coeffs[2] + 3 * coeffs[3] * state.x * state.x);
+        return;
+    }
+
+    Eigen::Vector4d MPC::calcCoeffs(const State& state) const {
+        size_t start, stop;
+        getTrackSection(start, stop, state);
+
+        Eigen::VectorXd xVals(stop - start);
+        Eigen::VectorXd yVals(stop - start);
+
+        for (unsigned int i = start; i < stop; i++) {
+            // shift points so that the state is in the origo
+            double dx = track[i].x - state.x;
+            double dy = track[i].y - state.y;
+            
+            // rotate points so that state.psi = 0 in the new refrence frame
+            xVals[i - start] = dx * cos(-state.psi) - dy * sin(-state.psi);
+            yVals[i - start] = dx * sin(-state.psi) + dy * cos(-state.psi);
+        }
+
+        auto coeffs = polyfit(xVals, yVals, 3);
+        assert(coeffs.size() == 4);
+        return coeffs;
+    }
+
+    void MPC::model(State& state, const Input& u) {
+        state.x += state.vel * cos(state.psi) * dt;
+        state.y += state.vel * sin(state.psi) * dt;
+        state.psi += state.vel * u.delta / Lf * dt;
+        state.vel += u.a * dt;
+    }
+
+    void MPC::getTrackSection(size_t& start, size_t& stop, const State& state) const {
+        double maxLen = std::max(state.vel * (N * dt * 2), 5 * N * dt); // s = v * t
+        double minDistSqrd = distSqrd(state.x - track[0].x, state.y - track[0].y);
+        size_t minIndex = 0;
+        for (unsigned int i = 1; i < track.size(); i++) {
+            double curDistSqrd = distSqrd(state.x - track[i].x, state.y - track[i].y);
+            if (curDistSqrd < minDistSqrd) {
+                minDistSqrd = curDistSqrd;
+                minIndex = i;
+            }
+        }
+
+        double len = 0;
+        size_t index = minIndex;
+        while(len < maxLen * maxLen && index < track.size() - 1) {
+            index++;
+            len += distSqrd(track[index].x - track[index - 1].x, track[index].y - track[index - 1].y);
+        }
+        start = minIndex;
+        stop = index;        
     }
 }
