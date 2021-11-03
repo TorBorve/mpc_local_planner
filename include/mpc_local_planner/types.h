@@ -4,6 +4,7 @@
 #include <eigen3/Eigen/Core>
 
 namespace mpc {
+
     struct State {
         State() = default;
 
@@ -80,5 +81,17 @@ namespace mpc {
         double computeTime;
         double cost;
         bool success;
+    };
+
+    struct Point {
+        Point() = default;
+
+        Point(double x, double y) :
+            x{x}, y{y}
+        {
+
+        }
+        double x;
+        double y;
     };
 }
