@@ -15,4 +15,12 @@ namespace mpc{
     CPPAD_TESTVECTOR(double) toCppAD(const std::vector<double>& vec);
 
     void logSolution(const MPCReturn& solution, const State& curState, const std::string& filename);
+
+    Eigen::VectorXd polyfit(const Eigen::VectorXd& xvals, const Eigen::VectorXd& yvals, int order);
+
+    inline double distSqrd(double dx, double dy) {
+        return dx * dx + dy * dy;
+    }
+
+    std::vector<Point> getTestTrack();
 }

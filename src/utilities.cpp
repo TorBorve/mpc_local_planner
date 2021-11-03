@@ -1,6 +1,7 @@
 #include "mpc_local_planner/utilities.h"
 
 #include <tf2/LinearMath/Quaternion.h>
+#include <eigen3/Eigen/Dense>
 
 #include <fstream>
 #include <iomanip>
@@ -66,5 +67,39 @@ namespace mpc{
                 << step.u.a << '\t'
                 << step.u.delta << std::endl;
         }
+    }
+
+    // Fit a polynomial.
+    // Adapted from
+    // https://gist.github.com/ksjgh/4d5050d0e9afc5fdb5908734335138d0
+    Eigen::VectorXd polyfit(const Eigen::VectorXd& xvals, const Eigen::VectorXd& yvals, int order) {
+    assert(xvals.size() == yvals.size());
+    assert(order >= 1 && order <= xvals.size() - 1);
+    Eigen::MatrixXd A(xvals.size(), order + 1);
+
+    for (int i = 0; i < xvals.size(); i++) {
+        A(i, 0) = 1.0;
+    }
+
+    for (int j = 0; j < xvals.size(); j++) {
+        for (int i = 0; i < order; i++) {
+        A(j, i + 1) = A(j, i) * xvals(j);
+        }
+    }
+
+    auto Q = A.householderQr();
+    auto result = Q.solve(yvals);
+    return result;
+    }
+
+    std::vector<Point> getTestTrack() {
+        constexpr size_t n = 100;
+        std::vector<Point> track;
+        double x_start = -10, x_stop = 10;
+   
+        for(double x = x_start; x < x_stop; x += (x_stop - x_start) / n) {
+            track.push_back(Point{x, 0.1 * x * x});
+        }
+        return track;
     }
 }
