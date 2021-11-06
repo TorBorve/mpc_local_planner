@@ -1,8 +1,10 @@
 #pragma once
 
-#include "eigen3/Eigen/Core"
+#include <eigen3/Eigen/Core>
 #include <cppad/cppad.hpp>
 #include <cppad/ipopt/solve.hpp>
+#include <ros/ros.h>
+
 #include "mpc_local_planner/types.h"
 
 namespace mpc {
@@ -11,28 +13,14 @@ namespace mpc {
     public:
         using Dvector = CPPAD_TESTVECTOR(double);
 
-        MPC(const std::vector<Point>& track, size_t N, double dt) : 
-            track{track}, N{N}, dt{dt}, x_start{0}, y_start{N},
-            psi_start{2*N}, v_start{3*N}, cte_start{4*N}, epsi_start{5*N},
-            delta_start{6*N}, a_start{7*N - 1} // -1 due to N-1 actuator variables
-        {
-
-        }
-
-        // void setPath(const Eigen::Vector4d& newCoeffs){
-        //     coeffs = newCoeffs;
-        // }
-        
-        // Eigen::Vector4d getPath() const {
-        //     return coeffs;
-        // }
+        MPC(const std::vector<Point>& track, size_t N, double dt);
 
         void setTrack(const std::vector<Point>& newTrack) { 
-            track = newTrack;
+            track_ = newTrack;
         }
         
         std::vector<Point> getTrack() const {
-            return track;
+            return track_;
         }
 
         MPCReturn solve(const State& state);
@@ -43,7 +31,9 @@ namespace mpc {
         
         void model(State& state, const Input& u);
     private:
-        Eigen::Vector4d calcCoeffs(const State& state) const;
+        void calcCoeffs(const State& state, double& rotation, Eigen::Vector4d& coeffs) const;
+
+        Eigen::Vector4d interpolate(const State& state, double rotation, size_t start, size_t end, double& cost) const;
         
         void calcState(State& state, const Eigen::Vector4d& coeffs) const;
 
@@ -53,7 +43,11 @@ namespace mpc {
 
         void getTrackSection(size_t& start, size_t& stop, const State& state) const;
         // Eigen::Vector4d coeffs;
-        std::vector<Point> track;
+        std::vector<Point> track_;
+
+        ros::Publisher trackPub_;
+        ros::Publisher mpcPathPub_;
+        ros::Publisher polynomPub_;
 
         size_t N;
         double dt;

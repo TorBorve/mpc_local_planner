@@ -134,25 +134,56 @@ namespace mpc {
         const double ref_v = 10; 
     };
 
+    MPC::MPC(const std::vector<Point>& track, size_t N, double dt) : 
+            track_{track}, N{N}, dt{dt}, x_start{0}, y_start{N},
+            psi_start{2*N}, v_start{3*N}, cte_start{4*N}, epsi_start{5*N},
+            delta_start{6*N}, a_start{7*N - 1} // -1 due to N-1 actuator variables
+    {
+        ros::NodeHandle nh;
+        trackPub_ = nh.advertise<nav_msgs::Path>("global_path", 1);
+        mpcPathPub_ = nh.advertise<nav_msgs::Path>("local_path", 1);
+        polynomPub_ = nh.advertise<nav_msgs::Path>("interpolated_path", 1);
+    }
+
     MPCReturn MPC::solve(const State& state) {
-        auto coeffs = calcCoeffs(state);
-        State tranformedState{0, 0, 0, state.vel, 0, 0};
-        calcState(tranformedState, coeffs);
-        auto res = solve(tranformedState, coeffs);
-        auto& x = res.mpcHorizon;
+        double rotation;
+        Eigen::Vector4d coeffs;
+        calcCoeffs(state, rotation, coeffs);
+
+        State transformedState{0, 0, rotation, state.vel, 0, 0};
+        calcState(transformedState, coeffs);
+  
+        auto result = solve(transformedState, coeffs);
+
+        double rotangle = state.psi - rotation;
+        auto& x = result.mpcHorizon;
         for (unsigned int i = 0; i < x.size(); i++) {
             // rotate back
             double dx = x[i].x.x;
             double dy = x[i].x.y;
-            x[i].x.x = dx * cos(state.psi) - dy * sin(state.psi);
-            x[i].x.y = dx * sin(state.psi) + dy * cos(state.psi);
+            x[i].x.x = dx * cos(rotangle) - dy * sin(rotangle);
+            x[i].x.y = dx * sin(rotangle) + dy * cos(rotangle);
             
             // // shift coordinates
             x[i].x.x += state.x;
             x[i].x.y += state.y;         
         }
-        
-        return res;
+
+        auto polyPath = getPathMsg(coeffs);
+        auto& points = polyPath.poses;
+        for (unsigned int i = 0; i < points.size(); i++) {
+            double dx = points[i].pose.position.x;
+            double dy = points[i].pose.position.y;
+            points[i].pose.position.x = dx * cos(rotangle) - dy * sin(rotangle);
+            points[i].pose.position.y = dx * sin(rotangle) + dy * cos(rotangle);
+
+            points[i].pose.position.x += state.x;
+            points[i].pose.position.y += state.y;
+        }
+        polynomPub_.publish(polyPath);
+        trackPub_.publish(getPathMsg(track_));
+        mpcPathPub_.publish(getPathMsg(result));
+        return result;
     }
 
     MPCReturn MPC::solve(const State& state, const Eigen::Vector4d& coeffs){
@@ -275,31 +306,53 @@ namespace mpc {
         return ret;
     }
 
+    void MPC::calcCoeffs(const State& state, double& rotation, Eigen::Vector4d& coeffs) const {
+        size_t start, end;
+        getTrackSection(start, end, state);
+
+        double minCost = 1e19;
+        for (double rot = -M_PI_2; rot < M_PI_2; rot += M_PI / 10.0) {
+            double curCost = minCost + 1;
+            Eigen::Vector4d curCoeffs = interpolate(state, rot, start, end, curCost);
+            if (curCost < minCost) {
+                minCost = curCost;
+                coeffs = curCoeffs;
+                rotation = rot;
+            }
+        }
+        // rotation = 0;
+        // coeffs = interpolate(state, rotation, start, end, minCost);
+        return;
+    }
+
     void MPC::calcState(State& state, const Eigen::Vector4d& coeffs) const {
         state.cte = state.y - polyEval(state.x, coeffs);
         state.epsi = state.psi - atan(coeffs[1] + 2 * state.x * coeffs[2] + 3 * coeffs[3] * state.x * state.x);
         return;
     }
 
-    Eigen::Vector4d MPC::calcCoeffs(const State& state) const {
-        size_t start, stop;
-        getTrackSection(start, stop, state);
+    Eigen::Vector4d MPC::interpolate(const State& state, double rotation, size_t start, size_t end, double& cost) const {
+        Eigen::VectorXd xVals(end - start);
+        Eigen::VectorXd yVals(end - start);
+        double angle = -state.psi + rotation;
 
-        Eigen::VectorXd xVals(stop - start);
-        Eigen::VectorXd yVals(stop - start);
-
-        for (unsigned int i = start; i < stop; i++) {
+        for (unsigned int i = start; i < end; i++) {
             // shift points so that the state is in the origo
-            double dx = track[i].x - state.x;
-            double dy = track[i].y - state.y;
+            double dx = track_[i].x - state.x;
+            double dy = track_[i].y - state.y;
             
             // rotate points so that state.psi = 0 in the new refrence frame
-            xVals[i - start] = dx * cos(-state.psi) - dy * sin(-state.psi);
-            yVals[i - start] = dx * sin(-state.psi) + dy * cos(-state.psi);
+            xVals[i - start] = dx * cos(angle) - dy * sin(angle);
+            yVals[i - start] = dx * sin(angle) + dy * cos(angle);
         }
 
         auto coeffs = polyfit(xVals, yVals, 3);
         assert(coeffs.size() == 4);
+
+        cost = 0;
+        for (unsigned int i = 0; i < yVals.size(); i++) {
+            cost += distSqrd(yVals[i] - polyEval(xVals[i], coeffs), 0);
+        }
         return coeffs;
     }
 
@@ -310,12 +363,12 @@ namespace mpc {
         state.vel += u.a * dt;
     }
 
-    void MPC::getTrackSection(size_t& start, size_t& stop, const State& state) const {
-        double maxLen = std::max(state.vel * (N * dt * 2), 5 * N * dt); // s = v * t
-        double minDistSqrd = distSqrd(state.x - track[0].x, state.y - track[0].y);
+    void MPC::getTrackSection(size_t& start, size_t& end, const State& state) const {
+        double maxLen = 3;
+        double minDistSqrd = distSqrd(state.x - track_[0].x, state.y - track_[0].y);
         size_t minIndex = 0;
-        for (unsigned int i = 1; i < track.size(); i++) {
-            double curDistSqrd = distSqrd(state.x - track[i].x, state.y - track[i].y);
+        for (unsigned int i = 1; i < track_.size(); i++) {
+            double curDistSqrd = distSqrd(state.x - track_[i].x, state.y - track_[i].y);
             if (curDistSqrd < minDistSqrd) {
                 minDistSqrd = curDistSqrd;
                 minIndex = i;
@@ -323,12 +376,20 @@ namespace mpc {
         }
 
         double len = 0;
-        size_t index = minIndex;
-        while(len < maxLen * maxLen && index < track.size() - 1) {
-            index++;
-            len += distSqrd(track[index].x - track[index - 1].x, track[index].y - track[index - 1].y);
+        // bool forward = track_[minIndex + 1].x - track_[minIndex].x > 0;
+        size_t frontIndex = minIndex;
+        size_t backIndex = minIndex;
+        while(len < maxLen * maxLen && frontIndex < track_.size() - 1 && backIndex > 0) {
+            frontIndex++;
+            // backIndex--;
+            len += distSqrd(track_[frontIndex].x - track_[frontIndex - 1].x, track_[frontIndex].y - track_[frontIndex - 1].y);
+            // len += distSqrd(track_[backIndex].x - track_[backIndex + 1].x, track_[backIndex].y - track_[backIndex + 1].y);
         }
-        start = minIndex;
-        stop = index;        
+        start = backIndex;
+        end = frontIndex;  
+        if (end - start < 4) {
+            end = start + 4;
+        }
+        assert(end < track_.size());      
     }
 }
