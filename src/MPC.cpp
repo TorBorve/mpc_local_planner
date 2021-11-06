@@ -4,6 +4,8 @@
 
 #include <cppad/cppad.hpp>
 #include <cppad/ipopt/solve.hpp>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2/LinearMath/Quaternion.h>
 
 #include <fstream>
 
@@ -146,6 +148,8 @@ namespace mpc {
     }
 
     MPCReturn MPC::solve(const State& state) {
+        static tf2_ros::TransformBroadcaster br;
+
         double rotation;
         Eigen::Vector4d coeffs;
         calcCoeffs(state, rotation, coeffs);
@@ -183,6 +187,22 @@ namespace mpc {
         polynomPub_.publish(polyPath);
         trackPub_.publish(getPathMsg(track_));
         mpcPathPub_.publish(getPathMsg(result));
+
+        geometry_msgs::TransformStamped transformStamped;
+        transformStamped.header.stamp = ros::Time::now();
+        transformStamped.header.frame_id = "odom";
+        transformStamped.child_frame_id = "base_link";
+        transformStamped.transform.translation.x = state.x;
+        transformStamped.transform.translation.y = state.y;
+        transformStamped.transform.translation.z = 0.5;
+        tf2::Quaternion q;
+        q.setRPY(0, 0, state.psi);
+        transformStamped.transform.rotation.x = q.x();
+        transformStamped.transform.rotation.y = q.y();
+        transformStamped.transform.rotation.z = q.z();
+        transformStamped.transform.rotation.w = q.w();
+
+        br.sendTransform(transformStamped);
         return result;
     }
 

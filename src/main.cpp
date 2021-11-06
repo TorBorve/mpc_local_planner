@@ -19,13 +19,13 @@ int main(int argc, char** argv){
     mpc::MPC MPC{track, N, dt};
     std::cout << "x\ty\tpsi\tvel\tcost\n";
     auto refresh = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds{100};
-    std::this_thread::sleep_for(std::chrono::seconds(2)); // wait for rviz
+    std::this_thread::sleep_for(std::chrono::seconds(1)); // wait for rviz
     while(ros::ok()){
         auto solution = MPC.solve(state);
         mpc::logSolution(solution, state, "log.txt");
         MPC.model(state, solution.u0);
-        std::cout << state.x << '\t' << state.y << '\t' << state.psi 
-            << '\t' << state.vel << '\t' << solution.cost << std::endl;
+        // std::cout << state.x << '\t' << state.y << '\t' << state.psi 
+        //     << '\t' << state.vel << '\t' << solution.cost << std::endl;
         std::cout << "Time: " << solution.computeTime << " [ms]\n";
         if (solution.cost < 100 && solution.cost > 0.1){
             state = initialState;

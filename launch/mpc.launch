@@ -9,4 +9,7 @@
     <group if="$(arg rviz)">
         <node pkg="rviz" type="rviz" name="rviz" args="-d $(find mpc_local_planner)/rviz/mpc_viz.rviz" />
     </group>
+
+    <param name="robot_description" textfile="$(find mpc_local_planner)/urdf/box.urdf"/>
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" />
 </launch>
