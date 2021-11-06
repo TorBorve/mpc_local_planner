@@ -10,8 +10,6 @@
 namespace mpc{
     geometry_msgs::Pose toMsg(const State& state);
     
-    nav_msgs::Path getPathMsg(const MPCReturn& solution);
-
     CPPAD_TESTVECTOR(double) toCppAD(const std::vector<double>& vec);
 
     void logSolution(const MPCReturn& solution, const State& curState, const std::string& filename);
@@ -23,4 +21,10 @@ namespace mpc{
     }
 
     std::vector<Point> getTestTrack();
+
+    nav_msgs::Path getPathMsg(const MPCReturn& solution);
+
+    nav_msgs::Path getPathMsg(const Eigen::Vector4d& coeffs);
+
+    nav_msgs::Path getPathMsg(const std::vector<Point>& track);
 }

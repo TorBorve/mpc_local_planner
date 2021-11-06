@@ -20,21 +20,6 @@ namespace mpc{
         return pose;
     }
 
-    nav_msgs::Path getPathMsg(const MPCReturn& solution) {
-        nav_msgs::Path path;
-        std_msgs::Header header;
-        header.frame_id = "odom";
-        header.stamp = ros::Time::now();
-        path.header = header;
-        header.frame_id = "base_link";
-        path.poses.resize(solution.mpcHorizon.size());
-        for(int i = 0; i < path.poses.size(); i++){
-            path.poses[i].pose = toMsg(solution.mpcHorizon[i].x);
-            path.poses[i].header = header;
-        }
-        return path;
-    }
-
     CppAD::vector<double> toCppAD(const std::vector<double>& vec){
         CppAD::vector<double> cppADVec(vec.size());
         for (int i = 0; i < vec.size(); i++) {
@@ -95,11 +80,66 @@ namespace mpc{
     std::vector<Point> getTestTrack() {
         constexpr size_t n = 100;
         std::vector<Point> track;
-        double x_start = -10, x_stop = 10;
-   
-        for(double x = x_start; x < x_stop; x += (x_stop - x_start) / n) {
-            track.push_back(Point{x, 0.1 * x * x});
+        // double x_start = -30, x_stop = 30;
+        // for(double x = x_start; x < x_stop; x += (x_stop - x_start) / n) {
+        //     track.push_back(Point{x, 0.5 * x + 0.1 * x * x + -0.01 * x * x * x});
+        // }
+        for (double theta = 0; theta < 2 * M_PI; theta += 2 * M_PI / (double)n) {
+            double radius = 20;
+            track.push_back(Point{radius * cos(theta), radius * sin(2*theta)});
         }
         return track;
+    }
+
+    nav_msgs::Path getPathMsg(const MPCReturn& solution) {
+        nav_msgs::Path path;
+        std_msgs::Header header;
+        header.frame_id = "odom";
+        header.stamp = ros::Time::now();
+        path.header = header;
+        header.frame_id = "base_link";
+        path.poses.resize(solution.mpcHorizon.size());
+        for(int i = 0; i < path.poses.size(); i++){
+            path.poses[i].pose = toMsg(solution.mpcHorizon[i].x);
+            path.poses[i].header = header;
+        }
+        return path;
+    }
+
+    nav_msgs::Path getPathMsg(const Eigen::Vector4d& coeffs) {
+        double start = -30, finish = 30;
+        double step = 0.1;
+        nav_msgs::Path path;
+        std_msgs::Header header;
+        header.frame_id = "odom";
+        header.stamp = ros::Time::now();
+        path.header = header;
+        header.frame_id = "base_link";
+        for(double x = start; x < finish; x += step){
+            double y = coeffs[0] + coeffs[1] * x + coeffs[2] * x * x + coeffs[3] * x * x * x;
+            geometry_msgs::PoseStamped pose;
+            pose.pose.position.x = x;
+            pose.pose.position.y = y;
+            pose.header = header;
+            path.poses.push_back(pose);
+        }
+    return path;
+    }
+
+    nav_msgs::Path getPathMsg(const std::vector<Point>& track) {
+        nav_msgs::Path path;
+        std_msgs::Header header;
+        header.frame_id = "odom";
+        header.stamp = ros::Time::now();
+        path.header = header;
+        header.frame_id = "base_link";
+        for(const auto& p : track){
+            geometry_msgs::PoseStamped pose;
+            pose.pose.position.x = p.x;
+            pose.pose.position.y = p.y;
+            pose.header = header;
+            path.poses.push_back(pose);
+        }
+    return path;
     }
 }
