@@ -234,6 +234,7 @@ namespace mpc {
         for (unsigned int i = 0; i < n_vars; i++) {
             vars[i] = 0;
         }
+
         for (unsigned int i = 0; i < N; i++) {
             vars[x_start + i] = x;
             vars[y_start + i] = y;
@@ -408,6 +409,10 @@ namespace mpc {
         start = backIndex;
         end = frontIndex;  
         if (end - start < 4) {
+            end = start + 4;
+        }
+        if (end >= track_.size()) {
+            start = 0;
             end = start + 4;
         }
         assert(end < track_.size());      

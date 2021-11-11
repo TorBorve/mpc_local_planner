@@ -86,7 +86,7 @@ namespace mpc{
         // }
         for (double theta = 0; theta < 2 * M_PI; theta += 2 * M_PI / (double)n) {
             double radius = 20;
-            track.push_back(Point{radius * cos(theta), radius * sin(2*theta)});
+            track.push_back(Point{2 * radius * cos(theta), radius * sin(1 * theta) + radius / 1.2 * sin(3 * theta)});
         }
         return track;
     }

@@ -42,7 +42,7 @@ namespace mpc {
         }
 
         void getTrackSection(size_t& start, size_t& stop, const State& state) const;
-        // Eigen::Vector4d coeffs;
+
         std::vector<Point> track_;
 
         ros::Publisher trackPub_;
