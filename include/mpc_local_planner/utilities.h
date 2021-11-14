@@ -4,6 +4,7 @@
 #include "mpc_local_planner/bounds.h"
 
 #include <nav_msgs/Path.h>
+#include <nav_msgs/Odometry.h>
 
 #include <cppad/cppad.hpp>
 
@@ -27,4 +28,12 @@ namespace mpc{
     nav_msgs::Path getPathMsg(const Eigen::Vector4d& coeffs);
 
     nav_msgs::Path getPathMsg(const std::vector<Point>& track);
+
+    State toState(const nav_msgs::Odometry& odom);
+
+    double velocity(const nav_msgs::Odometry& odom);   
+
+    double length(const geometry_msgs::Vector3& vec);
+
+    double getYaw(const geometry_msgs::Quaternion& quat);
 }

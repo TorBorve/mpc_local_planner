@@ -1,6 +1,7 @@
 #include "mpc_local_planner/utilities.h"
 
 #include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
 #include <eigen3/Eigen/Dense>
 
 #include <fstream>
@@ -141,5 +142,27 @@ namespace mpc{
             path.poses.push_back(pose);
         }
     return path;
+    }
+
+    State toState(const nav_msgs::Odometry& odom) {
+        double vel = velocity(odom);
+        double psi = getYaw(odom.pose.pose.orientation);
+        return State{odom.pose.pose.position.x, odom.pose.pose.position.y, psi, vel, 0, 0};
+    }
+
+    double velocity(const nav_msgs::Odometry& odom){
+        return length(odom.twist.twist.linear);
+    }
+
+    double length(const geometry_msgs::Vector3& vec){
+        return sqrt(vec.x*vec.x + vec.y*vec.y + vec.z*vec.z);
+    }
+
+    double getYaw(const geometry_msgs::Quaternion& quat){
+        tf2::Quaternion q{quat.x, quat.y, quat.z, quat.w};
+        tf2::Matrix3x3 mat{q};
+        double roll, pitch, yaw;
+        mat.getRPY(roll, pitch, yaw);
+        return yaw;
     }
 }
