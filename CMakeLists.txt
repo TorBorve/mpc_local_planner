@@ -37,7 +37,8 @@ link_directories(/usr/local/lib)
 
 # FILE(GLOB SOURCES "src/*.cpp")
 
-add_executable(main src/main.cpp src/utilities.cpp src/MPC.cpp src/bounds.cpp)
+add_executable(main src/main.cpp src/utilities.cpp src/MPC.cpp src/bounds.cpp src/RosMpc.cpp)
 target_link_libraries(main ${catkin_LIBRARIES} ipopt)
 
-add_executable(testCode tests/main.cpp src/bounds.cpp)
+add_executable(testMpc tests/main.cpp src/bounds.cpp src/utilities.cpp src/MPC.cpp)
+target_link_libraries(testMpc ${catkin_LIBRARIES} ipopt)
