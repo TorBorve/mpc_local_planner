@@ -150,6 +150,21 @@ namespace mpc {
     MPCReturn MPC::solve(const State& state) {
         static tf2_ros::TransformBroadcaster br;
 
+        geometry_msgs::TransformStamped transformStamped;
+        transformStamped.header.stamp = ros::Time::now();
+        transformStamped.header.frame_id = "odom";
+        transformStamped.child_frame_id = "mpc_base_link";
+        transformStamped.transform.translation.x = state.x;
+        transformStamped.transform.translation.y = state.y;
+        transformStamped.transform.translation.z = 0.5;
+        tf2::Quaternion q;
+        q.setRPY(0, 0, state.psi);
+        transformStamped.transform.rotation.x = q.x();
+        transformStamped.transform.rotation.y = q.y();
+        transformStamped.transform.rotation.z = q.z();
+        transformStamped.transform.rotation.w = q.w();
+        br.sendTransform(transformStamped);
+
         double rotation;
         Eigen::Vector4d coeffs;
         calcCoeffs(state, rotation, coeffs);
@@ -188,21 +203,6 @@ namespace mpc {
         trackPub_.publish(getPathMsg(track_));
         mpcPathPub_.publish(getPathMsg(result));
 
-        geometry_msgs::TransformStamped transformStamped;
-        transformStamped.header.stamp = ros::Time::now();
-        transformStamped.header.frame_id = "odom";
-        transformStamped.child_frame_id = "base_link";
-        transformStamped.transform.translation.x = state.x;
-        transformStamped.transform.translation.y = state.y;
-        transformStamped.transform.translation.z = 0.5;
-        tf2::Quaternion q;
-        q.setRPY(0, 0, state.psi);
-        transformStamped.transform.rotation.x = q.x();
-        transformStamped.transform.rotation.y = q.y();
-        transformStamped.transform.rotation.z = q.z();
-        transformStamped.transform.rotation.w = q.w();
-
-        br.sendTransform(transformStamped);
         return result;
     }
 
@@ -378,9 +378,21 @@ namespace mpc {
     }
 
     void MPC::model(State& state, const Input& u) {
+        static double prevDelta = 0;
+        constexpr double dt = 0.1;
+        constexpr double maxInc = 8000.0 / 17.3 * M_PI / 180.0 * dt;
+        double delta = u.delta;
+        if (delta < prevDelta - maxInc) {
+            delta = prevDelta - maxInc;
+            ROS_WARN("Unable to turn wheels fast enough");
+        } else if (delta > prevDelta + maxInc) {
+            delta = prevDelta + maxInc;
+            ROS_WARN("Unable to turn wheels fast enough");
+        }
+        prevDelta = delta;
         state.x += state.vel * cos(state.psi) * dt;
         state.y += state.vel * sin(state.psi) * dt;
-        state.psi += state.vel * u.delta / Lf * dt;
+        state.psi += state.vel * tan(delta) / Lf * dt;
         state.vel += u.a * dt;
     }
 
