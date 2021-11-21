@@ -7,8 +7,10 @@ int main(int argc, char** argv){
 
     mpc::RosMpc mpc;
     ros::Rate loopRate(10);
+    ros::Duration(2).sleep(); // sleep for two sec
     while(ros::ok()) {
         ros::spinOnce();
+        mpc.solve();
         loopRate.sleep();
     }
     return 0;
