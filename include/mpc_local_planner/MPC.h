@@ -23,13 +23,13 @@ namespace mpc {
             return track_;
         }
 
-        MPCReturn solve(const State& state);
+        MPCReturn solve(const OptVariables& optVars);
         
-        MPCReturn solve(const State& state, const Eigen::Vector4d& coeffs);
+        MPCReturn solve(const OptVariables& optVars, const Eigen::Vector4d& coeffs);
 
         MPCReturn toMPCReturn(const CppAD::ipopt::solve_result<Dvector>& solution, double time);
         
-        void model(State& state, const Input& u);
+        void model(OptVariables& optVars, const Input& u);
     private:
         void calcCoeffs(const State& state, double& rotation, Eigen::Vector4d& coeffs) const;
 

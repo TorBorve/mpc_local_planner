@@ -29,16 +29,16 @@ namespace mpc {
 
             for (unsigned int i=0; i<N; i++)
             {
-            fg[0] += 2000*CppAD::pow(vars[cte_start+i]-ref_cte, 2);
+            fg[0] += 500*CppAD::pow(vars[cte_start+i]-ref_cte, 2);
             fg[0] += 2000*CppAD::pow(vars[epsi_start+i]-ref_epsi, 2);
-            fg[0] += 1*CppAD::pow(vars[v_start+i]-ref_v, 2);
+            // fg[0] += 1*CppAD::pow(vars[v_start+i]-ref_v, 2);
             }
 
             // minimize the use of actuators
             for (unsigned int i=0; i<N-1; i++)
             {
             fg[0] += 25*CppAD::pow(vars[delta_start+i], 2);
-            fg[0] += 25*CppAD::pow(vars[a_start+i], 2);
+            // fg[0] += 25*CppAD::pow(vars[a_start+i], 2);
             //fg[0] += 700*CppAD::pow(vars[delta_start + i] * vars[v_start+i], 2);
             }
 
@@ -46,7 +46,7 @@ namespace mpc {
             for (unsigned int i=0; i<N-2; i++)
             {
             fg[0] += 200*CppAD::pow(vars[delta_start+i+1] - vars[delta_start+i], 2); 
-            fg[0] += 20*CppAD::pow(vars[a_start+i+1] - vars[a_start+i], 2);
+            // fg[0] += 20*CppAD::pow(vars[a_start+i+1] - vars[a_start+i], 2);
             }
     
             //
@@ -107,12 +107,18 @@ namespace mpc {
             // epsi[t+1] = psi[t] - psides[t] + v[t] * delta[t] / Lf * dt
             fg[2 + x_start + i] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
             fg[2 + y_start + i] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
-            fg[2 + psi_start + i] = psi1 - (psi0 + v0 * delta0 / Lf * dt);
-            fg[2 + v_start + i] = v1 - (v0 + a0 * dt);
+            fg[2 + psi_start + i] = psi1 - (psi0 + v0 * CppAD::tan(delta0) / Lf * dt);
+            fg[2 + v_start + i] = v1 - v0; //v1 - (v0 + a0 * dt);
             fg[2 + cte_start + i] =
                 cte1 - ((f0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
             fg[2 + epsi_start + i] =
-                epsi1 - ((psi0 - psides0) + v0 * delta0 / Lf * dt);
+                epsi1 - ((psi0 - psides0) + v0 * CppAD::tan(delta0) / Lf * dt);
+            }
+
+            for (unsigned int i = delta_start; i < delta_start + N - 2; i++) {
+                CppAD::AD<double> delta0 = vars[i];
+                CppAD::AD<double> delta1 = vars[i + 1];
+                fg[1 + i] = delta1 - delta0;
             }
             return;
         }
@@ -133,7 +139,7 @@ namespace mpc {
         const double Lf = 2.67;
         const double ref_cte = 0;
         const double ref_epsi = 0;
-        const double ref_v = 10; 
+        const double ref_v = 5; 
     };
 
     MPC::MPC(const std::vector<Point>& track, size_t N, double dt) : 
@@ -147,8 +153,9 @@ namespace mpc {
         polynomPub_ = nh.advertise<nav_msgs::Path>("interpolated_path", 1);
     }
 
-    MPCReturn MPC::solve(const State& state) {
+    MPCReturn MPC::solve(const OptVariables& optVars) {
         static tf2_ros::TransformBroadcaster br;
+        const State& state = optVars.x;
 
         geometry_msgs::TransformStamped transformStamped;
         transformStamped.header.stamp = ros::Time::now();
@@ -171,8 +178,11 @@ namespace mpc {
 
         State transformedState{0, 0, rotation, state.vel, 0, 0};
         calcState(transformedState, coeffs);
-  
-        auto result = solve(transformedState, coeffs);
+        OptVariables transformedOptVar{transformedState, optVars.u};
+        if(optVars.x.vel < 1) {
+            transformedOptVar.x.vel = 1;
+        }
+        auto result = solve(transformedOptVar, coeffs);
 
         double rotangle = state.psi - rotation;
         auto& x = result.mpcHorizon;
@@ -206,8 +216,12 @@ namespace mpc {
         return result;
     }
 
-    MPCReturn MPC::solve(const State& state, const Eigen::Vector4d& coeffs){
+    MPCReturn MPC::solve(const OptVariables& optVars, const Eigen::Vector4d& coeffs){
         using Dvector = CPPAD_TESTVECTOR(double);
+        const State& state = optVars.x;
+
+        // static double prevDelta = 0;
+        const double maxInc = 800.0 / 17.3 * M_PI / 180.0 * dt;
 
         auto start = std::chrono::high_resolution_clock::now();
 
@@ -217,6 +231,7 @@ namespace mpc {
         double v = state.vel;
         double cte = state.cte;
         double epsi = state.epsi;
+        double delta = optVars.u.delta;
 
         // TODO: Set the number of model variables (includes both states and inputs).
         // For example: If the state is a 4 element vector, the actuators is a 2
@@ -225,7 +240,7 @@ namespace mpc {
         // 4 * 10 + 2 * 9
         size_t n_vars = N * 6 + (N-1)*2;
         // TODO: Set the number of constraints
-        size_t n_constraints = N * 6;
+        size_t n_constraints = N * 6 + N - 2;
 
 
         // Initial value of the independent variables.
@@ -254,7 +269,7 @@ namespace mpc {
 
         // acceleration/deceleration upper/lower limits 
         for (unsigned int i = a_start; i < n_vars; i++) {
-            varBounds[i] = Bound{-1, 1};
+            varBounds[i] = Bound{0, 0};
         }
 
 
@@ -268,6 +283,20 @@ namespace mpc {
         constraintBounds[v_start] = Bound{v, v};
         constraintBounds[cte_start] = Bound{cte, cte};
         constraintBounds[epsi_start] = Bound{epsi, epsi};
+
+        for (unsigned int i = delta_start; i < delta_start + N - 2; i++) {
+            constraintBounds[i] = Bound{-maxInc, maxInc};
+        }
+        
+        Bound deltaBound{-0.57, 0.57};
+        if ((delta - maxInc) > deltaBound.lower) {
+            deltaBound.lower = delta - maxInc;
+        }
+        if ((delta + maxInc) < deltaBound.upper) {
+            deltaBound.upper = delta + maxInc;
+        }
+        varBounds[delta_start] = deltaBound;
+        // ROS_WARN("l: %f, u: %f", deltaBound.lower, deltaBound.upper);
 
         // object that computes objective and constraints
         FG_eval fg_eval(coeffs, N, dt);
@@ -307,6 +336,16 @@ namespace mpc {
         }
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        
+        // double delta = solution.x[delta_start];
+        // if (delta < prevDelta - maxInc) {
+        //     delta = prevDelta - maxInc;
+        //     ROS_WARN("Unable to turn wheels fast enough, MPC");
+        // } else if (delta > prevDelta + maxInc) {
+        //     delta = prevDelta + maxInc;
+        //     ROS_WARN("Unable to turn wheels fast enough, MPC");
+        // }
+        // prevDelta = delta;
         return toMPCReturn(solution, duration.count());
     }
 
@@ -377,23 +416,24 @@ namespace mpc {
         return coeffs;
     }
 
-    void MPC::model(State& state, const Input& u) {
-        static double prevDelta = 0;
+    void MPC::model(OptVariables& optVars, const Input& u) {
         constexpr double dt = 0.1;
-        constexpr double maxInc = 8000.0 / 17.3 * M_PI / 180.0 * dt;
+        constexpr double maxInc = 800.0 / 17.3 * M_PI / 180.0 * dt;
+        State& state = optVars.x;
         double delta = u.delta;
-        if (delta < prevDelta - maxInc) {
-            delta = prevDelta - maxInc;
+        if (delta < optVars.u.delta - maxInc) {
+            delta = optVars.u.delta - maxInc;
             ROS_WARN("Unable to turn wheels fast enough");
-        } else if (delta > prevDelta + maxInc) {
-            delta = prevDelta + maxInc;
+        } else if (delta > optVars.u.delta + maxInc) {
+            delta = optVars.u.delta + maxInc;
             ROS_WARN("Unable to turn wheels fast enough");
         }
-        prevDelta = delta;
+        optVars.u.delta = delta;
         state.x += state.vel * cos(state.psi) * dt;
         state.y += state.vel * sin(state.psi) * dt;
         state.psi += state.vel * tan(delta) / Lf * dt;
         state.vel += u.a * dt;
+        // state.vel = 5;
     }
 
     void MPC::getTrackSection(size_t& start, size_t& end, const State& state) const {
