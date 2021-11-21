@@ -79,14 +79,14 @@ namespace mpc{
     }
 
     std::vector<Point> getTestTrack() {
-        constexpr size_t n = 100;
+        constexpr size_t n = 400;
         std::vector<Point> track;
         // double x_start = -30, x_stop = 30;
         // for(double x = x_start; x < x_stop; x += (x_stop - x_start) / n) {
         //     track.push_back(Point{x, 0.5 * x + 0.1 * x * x + -0.01 * x * x * x});
         // }
         for (double theta = 0; theta < 2 * M_PI; theta += 2 * M_PI / (double)n) {
-            double radius = 20;
+            double radius = 40;
             track.push_back(Point{2 * radius * cos(theta), radius * sin(1 * theta) + radius / 1.2 * sin(3 * theta)});
         }
         return track;
