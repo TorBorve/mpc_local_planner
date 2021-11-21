@@ -1,0 +1,8 @@
+#pragma once
+
+#define MPC_N 30
+#define MPC_dt 0.1
+
+#define MPC_MAX_STEERING_ANGLE 0.57
+#define MPC_MIN_STEERING_ANGLE -MPC_MAX_STEERING_ANGLE
+#define MPC_MAX_STEERING_ROTATION_SPEED 800.0 / 17.3 * M_PI / 180.0

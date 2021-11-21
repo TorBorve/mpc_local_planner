@@ -1,6 +1,7 @@
 #include "mpc_local_planner/MPC.h"
 #include "mpc_local_planner/bounds.h"
 #include "mpc_local_planner/utilities.h"
+#include "mpc_local_planner/constants.h"
 
 #include <cppad/cppad.hpp>
 #include <cppad/ipopt/solve.hpp>
@@ -221,7 +222,7 @@ namespace mpc {
         const State& state = optVars.x;
 
         // static double prevDelta = 0;
-        const double maxInc = 800.0 / 17.3 * M_PI / 180.0 * dt;
+        const double maxInc = MPC_MAX_STEERING_ROTATION_SPEED * dt;
 
         auto start = std::chrono::high_resolution_clock::now();
 
@@ -264,7 +265,7 @@ namespace mpc {
         // upper/lower limits for delta set to -25/25
         // degrees(values in radians)
         for (unsigned int i = delta_start; i < a_start; i++) {
-            varBounds[i] = Bound{-0.436332*Lf, 0.436332*Lf};
+            varBounds[i] = Bound{MPC_MIN_STEERING_ANGLE, MPC_MAX_STEERING_ANGLE};
         }
 
         // acceleration/deceleration upper/lower limits 
@@ -288,7 +289,7 @@ namespace mpc {
             constraintBounds[i] = Bound{-maxInc, maxInc};
         }
         
-        Bound deltaBound{-0.57, 0.57};
+        Bound deltaBound{MPC_MIN_STEERING_ANGLE, MPC_MAX_STEERING_ANGLE};
         if ((delta - maxInc) > deltaBound.lower) {
             deltaBound.lower = delta - maxInc;
         }
@@ -417,8 +418,8 @@ namespace mpc {
     }
 
     void MPC::model(OptVariables& optVars, const Input& u) {
-        constexpr double dt = 0.1;
-        constexpr double maxInc = 800.0 / 17.3 * M_PI / 180.0 * dt;
+        constexpr double dt = MPC_dt;
+        constexpr double maxInc = MPC_MAX_STEERING_ROTATION_SPEED * dt;
         State& state = optVars.x;
         double delta = u.delta;
         if (delta < optVars.u.delta - maxInc) {

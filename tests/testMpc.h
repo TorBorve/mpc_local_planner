@@ -2,6 +2,7 @@
 
 #include "mpc_local_planner/MPC.h"
 #include "mpc_local_planner/utilities.h"
+#include "mpc_local_planner/constants.h"
 #include <ros/ros.h>
 #include <thread>
 
@@ -9,8 +10,8 @@ namespace mpc {
     void testMpc() {
         auto track = mpc::getTestTrack();
         mpc::OptVariables initialOptVars{State{81, 0, M_PI_2, 5.0, 0, 0}, Input{0, 0}};
-        constexpr size_t N = 30;
-        constexpr double dt = 0.1;
+        constexpr size_t N = MPC_N;
+        constexpr double dt = MPC_dt;
 
         mpc::OptVariables optVars = initialOptVars;
         mpc::MPC MPC{track, N, dt};

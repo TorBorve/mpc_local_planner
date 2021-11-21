@@ -1,5 +1,6 @@
 #include "mpc_local_planner/RosMpc.h"
 #include "mpc_local_planner/utilities.h"
+#include "mpc_local_planner/constants.h"
 
 #include <geometry_msgs/Twist.h>
 #include <std_msgs/Float64.h>
@@ -9,12 +10,11 @@
 namespace mpc {
 
     RosMpc::RosMpc() : 
-        mpc{getTestTrack(), 30, 0.1}, tfListener_{tfBuffer_}    
+        mpc{getTestTrack(), MPC_N, MPC_dt}, tfListener_{tfBuffer_}    
     {
         ros::NodeHandle nh;
         inputPub_ = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
         steeringPub_ = nh.advertise<std_msgs::Float64>("steering_cmd", 1);
-        // odomSub_ = nh.subscribe("odom", 1, &RosMpc::odomCallback, this);
         twistSub_ = nh.subscribe("twist", 1, &RosMpc::twistCallback, this);
         actualSteeringSub_ = nh.subscribe("actual_steering_angle", 1, &RosMpc::actualSteeringCallback, this);
     }
@@ -39,7 +39,7 @@ namespace mpc {
             current_steering_angle_
         };
         OptVariables optVars{state, input};
-        mpc.model(optVars, input);
+        mpc.model(optVars, input); // get predicted state after calculation is finished
 
         const auto result = mpc.solve(optVars);
         constexpr double vel = 3;
