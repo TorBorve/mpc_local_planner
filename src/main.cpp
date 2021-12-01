@@ -6,7 +6,7 @@ int main(int argc, char** argv){
     ROS_INFO("MPC node intitialized");
 
     mpc::RosMpc mpc;
-    ros::Rate loopRate(10);
+    ros::Rate loopRate(20);
     ros::Duration(2).sleep(); // sleep for two sec
     while(ros::ok()) {
         ros::spinOnce();

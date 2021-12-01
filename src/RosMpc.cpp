@@ -39,10 +39,10 @@ namespace mpc {
             current_steering_angle_
         };
         OptVariables optVars{state, input};
-        mpc.model(optVars, input); // get predicted state after calculation is finished
+        // mpc.model(optVars, input); // get predicted state after calculation is finished
 
         const auto result = mpc.solve(optVars);
-        constexpr double vel = 3;
+        constexpr double vel = 8;
         geometry_msgs::Twist twist;
         twist.linear.x = vel;
         twist.angular.z = rotationSpeed(result.u0.delta, result.mpcHorizon[0].x.vel);

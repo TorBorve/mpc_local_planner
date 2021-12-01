@@ -3,6 +3,8 @@
 #include "mpc_local_planner/utilities.h"
 #include "mpc_local_planner/constants.h"
 
+#include "timing.h"
+
 #include <cppad/cppad.hpp>
 #include <cppad/ipopt/solve.hpp>
 #include <tf2_ros/transform_broadcaster.h>
@@ -296,7 +298,7 @@ namespace mpc {
         if ((delta + maxInc) < deltaBound.upper) {
             deltaBound.upper = delta + maxInc;
         }
-        varBounds[delta_start] = deltaBound;
+        // varBounds[delta_start] = deltaBound;
         // ROS_WARN("l: %f, u: %f", deltaBound.lower, deltaBound.upper);
 
         // object that computes objective and constraints
@@ -372,7 +374,7 @@ namespace mpc {
         getTrackSection(start, end, state);
 
         double minCost = 1e19;
-        for (double rot = -M_PI_2; rot < M_PI_2; rot += M_PI / 10.0) {
+        for (double rot = -M_PI_2; rot < 0; rot += M_PI_2 / 3) {
             double curCost = minCost + 1;
             Eigen::Vector4d curCoeffs = interpolate(state, rot, start, end, curCost);
             if (curCost < minCost) {
@@ -418,8 +420,7 @@ namespace mpc {
     }
 
     void MPC::model(OptVariables& optVars, const Input& u) {
-        constexpr double dt = MPC_dt;
-        constexpr double maxInc = MPC_MAX_STEERING_ROTATION_SPEED * dt;
+        constexpr double maxInc = MPC_MAX_STEERING_ROTATION_SPEED * MPC_dt;
         State& state = optVars.x;
         double delta = u.delta;
         if (delta < optVars.u.delta - maxInc) {
@@ -434,7 +435,6 @@ namespace mpc {
         state.y += state.vel * sin(state.psi) * dt;
         state.psi += state.vel * tan(delta) / Lf * dt;
         state.vel += u.a * dt;
-        // state.vel = 5;
     }
 
     void MPC::getTrackSection(size_t& start, size_t& end, const State& state) const {

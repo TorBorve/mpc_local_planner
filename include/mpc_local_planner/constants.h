@@ -1,6 +1,6 @@
 #pragma once
 
-#define MPC_N 30
+#define MPC_N 20
 #define MPC_dt 0.1
 
 #define MPC_MAX_STEERING_ANGLE 0.57
