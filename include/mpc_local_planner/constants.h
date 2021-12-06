@@ -2,9 +2,9 @@
 
 // Parameters for mpc
 
-#define MPC_N 20 // number of steps in mpc
+#define MPC_N 10 // number of steps in mpc
 
-#define MPC_dt 0.1 // time increment in between steps
+#define MPC_dt 0.2 // time increment in between steps
 
 // Constants for car
 
