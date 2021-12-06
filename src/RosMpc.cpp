@@ -15,14 +15,14 @@ namespace mpc {
         ros::NodeHandle nh;
         inputPub_ = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
         steeringPub_ = nh.advertise<std_msgs::Float64>("steering_cmd", 1);
-        twistSub_ = nh.subscribe("twist", 1, &RosMpc::twistCallback, this);
-        actualSteeringSub_ = nh.subscribe("actual_steering_angle", 1, &RosMpc::actualSteeringCallback, this);
+        twistSub_ = nh.subscribe(twistTopic_, 1, &RosMpc::twistCallback, this);
+        actualSteeringSub_ = nh.subscribe(actualSteeringTopic_, 1, &RosMpc::actualSteeringCallback, this);
     }
 
     MPCReturn RosMpc::solve() {
         geometry_msgs::TransformStamped tfCar;
         try {
-            tfCar = tfBuffer_.lookupTransform("odom", "base_footprint", ros::Time(0));
+            tfCar = tfBuffer_.lookupTransform(mapFrame_, carFrame_, ros::Time(0));
         } catch (tf2::TransformException& e) {
             ROS_WARN_STREAM("Error thrown: " << e.what());
         }
@@ -53,6 +53,35 @@ namespace mpc {
         ROS_INFO("Time: %i [ms]", (int)result.computeTime);
         ROS_INFO("refvel: %.2f, carVel: %.2f, steering: %.2f [deg]", vel, state.vel, result.u0.delta * 180.0 / M_PI);
         return result;
+    }
+
+    bool RosMpc::verifyInputs() const {
+        double waitTime = 10.0;
+
+        // check if twist publisher is publishing
+        while (ros::ok() && !ros::topic::waitForMessage<geometry_msgs::TwistStamped>(twistTopic_, ros::Duration{waitTime})) {
+            ROS_WARN("Waiting for twist message. Should be published at the topic: %s", twistTopic_.c_str());
+        }
+
+        // cheeck if actual steering angle is published
+        while (ros::ok() && !ros::topic::waitForMessage<std_msgs::Float64>(actualSteeringTopic_, ros::Duration{waitTime})) {
+            ROS_WARN("Waiting for actual steering angle. Should be publishd at the topic: %s", actualSteeringTopic_.c_str());
+        }
+
+        while (ros::ok()) {
+            bool ok = true; // if the transform was recived
+            geometry_msgs::TransformStamped tfCar;
+            try {
+                tfCar = tfBuffer_.lookupTransform(mapFrame_, carFrame_, ros::Time(0), ros::Duration{waitTime});
+            } catch (tf2::TransformException& e) {
+                ROS_WARN("Waiting for transfrom from map to car.\n\t Error message: %s", e.what());
+                ok = false;
+            }
+            if (ok) {
+                break;
+            }
+        }
+        return true;
     }
 
     double RosMpc::rotationSpeed(double steeringAngle, double vel) {
