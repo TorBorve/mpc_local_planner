@@ -85,8 +85,7 @@ namespace mpc {
     }
 
     double RosMpc::rotationSpeed(double steeringAngle, double vel) {
-        double length = 2.65;
-        return tan(steeringAngle) * vel / length;
+        return tan(steeringAngle) * vel / MPC_WHEELBASE;
     }
 
     void RosMpc::twistCallback(const geometry_msgs::TwistStamped::ConstPtr& msg) {

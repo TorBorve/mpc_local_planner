@@ -14,4 +14,4 @@
 
 #define MPC_MAX_STEERING_ROTATION_SPEED 800.0 / 17.3 * M_PI / 180.0 // maximum ratation speed on the wheels in [rad / s]
 
-// should add LF variable
+#define MPC_WHEELBASE 2.65

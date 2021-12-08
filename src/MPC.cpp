@@ -139,7 +139,7 @@ namespace mpc {
         const size_t delta_start;
         const size_t a_start;
 
-        const double Lf = 2.67;
+        const double Lf = MPC_WHEELBASE;
         const double ref_cte = 0;
         const double ref_epsi = 0;
         const double ref_v = 5; 

@@ -112,7 +112,7 @@ namespace mpc {
         double dt;
 
         /// @brief distance between front and rear wheels
-        constexpr static double Lf = 2.67;
+        constexpr static double Lf = MPC_WHEELBASE;
 
         /// @brief start index for x variables in mpc variables
         const size_t x_start;
