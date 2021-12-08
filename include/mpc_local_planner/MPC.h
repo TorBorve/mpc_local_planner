@@ -6,6 +6,7 @@
 #include <ros/ros.h>
 
 #include "mpc_local_planner/types.h"
+#include "mpc_local_planner/constants.h"
 
 namespace mpc {
 
@@ -57,6 +58,12 @@ namespace mpc {
         /// @param[in] u inputs on car (acceleration and steering angle)
         void model(OptVariables& optVars, const Input& u);
 
+        /// @brief model of a car. Used to predict state evolution.
+        /// @param[in/out] optVars state thate should be updated
+        /// @param[in] u inputs on car (acceleration and steering angle)
+        /// @param[in] dt the time increment used in the model
+        void model(OptVariables& optVars, const Input& u, double dt);
+
     private:
 
         /// @brief calculates coefficients of third order polynomial that fits the disired trajectory best.
@@ -106,37 +113,37 @@ namespace mpc {
         ros::Publisher polynomPub_;
 
         /// @brief number of steps in mpc solver
-        size_t N;
+        size_t N_;
 
         /// @brief time increment for model.
-        double dt;
+        double dt_;
 
         /// @brief distance between front and rear wheels
         constexpr static double Lf = MPC_WHEELBASE;
 
         /// @brief start index for x variables in mpc variables
-        const size_t x_start;
+        const size_t x_start_;
 
         /// @brief start index for y variables in mpc variables
-        const size_t y_start;
+        const size_t y_start_;
 
         /// @brief start index for psi variables in mpc variables
-        const size_t psi_start;
+        const size_t psi_start_;
 
         /// @brief start index for vel variables in mpc variables
-        const size_t v_start;
+        const size_t v_start_;
 
         /// @brief start index for cte variables in mpc variables
-        const size_t cte_start;
+        const size_t cte_start_;
 
         /// @brief start index for epsi variables in mpc variables
-        const size_t epsi_start;
+        const size_t epsi_start_;
 
         /// @brief start index for delta variables in mpc variables
-        const size_t delta_start;
+        const size_t delta_start_;
 
         /// @brief start index for accel variables in mpc variables
-        const size_t a_start;
+        const size_t a_start_;
     };
 
 }

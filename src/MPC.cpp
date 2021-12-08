@@ -146,9 +146,9 @@ namespace mpc {
     };
 
     MPC::MPC(const std::vector<Point>& track, size_t N, double dt) : 
-            track_{track}, N{N}, dt{dt}, x_start{0}, y_start{N},
-            psi_start{2*N}, v_start{3*N}, cte_start{4*N}, epsi_start{5*N},
-            delta_start{6*N}, a_start{7*N - 1} // -1 due to N-1 actuator variables
+            track_{track}, N_{N}, dt_{dt}, x_start_{0}, y_start_{N},
+            psi_start_{2*N}, v_start_{3*N}, cte_start_{4*N}, epsi_start_{5*N},
+            delta_start_{6*N}, a_start_{7*N - 1} // -1 due to N-1 actuator variables
     {
         ros::NodeHandle nh;
         trackPub_ = nh.advertise<nav_msgs::Path>("global_path", 1);
@@ -224,7 +224,7 @@ namespace mpc {
         const State& state = optVars.x;
 
         // static double prevDelta = 0;
-        const double maxInc = MPC_MAX_STEERING_ROTATION_SPEED * dt;
+        const double maxInc = MPC_MAX_STEERING_ROTATION_SPEED * dt_;
 
         auto start = std::chrono::high_resolution_clock::now();
 
@@ -241,9 +241,9 @@ namespace mpc {
         // element vector and there are 10 timesteps. The number of variables is:
         //
         // 4 * 10 + 2 * 9
-        size_t n_vars = N * 6 + (N-1)*2;
+        size_t n_vars = N_ * 6 + (N_-1)*2;
         // TODO: Set the number of constraints
-        size_t n_constraints = N * 6 + N - 2;
+        size_t n_constraints = N_ * 6 + N_ - 2;
 
 
         // Initial value of the independent variables.
@@ -253,25 +253,25 @@ namespace mpc {
             vars[i] = 0;
         }
 
-        for (unsigned int i = 0; i < N; i++) {
-            vars[x_start + i] = x;
-            vars[y_start + i] = y;
-            vars[psi_start + i] = psi;
-            vars[v_start + i] = v;
-            vars[cte_start + i] = cte;
-            vars[epsi_start + i] = epsi;
+        for (unsigned int i = 0; i < N_; i++) {
+            vars[x_start_ + i] = x;
+            vars[y_start_ + i] = y;
+            vars[psi_start_ + i] = psi;
+            vars[v_start_ + i] = v;
+            vars[cte_start_ + i] = cte;
+            vars[epsi_start_ + i] = epsi;
         }
 
         BoundVector varBounds(n_vars, Bound::noBound());
 
         // upper/lower limits for delta set to -25/25
         // degrees(values in radians)
-        for (unsigned int i = delta_start; i < a_start; i++) {
+        for (unsigned int i = delta_start_; i < a_start_; i++) {
             varBounds[i] = Bound{MPC_MIN_STEERING_ANGLE, MPC_MAX_STEERING_ANGLE};
         }
 
         // acceleration/deceleration upper/lower limits 
-        for (unsigned int i = a_start; i < n_vars; i++) {
+        for (unsigned int i = a_start_; i < n_vars; i++) {
             varBounds[i] = Bound{0, 0};
         }
 
@@ -280,14 +280,14 @@ namespace mpc {
         // Should be 0 besides initial state.
         BoundVector constraintBounds(n_constraints, Bound::zeroBound());
 
-        constraintBounds[x_start] = Bound{x, x};
-        constraintBounds[y_start] = Bound{y, y};
-        constraintBounds[psi_start] = Bound{psi, psi};
-        constraintBounds[v_start] = Bound{v, v};
-        constraintBounds[cte_start] = Bound{cte, cte};
-        constraintBounds[epsi_start] = Bound{epsi, epsi};
+        constraintBounds[x_start_] = Bound{x, x};
+        constraintBounds[y_start_] = Bound{y, y};
+        constraintBounds[psi_start_] = Bound{psi, psi};
+        constraintBounds[v_start_] = Bound{v, v};
+        constraintBounds[cte_start_] = Bound{cte, cte};
+        constraintBounds[epsi_start_] = Bound{epsi, epsi};
 
-        for (unsigned int i = delta_start; i < delta_start + N - 2; i++) {
+        for (unsigned int i = delta_start_; i < delta_start_ + N_ - 2; i++) {
             constraintBounds[i] = Bound{-maxInc, maxInc};
         }
         
@@ -302,7 +302,7 @@ namespace mpc {
         // ROS_WARN("l: %f, u: %f", deltaBound.lower, deltaBound.upper);
 
         // object that computes objective and constraints
-        FG_eval fg_eval(coeffs, N, dt);
+        FG_eval fg_eval(coeffs, N_, dt_);
 
         //
         // NOTE: You don't have to worry about these options
@@ -355,12 +355,12 @@ namespace mpc {
     MPCReturn MPC::toMPCReturn(const CppAD::ipopt::solve_result<Dvector>& solution, double time){
         const auto& x = solution.x;
         MPCReturn ret;
-        ret.mpcHorizon.resize(N - 1); // TODO should be N error due to a?
-        ret.u0 = Input{x[a_start], x[delta_start]};
-        for (int i = 0; i < N - 1; i++){ // TODO should be N error due to a?
-            State state{x[x_start + i], x[y_start + i], x[psi_start + i], x[v_start + i],
-                        x[cte_start + i], x[epsi_start + i]};
-            Input input{x[a_start + i], x[delta_start + i]};
+        ret.mpcHorizon.resize(N_ - 1); // TODO should be N error due to a?
+        ret.u0 = Input{x[a_start_], x[delta_start_]};
+        for (int i = 0; i < N_ - 1; i++){ // TODO should be N error due to a?
+            State state{x[x_start_ + i], x[y_start_ + i], x[psi_start_ + i], x[v_start_ + i],
+                        x[cte_start_ + i], x[epsi_start_ + i]};
+            Input input{x[a_start_ + i], x[delta_start_ + i]};
             ret.mpcHorizon[i] = OptVariables{state, input};
         }
         ret.cost = solution.obj_value;
@@ -420,6 +420,10 @@ namespace mpc {
     }
 
     void MPC::model(OptVariables& optVars, const Input& u) {
+        model(optVars, u, this->dt_);
+    }
+
+    void MPC::model(OptVariables& optVars, const Input& u, double dt){
         constexpr double maxInc = MPC_MAX_STEERING_ROTATION_SPEED * MPC_dt;
         State& state = optVars.x;
         double delta = u.delta;

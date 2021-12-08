@@ -39,7 +39,7 @@ namespace mpc {
             current_steering_angle_
         };
         OptVariables optVars{state, input};
-        // mpc.model(optVars, input); // get predicted state after calculation is finished
+        mpc.model(optVars, input, MPC_LOOP_dt); // get predicted state after calculation is finished
 
         const auto result = mpc.solve(optVars);
         constexpr double vel = 8;
