@@ -6,8 +6,8 @@ This repository contains an implementation of a nonlinear MPC that is used to co
 The structure of the MPC is inspired by Udacity's [example MPC](https://medium.com/@techreigns/model-predictive-control-implementation-for-autonomous-vehicles-932c81598b49) for their simulator. On top of this there is implemented a ROS interface.
 
 <div align="center">
-  <img src="images/mpc_demo.gif" width="300">
-  <figcaption align="center">Demo of MPC using gazebo</figcaption>
+  <img src="images/mpc_demo.gif" width="400">
+  <figcaption align="center">Demo of MPC using gazebo simulator and audibot car</figcaption>
 </div>
 
 ### **ROS interface**
@@ -20,53 +20,54 @@ The output of the MPC is a steering angle and acceleration. Currently the accele
 
 ## **Install**
 The MPC requires several things to work. Mainly it is the optimizer ipopt and of course ROS.
- 
+
 1. **ROS**
- 
-  ROS is used to send and receive data. It can be installed by following [this]((http://wiki.ros.org/noetic/Installation)) tutorial. If you already have ROS installed you can skip this. ROS noetic is used, however other versions may also work.
+
+   ROS is used to send and receive data. It can be installed by following [this]((http://wiki.ros.org/noetic/Installation)) tutorial. If you already have ROS installed you can skip this. ROS noetic is used, however other versions may also work.
  
 2. **Clone**
  
-  Clone this repository into the src folder in a catkin workspace. Example:
-  ```terminal
-  cd ~/catkin_ws/src
-  git clone https://gitlab.stud.idi.ntnu.no/fuelfighter/autonomous/planning-control/mpc-local-planner.git
-  ```
+   Clone this repository into the src folder in a catkin workspace. Example:
+
+   ```terminal
+   cd ~/catkin_ws/src
+   git clone https://gitlab.stud.idi.ntnu.no/fuelfighter/autonomous/planning-control/mpc-local-planner.git
+   ```
  
 3. **Ipopt**
  
-  Ipopt is the solver used to solve the optimization problem. First we need to download the source code and dependencies. I recommend doing this in a folder called "c++_libraries" or similar.
+   Ipopt is the solver used to solve the optimization problem. First we need to download the source code and dependencies. I recommend doing this in a folder called "c++_libraries" or similar.
  
-  ```terminal
-  cd ~/c++_libraries #or another folder
-  sudo apt-get install gcc g++ gfortran git patch wget pkg-config liblapack-dev libmetis-dev
-  sudo apt-get install unzip
-  wget https://www.coin-or.org/download/source/Ipopt/Ipopt-3.12.7.zip &&
-  unzip Ipopt-3.12.7.zip &&
-  rm Ipopt-3.12.7.zip
-  ```
+   ```terminal
+   cd ~/c++_libraries #or another folder
+   sudo apt-get install gcc g++ gfortran git patch wget pkg-config liblapack-dev libmetis-dev
+   sudo apt-get install unzip
+   wget https://www.coin-or.org/download/source/Ipopt/Ipopt-3.12.7.zip &&
+   unzip Ipopt-3.12.7.zip &&
+   rm Ipopt-3.12.7.zip
+   ```
  
-  We are now ready to build the library. To do this the easiest is to use the file *install_ipopt.sh*. The file does all the building for you. You need to specify where the ipopt folder is located. Example:
+   We are now ready to build the library. To do this the easiest is to use the file *install_ipopt.sh*. The file does all the building for you. You need to specify where the ipopt folder is located. Example:
  
-  ```terminal
-  sudo bash install_ipopt.sh ~/c++_libraries/Ipopt-3.12.7
-  ```
+   ```terminal
+   sudo bash install_ipopt.sh ~/c++_libraries/Ipopt-3.12.7
+   ```
  
 4. **CppAD**
  
-  CppAD is used to interface with ipopt. It can be installed by running
+   CppAD is used to interface with ipopt. It can be installed by running
  
-  ```terminal
-  sudo apt-get install cppad
-  ```
+   ```terminal
+   sudo apt-get install cppad
+   ```
  
 5. **MPC**
  
-  Now we are ready to build the mpc. This is done by using catkin build or catkin_make. Example:
+   Now we are ready to build the mpc. This is done by using catkin build or catkin_make. Example:
  
-  ```terminal
-  catkin build
-  ```
+   ```terminal
+   catkin build
+   ```
  
 ## **Usage**
  
