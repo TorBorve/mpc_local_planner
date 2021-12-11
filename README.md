@@ -7,6 +7,7 @@ The structure of the MPC is inspired by Udacity's [example MPC](https://medium.c
 
 <div align="center">
   <img src="images/mpc_demo.gif" width="400">
+  <br>
   <figcaption align="center">Demo of MPC using gazebo simulator and audibot car</figcaption>
 </div>
 
@@ -15,6 +16,7 @@ The mpc is made for ROS noetic. All of the inputs to the mpc and outputs are the
 The output of the MPC is a steering angle and acceleration. Currently the acceleration is not used as we set a constant speed. This data is then converted to a twist message using the akerman model to determine what the resulting angular velocity from the steering angle is. In addition to the commands sent to the car several path messages are also published. */global_path* is the reference track. This is where we want the car to drive. This is the green line seen in the gif. */local_path* is where the mpc is planning to drive. This is shown in red. Lastly we have */interpolated_path*. This is a interpolation of the */global_path* using a third order polynomial. The names of all the frames and topics can be found and changed in the file RosMpc.h.
 <div align="center">
   <img src="images/rosgraphMPC.png" width="700">
+  <br>
   <figcaption align="center">ROS interface for MPC</figcaption>
 </div>
 
