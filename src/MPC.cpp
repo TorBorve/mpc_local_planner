@@ -34,14 +34,14 @@ namespace mpc {
             {
             fg[0] += 500*CppAD::pow(vars[cte_start+i]-ref_cte, 2);
             fg[0] += 2000*CppAD::pow(vars[epsi_start+i]-ref_epsi, 2);
-            // fg[0] += 1*CppAD::pow(vars[v_start+i]-ref_v, 2);
+            fg[0] += 5*CppAD::pow(vars[v_start+i]-ref_v, 2);
             }
 
             // minimize the use of actuators
             for (unsigned int i=0; i<N-1; i++)
             {
             fg[0] += 25*CppAD::pow(vars[delta_start+i], 2);
-            // fg[0] += 25*CppAD::pow(vars[a_start+i], 2);
+            fg[0] += 25*CppAD::pow(vars[a_start+i], 2);
             //fg[0] += 700*CppAD::pow(vars[delta_start + i] * vars[v_start+i], 2);
             }
 
@@ -49,7 +49,7 @@ namespace mpc {
             for (unsigned int i=0; i<N-2; i++)
             {
             fg[0] += 200*CppAD::pow(vars[delta_start+i+1] - vars[delta_start+i], 2); 
-            // fg[0] += 20*CppAD::pow(vars[a_start+i+1] - vars[a_start+i], 2);
+            fg[0] += 20*CppAD::pow(vars[a_start+i+1] - vars[a_start+i], 2);
             }
     
             //
@@ -111,7 +111,8 @@ namespace mpc {
             fg[2 + x_start + i] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
             fg[2 + y_start + i] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
             fg[2 + psi_start + i] = psi1 - (psi0 + v0 * CppAD::tan(delta0) / Lf * dt);
-            fg[2 + v_start + i] = v1 - v0; //v1 - (v0 + a0 * dt);
+            // fg[2 + v_start + i] = v1 - v0; //v1 - (v0 + a0 * dt);
+            fg[2 + v_start + i] = v1 - (v0 + a0 * dt);
             fg[2 + cte_start + i] =
                 cte1 - ((f0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
             fg[2 + epsi_start + i] =
@@ -142,7 +143,7 @@ namespace mpc {
         const double Lf = MPC_WHEELBASE;
         const double ref_cte = 0;
         const double ref_epsi = 0;
-        const double ref_v = 5; 
+        const double ref_v = MPC_ref_vel; 
     };
 
     MPC::MPC(const std::vector<Point>& track, size_t N, double dt) : 
@@ -157,30 +158,17 @@ namespace mpc {
     }
 
     MPCReturn MPC::solve(const OptVariables& optVars) {
-        static tf2_ros::TransformBroadcaster br;
         const State& state = optVars.x;
 
-        geometry_msgs::TransformStamped transformStamped;
-        transformStamped.header.stamp = ros::Time::now();
-        transformStamped.header.frame_id = "odom";
-        transformStamped.child_frame_id = "mpc_base_link";
-        transformStamped.transform.translation.x = state.x;
-        transformStamped.transform.translation.y = state.y;
-        transformStamped.transform.translation.z = 0.5;
-        tf2::Quaternion q;
-        q.setRPY(0, 0, state.psi);
-        transformStamped.transform.rotation.x = q.x();
-        transformStamped.transform.rotation.y = q.y();
-        transformStamped.transform.rotation.z = q.z();
-        transformStamped.transform.rotation.w = q.w();
-        br.sendTransform(transformStamped);
+        pubTf(state);
 
         double rotation;
         Eigen::Vector4d coeffs;
-        calcCoeffs(state, rotation, coeffs);
+        bool forward;
+        calcCoeffs(state, rotation, coeffs, forward);
 
         State transformedState{0, 0, rotation, state.vel, 0, 0};
-        calcState(transformedState, coeffs);
+        calcState(transformedState, coeffs, forward);
         OptVariables transformedOptVar{transformedState, optVars.u};
         if(optVars.x.vel < 1) {
             transformedOptVar.x.vel = 1;
@@ -272,7 +260,7 @@ namespace mpc {
 
         // acceleration/deceleration upper/lower limits 
         for (unsigned int i = a_start_; i < n_vars; i++) {
-            varBounds[i] = Bound{0, 0};
+            varBounds[i] = Bound{-1, 1};
         }
 
 
@@ -369,35 +357,55 @@ namespace mpc {
         return ret;
     }
 
-    void MPC::calcCoeffs(const State& state, double& rotation, Eigen::Vector4d& coeffs) const {
+    void MPC::calcCoeffs(const State& state, double& rotation, Eigen::Vector4d& coeffs, bool& forward) const {
         size_t start, end;
         getTrackSection(start, end, state);
 
         double minCost = 1e19;
         for (double rot = -M_PI_2; rot < 0; rot += M_PI_2 / 3) {
             double curCost = minCost + 1;
-            Eigen::Vector4d curCoeffs = interpolate(state, rot, start, end, curCost);
+            bool curForward = true;
+            Eigen::Vector4d curCoeffs = interpolate(state, rot, start, end, curCost, curForward);
             if (curCost < minCost) {
                 minCost = curCost;
+                forward = curForward;
                 coeffs = curCoeffs;
                 rotation = rot;
             }
         }
         // rotation = 0;
-        // coeffs = interpolate(state, rotation, start, end, minCost);
+        // coeffs = interpolate(state, rotation, start, end, minCost, forward);
         return;
     }
 
-    void MPC::calcState(State& state, const Eigen::Vector4d& coeffs) const {
+    void MPC::calcState(State& state, const Eigen::Vector4d& coeffs, bool& forward) const {
         state.cte = state.y - polyEval(state.x, coeffs);
-        state.epsi = state.psi - atan(coeffs[1] + 2 * state.x * coeffs[2] + 3 * coeffs[3] * state.x * state.x);
+        double dy = coeffs[1] + 2 * state.x * coeffs[2] + 3 * coeffs[3] * state.x * state.x;
+        double dx = 1;
+        if (dy > 100) {
+            dy = 100;
+        } else if (dy < -100) {
+            dy = -100;
+        }
+
+        if (forward) {
+            state.epsi = state.psi - atan2(dy, dx);
+        } else {
+            state.epsi = state.psi - atan2(-dy, -dx);
+        }
+
+        if (state.epsi > M_PI) {
+            state.epsi -= 2 * M_PI;
+        } else if (state.epsi < -M_PI) {
+            state.epsi += 2 * M_PI;
+        }
         return;
     }
 
-    Eigen::Vector4d MPC::interpolate(const State& state, double rotation, size_t start, size_t end, double& cost) const {
+    Eigen::Vector4d MPC::interpolate(const State& state, double rotation, size_t start, size_t end, double& cost, bool& forward) const {
         Eigen::VectorXd xVals(end - start);
         Eigen::VectorXd yVals(end - start);
-        double angle = -state.psi + rotation;
+        double angle = rotation - state.psi;
 
         for (unsigned int i = start; i < end; i++) {
             // shift points so that the state is in the origo
@@ -415,6 +423,12 @@ namespace mpc {
         cost = 0;
         for (unsigned int i = 0; i < yVals.size(); i++) {
             cost += distSqrd(yVals[i] - polyEval(xVals[i], coeffs), 0);
+        }
+
+        if (xVals[0] <= xVals[xVals.size() - 1]) {
+            forward = true;
+        } else {
+            forward = false;
         }
         return coeffs;
     }
@@ -473,5 +487,24 @@ namespace mpc {
             end = start + 4;
         }
         assert(end < track_.size());      
+    }
+
+    void MPC::pubTf(const State& state) const {
+        static tf2_ros::TransformBroadcaster br;
+
+        geometry_msgs::TransformStamped transformStamped;
+        transformStamped.header.stamp = ros::Time::now();
+        transformStamped.header.frame_id = "odom";
+        transformStamped.child_frame_id = "mpc_base_link";
+        transformStamped.transform.translation.x = state.x;
+        transformStamped.transform.translation.y = state.y;
+        transformStamped.transform.translation.z = 0.5;
+        tf2::Quaternion q;
+        q.setRPY(0, 0, state.psi);
+        transformStamped.transform.rotation.x = q.x();
+        transformStamped.transform.rotation.y = q.y();
+        transformStamped.transform.rotation.z = q.z();
+        transformStamped.transform.rotation.w = q.w();
+        br.sendTransform(transformStamped);
     }
 }
