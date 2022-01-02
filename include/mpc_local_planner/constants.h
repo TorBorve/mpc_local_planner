@@ -4,11 +4,13 @@
 
 #define MPC_N 10 // number of steps in mpc
 
-#define MPC_dt 0.2 // time increment in between steps
+#define MPC_dt 0.15 // time increment in between steps
 
 #define MPC_LOOP_Hz 30 // the hertz of the mpc. It could hurt performance if this is too low
 
 #define MPC_LOOP_dt 1.0 / MPC_LOOP_Hz // time between outputs from the MPC
+
+#define MPC_ref_vel 10.0 // refrence velocity that the car should drive at
 
 // Constants for car
 

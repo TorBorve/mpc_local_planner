@@ -42,16 +42,19 @@ namespace mpc {
         mpc.model(optVars, input, MPC_LOOP_dt); // get predicted state after calculation is finished
 
         const auto result = mpc.solve(optVars);
-        constexpr double vel = 8;
+        double ref_vel = current_vel_ + 5 * result.u0.a * MPC_dt;
+        ref_vel = std::max(2.0, ref_vel);
+        // constexpr double vel = 8;
         geometry_msgs::Twist twist;
-        twist.linear.x = vel;
+        twist.linear.x = ref_vel;
         twist.angular.z = rotationSpeed(result.u0.delta, result.mpcHorizon[0].x.vel);
         inputPub_.publish(twist);
         // std_msgs::Float64 steeringAngle;
         // steeringAngle.data = result.u0.delta * AUDIBOT_STEERING_RATIO;
         // steeringPub_.publish(steeringAngle);
         ROS_INFO("Time: %i [ms]", (int)result.computeTime);
-        ROS_INFO("refvel: %.2f, carVel: %.2f, steering: %.2f [deg]", vel, state.vel, result.u0.delta * 180.0 / M_PI);
+        ROS_INFO("refvel: %.2f, carVel: %.2f, steering: %.2f [deg], accel: %.2f", ref_vel, state.vel, result.u0.delta * 180.0 / M_PI, result.u0.a);
+        ROS_INFO("yaw error: %.2f", result.mpcHorizon.at(0).x.epsi * 180.0 / M_PI);
         return result;
     }
 
