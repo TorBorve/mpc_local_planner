@@ -33,7 +33,7 @@ The MPC requires several things to work. Mainly it is the optimizer ipopt and of
 
    ```terminal
    cd ~/catkin_ws/src
-   git clone https://gitlab.stud.idi.ntnu.no/fuelfighter/autonomous/planning-control/mpc-local-planner.git
+   git clone https://gitlab.stud.idi.ntnu.no/fuelfighter/autonomous/planning-control/mpc_local_planner.git
    ```
  
 3. **Ipopt**
