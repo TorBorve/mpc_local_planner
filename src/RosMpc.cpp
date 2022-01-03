@@ -5,18 +5,30 @@
 #include <geometry_msgs/Twist.h>
 #include <std_msgs/Float64.h>
 
-#define AUDIBOT_STEERING_RATIO  17.3
-
 namespace mpc {
 
-    RosMpc::RosMpc() : 
-        mpc{getTestTrack(), MPC_N, MPC_dt}, tfListener_{tfBuffer_}    
+    RosMpc::RosMpc(ros::NodeHandle* nh) : 
+        mpc{getTestTrack(), (size_t)nh->param<int>("mpc_N", 10), nh->param<double>("mpc_dt", 0.2),
+            Bound{nh->param<double>("min_steering_angle", -0.57), nh->param<double>("max_steering_angle", 0.57)},
+            nh->param<double>("max_steering_rotation_speed", 0.80), nh->param<double>("wheelbase", 3.0)}, 
+        tfListener_{tfBuffer_}    
     {
-        ros::NodeHandle nh;
-        inputPub_ = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
-        steeringPub_ = nh.advertise<std_msgs::Float64>("steering_cmd", 1);
-        twistSub_ = nh.subscribe(twistTopic_, 1, &RosMpc::twistCallback, this);
-        actualSteeringSub_ = nh.subscribe(actualSteeringTopic_, 1, &RosMpc::actualSteeringCallback, this);
+        if (!verifyParamsForMPC(nh)) {
+            ROS_WARN("One or more parameters for the mpc is not specified. Default values is therefore used.");
+        }
+
+        twistTopic_ = nh->param<std::string>("twist_topic", "twist");
+        actualSteeringTopic_ = nh->param<std::string>("actual_steering_topic", "actual_steering_angle");
+        mapFrame_ = nh->param<std::string>("map_frame", "map");
+        carFrame_ = nh->param<std::string>("car_frame", "base_link");
+        loop_Hz_ = nh->param<double>("loop_Hz", 30);
+        mpc_dt_ = nh->param<double>("mpc_dt", 0.2);
+        wheelbase_ = nh->param<double>("wheelbase", 3.0);
+        std::string inputTopic = nh->param<std::string>("input_topic", "cmd_vel");
+
+        inputPub_ = nh->advertise<geometry_msgs::Twist>(inputTopic, 1);
+        twistSub_ = nh->subscribe(twistTopic_, 1, &RosMpc::twistCallback, this);
+        actualSteeringSub_ = nh->subscribe(actualSteeringTopic_, 1, &RosMpc::actualSteeringCallback, this);
     }
 
     MPCReturn RosMpc::solve() {
@@ -39,12 +51,12 @@ namespace mpc {
             current_steering_angle_
         };
         OptVariables optVars{state, input};
-        mpc.model(optVars, input, MPC_LOOP_dt); // get predicted state after calculation is finished
+        mpc.model(optVars, input, 1.0 / loop_Hz_); // get predicted state after calculation is finished
 
         const auto result = mpc.solve(optVars);
-        double ref_vel = current_vel_ + 5 * result.u0.a * MPC_dt;
+        double ref_vel = current_vel_ + 5 * result.u0.a * mpc_dt_;
         ref_vel = std::max(2.0, ref_vel);
-        // constexpr double vel = 8;
+ 
         geometry_msgs::Twist twist;
         twist.linear.x = ref_vel;
         twist.angular.z = rotationSpeed(result.u0.delta, result.mpcHorizon[0].x.vel);
@@ -86,7 +98,7 @@ namespace mpc {
     }
 
     double RosMpc::rotationSpeed(double steeringAngle, double vel) {
-        return tan(steeringAngle) * vel / MPC_WHEELBASE;
+        return tan(steeringAngle) * vel / wheelbase_;
     }
 
     void RosMpc::twistCallback(const geometry_msgs::TwistStamped::ConstPtr& msg) {
@@ -95,5 +107,16 @@ namespace mpc {
 
     void RosMpc::actualSteeringCallback(const std_msgs::Float64::ConstPtr& msg) {
         current_steering_angle_ = msg->data;
+    }
+
+    bool RosMpc::verifyParamsForMPC(ros::NodeHandle* nh) const {
+        bool ok = true;
+        ok &= hasParamError(nh, "mpc_N");
+        ok &= hasParamError(nh, "mpc_dt");
+        ok &= hasParamWarn(nh, "min_steering_angle");
+        ok &= hasParamWarn(nh, "max_steering_angle");
+        ok &= hasParamWarn(nh, "max_steering_rotation_speed");
+        ok &= hasParamWarn(nh, "wheelbase");
+        return ok;
     }
 }

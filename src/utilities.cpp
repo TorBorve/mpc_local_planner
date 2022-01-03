@@ -165,4 +165,22 @@ namespace mpc{
         mat.getRPY(roll, pitch, yaw);
         return yaw;
     }
+
+    bool hasParamError(ros::NodeHandle* nh, const std::string& param) {
+        if (!nh->hasParam(param)) {
+            std::string error = "parameter " + param + " is not set. This needs to be specified as a rosparameter in the launchfile";
+            ROS_ERROR_STREAM(error);
+            throw std::runtime_error{error};
+        }
+        return true;
+    }
+
+    bool hasParamWarn(ros::NodeHandle* nh, const std::string& param) {
+        if (!nh->hasParam(param)) {
+            std::string error = "parameter " + param + " is not set. This needs to be specified as a rosparameter in the launchfile";
+            ROS_WARN_STREAM(error);
+            return false;
+        }
+        return true;
+    }
 }

@@ -13,7 +13,8 @@ namespace mpc {
     class RosMpc {
     public:
         /// @brief default constructor for RosMpc class
-        RosMpc();
+        /// @param[in] nh pointer to NodeHandle with access to private variables .
+        RosMpc(ros::NodeHandle* nh);
         
         /// @brief solve function for mpc. Calls internal mpc class with latest values for state.
         MPCReturn solve();
@@ -36,6 +37,12 @@ namespace mpc {
         /// @param[in] vel the current speed of the car.
         /// @return resulting angular velocity [rad / s]
         double rotationSpeed(double steeringAngle, double vel);
+
+        /// @brief checks if the desired parameters is given to the MPC class.
+        /// @param[in] nh pointer to Nodehandle with access to the parameters
+        /// @return true if all parameters was defined. False otherwise.
+        /// @throw runtime exception if one or more critical parmeters is not defined.  
+        bool verifyParamsForMPC(ros::NodeHandle* nh) const;
 
         /// @brief mpc class that solves the problem given our state and desired trajectory.
         MPC mpc;
@@ -65,15 +72,24 @@ namespace mpc {
         double current_steering_angle_ = 0;
 
         /// @brief topic name for where the twist message is published
-        std::string twistTopic_ = "twist";
+        std::string twistTopic_;
 
         /// @brief topic name for where the actual steering angle is published
-        std::string actualSteeringTopic_ = "actual_steering_angle";
+        std::string actualSteeringTopic_;
 
         /// @brief name of "origin" frame. Typically odom or map
-        std::string mapFrame_ = "odom";
+        std::string mapFrame_;
 
         /// @brief name of frame where the car is located
-        std::string carFrame_ = "base_footprint";
+        std::string carFrame_;
+
+        /// @brief frequency that the mpc is run at.
+        double loop_Hz_;
+
+        /// @brief time between steps in the mpc calculations.
+        double mpc_dt_;
+
+        /// @brief distance between the front and rear wheels.
+        double wheelbase_;
     };
 }

@@ -9,6 +9,7 @@
 #include <cppad/ipopt/solve.hpp>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Quaternion.h>
+#include <ros/ros.h>
 
 #include <fstream>
 
@@ -18,8 +19,8 @@ namespace mpc {
     public:
         using ADvector = CPPAD_TESTVECTOR(CppAD::AD<double>);
         
-        FG_eval(const Eigen::Vector4d& coeffs, size_t N, double dt) :
-            coeffs{coeffs}, N{N}, dt{dt}, x_start{0}, y_start{N}, 
+        FG_eval(const Eigen::Vector4d& coeffs, size_t N, double dt, double wheelbase) :
+            coeffs{coeffs}, N{N}, dt{dt}, Lf{wheelbase}, x_start{0}, y_start{N}, 
             psi_start{2*N}, v_start{3*N}, cte_start{4*N}, epsi_start{5*N}, 
             delta_start{6*N}, a_start{7*N - 1} 
         {
@@ -140,15 +141,15 @@ namespace mpc {
         const size_t delta_start;
         const size_t a_start;
 
-        const double Lf = MPC_WHEELBASE;
+        const double Lf;
         const double ref_cte = 0;
         const double ref_epsi = 0;
-        const double ref_v = MPC_ref_vel; 
+        const double ref_v = 10.0; 
     };
 
-    MPC::MPC(const std::vector<Point>& track, size_t N, double dt) : 
-            track_{track}, N_{N}, dt_{dt}, x_start_{0}, y_start_{N},
-            psi_start_{2*N}, v_start_{3*N}, cte_start_{4*N}, epsi_start_{5*N},
+    MPC::MPC(const std::vector<Point>& track, size_t N, double dt, Bound steeringAngle, double maxSteeringRotationSpeed, double wheelbase) : 
+            track_{track}, N_{N}, dt_{dt}, steeringAngle_{steeringAngle}, maxSteeringRotationSpeed_{maxSteeringRotationSpeed}, 
+            wheelbase_{wheelbase}, x_start_{0}, y_start_{N}, psi_start_{2*N}, v_start_{3*N}, cte_start_{4*N}, epsi_start_{5*N},
             delta_start_{6*N}, a_start_{7*N - 1} // -1 due to N-1 actuator variables
     {
         ros::NodeHandle nh;
@@ -210,9 +211,7 @@ namespace mpc {
     MPCReturn MPC::solve(const OptVariables& optVars, const Eigen::Vector4d& coeffs){
         using Dvector = CPPAD_TESTVECTOR(double);
         const State& state = optVars.x;
-
-        // static double prevDelta = 0;
-        const double maxInc = MPC_MAX_STEERING_ROTATION_SPEED * dt_;
+        const double maxInc = maxSteeringRotationSpeed_ * dt_;
 
         auto start = std::chrono::high_resolution_clock::now();
 
@@ -255,7 +254,7 @@ namespace mpc {
         // upper/lower limits for delta set to -25/25
         // degrees(values in radians)
         for (unsigned int i = delta_start_; i < a_start_; i++) {
-            varBounds[i] = Bound{MPC_MIN_STEERING_ANGLE, MPC_MAX_STEERING_ANGLE};
+            varBounds[i] = steeringAngle_;
         }
 
         // acceleration/deceleration upper/lower limits 
@@ -278,19 +277,17 @@ namespace mpc {
         for (unsigned int i = delta_start_; i < delta_start_ + N_ - 2; i++) {
             constraintBounds[i] = Bound{-maxInc, maxInc};
         }
-        
-        Bound deltaBound{MPC_MIN_STEERING_ANGLE, MPC_MAX_STEERING_ANGLE};
+
+        Bound deltaBound = steeringAngle_;
         if ((delta - maxInc) > deltaBound.lower) {
             deltaBound.lower = delta - maxInc;
         }
         if ((delta + maxInc) < deltaBound.upper) {
             deltaBound.upper = delta + maxInc;
         }
-        // varBounds[delta_start] = deltaBound;
-        // ROS_WARN("l: %f, u: %f", deltaBound.lower, deltaBound.upper);
 
         // object that computes objective and constraints
-        FG_eval fg_eval(coeffs, N_, dt_);
+        FG_eval fg_eval(coeffs, N_, dt_, wheelbase_);
 
         //
         // NOTE: You don't have to worry about these options
@@ -328,15 +325,6 @@ namespace mpc {
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
         
-        // double delta = solution.x[delta_start];
-        // if (delta < prevDelta - maxInc) {
-        //     delta = prevDelta - maxInc;
-        //     ROS_WARN("Unable to turn wheels fast enough, MPC");
-        // } else if (delta > prevDelta + maxInc) {
-        //     delta = prevDelta + maxInc;
-        //     ROS_WARN("Unable to turn wheels fast enough, MPC");
-        // }
-        // prevDelta = delta;
         return toMPCReturn(solution, duration.count());
     }
 
@@ -373,8 +361,6 @@ namespace mpc {
                 rotation = rot;
             }
         }
-        // rotation = 0;
-        // coeffs = interpolate(state, rotation, start, end, minCost, forward);
         return;
     }
 
@@ -438,7 +424,7 @@ namespace mpc {
     }
 
     void MPC::model(OptVariables& optVars, const Input& u, double dt){
-        constexpr double maxInc = MPC_MAX_STEERING_ROTATION_SPEED * MPC_dt;
+        const double maxInc = maxSteeringRotationSpeed_ * dt_;
         State& state = optVars.x;
         double delta = u.delta;
         if (delta < optVars.u.delta - maxInc) {
@@ -451,7 +437,7 @@ namespace mpc {
         optVars.u.delta = delta;
         state.x += state.vel * cos(state.psi) * dt;
         state.y += state.vel * sin(state.psi) * dt;
-        state.psi += state.vel * tan(delta) / Lf * dt;
+        state.psi += state.vel * tan(delta) / wheelbase_ * dt;
         state.vel += u.a * dt;
     }
 
@@ -468,7 +454,6 @@ namespace mpc {
         }
 
         double len = 0;
-        // bool forward = track_[minIndex + 1].x - track_[minIndex].x > 0;
         size_t frontIndex = minIndex;
         size_t backIndex = minIndex;
         while(len < maxLen * maxLen && frontIndex < track_.size() - 1 && backIndex > 0) {

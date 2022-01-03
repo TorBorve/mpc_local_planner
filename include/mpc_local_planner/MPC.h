@@ -7,6 +7,7 @@
 
 #include "mpc_local_planner/types.h"
 #include "mpc_local_planner/constants.h"
+#include "mpc_local_planner/bounds.h"
 
 namespace mpc {
 
@@ -21,7 +22,10 @@ namespace mpc {
         /// @param[in] track vector with points that define desired trajectory
         /// @param[in] N number of steps in simulation
         /// @param[in] dt time increment for model
-        MPC(const std::vector<Point>& track, size_t N, double dt);
+        /// @param[in] steeringAngle bounds for max and min steering angle
+        /// @param[in] maxSteeringRotationsSpeed the maximum speed the wheels can turn at. Given in [rad/s].
+        /// @param[in] wheelbase the distance between the front and rear wheels.
+        MPC(const std::vector<Point>& track, size_t N, double dt, Bound steeringAngle, double maxSteeringRotationSpeed, double wheelbase);
 
         /// @brief update track variable for desired trajectory
         /// @param[in] newTrack the new desired trajectory
@@ -130,7 +134,13 @@ namespace mpc {
         double dt_;
 
         /// @brief distance between front and rear wheels
-        constexpr static double Lf = MPC_WHEELBASE;
+        double wheelbase_;
+        
+        /// @brief bounds for max and min steering angle
+        Bound steeringAngle_;
+
+        /// @brief maxSteeringRotationsSpeed the maximum speed the wheels can turn at. Given in [rad/s].
+        double maxSteeringRotationSpeed_;
 
         /// @brief start index for x variables in mpc variables
         const size_t x_start_;

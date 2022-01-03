@@ -9,14 +9,14 @@
 
 #include <cppad/cppad.hpp>
 
-#ifdef NDEBUG
-    #define LOG_DEBUG_STREAM(args...) ((void)0)
-    #define LOG_DEBUG(args...) ((void)0)
+#ifdef NDEBUG // true if the build type is not debug
+    #define LOG_DEBUG_STREAM(args...) ((void)0) // define as do nothing
+    #define LOG_DEBUG(args...) ((void)0) // define as do nothing
 #else
     #define LOG_DEBUG_STREAM(args...) \
-            ROS_INFO_STREAM(args)
+            ROS_INFO_STREAM(args) // print args to consol
     #define LOG_DEBUG(args...) \
-            ROS_INFO(args)
+            ROS_INFO(args) // print args to consol
 #endif
 
 namespace mpc{
@@ -84,4 +84,16 @@ namespace mpc{
     /// @param[in] quat Quaternion
     /// @return yaw from quaternion
     double getYaw(const geometry_msgs::Quaternion& quat);
+
+    /// @brief checks if param exist in nh. If not an error is printed and a exception is thrown
+    /// @param[in] nh pointer to nodeHandle that should have access to the parameter.
+    /// @param[in] param the parameter we want to check if exists.
+    /// @return true if the parameter existed
+    /// @throw runtime error it the parameter didn't exist
+    bool hasParamError(ros::NodeHandle* nh, const std::string& param);
+
+    /// @brief checks if the parameter exist in nh. If not an warning is printed.
+
+    /// @return true if the parameter existed
+    bool hasParamWarn(ros::NodeHandle* nh, const std::string& param);
 }
