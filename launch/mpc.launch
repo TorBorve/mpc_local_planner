@@ -3,7 +3,10 @@
     <arg name="rviz" default="true" />
 
     <!-- launch mpc file -->
-    <node pkg="mpc_local_planner" type="main" name="mpc" output="screen" />
+    <node pkg="mpc_local_planner" type="main" name="mpc" output="screen" >
+        <!-- load parameters for the mpc -->
+        <rosparam command="load" file="$(find mpc_local_planner)/params/mpc.yaml" />
+    </node>
 
     <!-- launch rviz for visualization -->
     <group if="$(arg rviz)">
