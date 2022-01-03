@@ -49,12 +49,10 @@ namespace mpc {
         twist.linear.x = ref_vel;
         twist.angular.z = rotationSpeed(result.u0.delta, result.mpcHorizon[0].x.vel);
         inputPub_.publish(twist);
-        // std_msgs::Float64 steeringAngle;
-        // steeringAngle.data = result.u0.delta * AUDIBOT_STEERING_RATIO;
-        // steeringPub_.publish(steeringAngle);
-        ROS_INFO("Time: %i [ms]", (int)result.computeTime);
-        ROS_INFO("refvel: %.2f, carVel: %.2f, steering: %.2f [deg], accel: %.2f", ref_vel, state.vel, result.u0.delta * 180.0 / M_PI, result.u0.a);
-        ROS_INFO("yaw error: %.2f", result.mpcHorizon.at(0).x.epsi * 180.0 / M_PI);
+
+        LOG_DEBUG("Time: %i [ms]", (int)result.computeTime);
+        LOG_DEBUG("refvel: %.2f, carVel: %.2f, steering: %.2f [deg], accel: %.2f", ref_vel, state.vel, result.u0.delta * 180.0 / M_PI, result.u0.a);
+        LOG_DEBUG("yaw error: %.2f", result.mpcHorizon.at(0).x.epsi * 180.0 / M_PI);
         return result;
     }
 

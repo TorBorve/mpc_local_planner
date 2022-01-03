@@ -4,6 +4,14 @@ project(mpc_local_planner)
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
+# Uncomment if you want debugging
+# set(CMAKE_BUILD_TYPE Debug)
+
+# Default build type
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+endif()
+
 add_compile_definitions(__PATH__="${PROJECT_SOURCE_DIR}")
 file(MAKE_DIRECTORY "${PROJECT_SOURCE_DIR}/logs")
 

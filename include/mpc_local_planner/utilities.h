@@ -5,8 +5,19 @@
 
 #include <nav_msgs/Path.h>
 #include <nav_msgs/Odometry.h>
+#include <ros/ros.h>
 
 #include <cppad/cppad.hpp>
+
+#ifdef NDEBUG
+    #define LOG_DEBUG_STREAM(args...) ((void)0)
+    #define LOG_DEBUG(args...) ((void)0)
+#else
+    #define LOG_DEBUG_STREAM(args...) \
+            ROS_INFO_STREAM(args)
+    #define LOG_DEBUG(args...) \
+            ROS_INFO(args)
+#endif
 
 namespace mpc{
 
