@@ -77,19 +77,19 @@ Once everything is installed and built we are ready to run the mpc. This is done
  
 ```terminal
 source devel/setup.bash
-roslaunch mpc-local-planner mpc.launch
+roslaunch mpc_local_planner mpc.launch
 ```
  
 You could also specify if you do not want to start rviz by setting the argument rviz:=false.
  
 ```terminal
-roslaunch mpc-local-planner mpc.launch rviz:=false
+roslaunch mpc_local_planner mpc.launch rviz:=false
 ```
  
 It is also possible to only start rviz be using *rviz.launch*. The syntax is the same as for *mpc.launch*.
  
 ```terminal
-roslaunch mpc-local-planner rviz.launch
+roslaunch mpc_local_planner rviz.launch
 ```
  
 If you want to change parameter this is mainly done in the file *constants.h*. If you change something remember to recompile by using catkin build or similar. We are working on making it possible to use ros parameters instead.
