@@ -72,8 +72,12 @@ The MPC requires several things to work. Mainly it is the optimizer ipopt and of
    ```
  
 ## **Usage**
- 
-Once everything is installed and built we are ready to run the mpc. This is done by using *launch* files. The main launch file is *mpc.launch*. You can run this file in the following way.
+
+### **Parameters**
+Once everything is installed and built we are ready to define the parameters for the mpc. This is done using *rosparam*. The parameters are defined in a *.yaml* file in the folder *params*. These parameters need to be correct for your vehicle so that the mpc will work optimally. The parameters can be found and changed in *params/mpc.yaml*. If some critical parameters are not defined the code will not run. It will throw an error telling you what parameter it is missing. Other noncritical parameters cause warnings and some do not even do that. Therefore make sure your parameters are correct. It is not necessary to recompile the code after changing one or more parameters. Simply rerun it as explained in the next section.
+
+### **Run**
+Finally we are ready to run the code. This is done by using *launch* files. The main launch file is *mpc.launch*. You can run this file in the following way.
  
 ```terminal
 source devel/setup.bash
@@ -91,8 +95,6 @@ It is also possible to only start rviz be using *rviz.launch*. The syntax is the
 ```terminal
 roslaunch mpc_local_planner rviz.launch
 ```
- 
-If you want to change parameter this is mainly done in the file *constants.h*. If you change something remember to recompile by using catkin build or similar. We are working on making it possible to use ros parameters instead.
  
 ## **References**
 - [ipopt](https://coin-or.github.io/Ipopt/)
