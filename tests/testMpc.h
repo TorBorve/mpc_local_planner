@@ -8,9 +8,10 @@
 namespace mpc {
     void testMpc() {
         auto track = mpc::getTestTrack();
-        mpc::OptVariables initialOptVars{State{81, 0, M_PI_2, 5.0, 0, 0}, Input{0, 0}};
+        mpc::OptVariables initialOptVars{State{41, 0, M_PI_2, 5.0, 0, 0}, Input{0, 0}};
         constexpr size_t N = 10;
         constexpr double dt = 0.15;
+        constexpr double loopHz = 30;
         constexpr double wheelbase = 2.65;
         const Bound steeringAngle{-0.57, 0.57};
         constexpr double maxSteeringRotationSpeed = 0.8;
@@ -27,7 +28,7 @@ namespace mpc {
             std::string filePath = __PATH__;
             filePath += "/logs/log.txt";
             mpc::logSolution(solution, optVars.x, filePath);
-            MPC.model(optVars, solution.u0);
+            MPC.model(optVars, solution.u0, 1.0 / loopHz);
 
             std::cout << "Time: " << solution.computeTime << " [ms]\n";
             totalTime += solution.computeTime;
@@ -36,7 +37,7 @@ namespace mpc {
             std::cout << "Vel: " << optVars.x.vel << std::endl;
 
             std::this_thread::sleep_until(refresh);
-            refresh = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds{(int)(1000 * dt)};
+            refresh = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds{(int)(1000 * 1.0 / loopHz)};
         }
     }
 }
