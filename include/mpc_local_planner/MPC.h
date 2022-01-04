@@ -6,7 +6,6 @@
 #include <ros/ros.h>
 
 #include "mpc_local_planner/types.h"
-#include "mpc_local_planner/constants.h"
 #include "mpc_local_planner/bounds.h"
 
 namespace mpc {

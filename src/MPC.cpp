@@ -1,9 +1,6 @@
 #include "mpc_local_planner/MPC.h"
 #include "mpc_local_planner/bounds.h"
 #include "mpc_local_planner/utilities.h"
-#include "mpc_local_planner/constants.h"
-
-#include "timing.h"
 
 #include <cppad/cppad.hpp>
 #include <cppad/ipopt/solve.hpp>

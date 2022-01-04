@@ -1,5 +1,4 @@
 #include "mpc_local_planner/RosMpc.h"
-#include "mpc_local_planner/constants.h"
 #include <ros/ros.h>
 
 int main(int argc, char** argv){

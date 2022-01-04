@@ -1,6 +1,5 @@
 #include "mpc_local_planner/RosMpc.h"
 #include "mpc_local_planner/utilities.h"
-#include "mpc_local_planner/constants.h"
 
 #include <geometry_msgs/Twist.h>
 #include <std_msgs/Float64.h>
