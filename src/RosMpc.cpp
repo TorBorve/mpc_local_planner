@@ -10,24 +10,30 @@ namespace mpc {
         mpc{getTestTrack(), (size_t)nh->param<int>("mpc_N", 10), nh->param<double>("mpc_dt", 0.2),
             Bound{nh->param<double>("min_steering_angle", -0.57), nh->param<double>("max_steering_angle", 0.57)},
             nh->param<double>("max_steering_rotation_speed", 0.80), nh->param<double>("wheelbase", 3.0)}, 
-        tfListener_{tfBuffer_}    
+        tfListener_{tfBuffer_}, nh_{nh}    
     {
         if (!verifyParamsForMPC(nh)) {
             ROS_WARN("One or more parameters for the mpc is not specified. Default values is therefore used.");
         }
 
-        twistTopic_ = nh->param<std::string>("twist_topic", "twist");
-        actualSteeringTopic_ = nh->param<std::string>("actual_steering_topic", "actual_steering_angle");
+        std::string twistTopic = nh_->param<std::string>("twist_topic", "twist");
+        std::string actualSteeringTopic = nh_->param<std::string>("actual_steering_topic", "actual_steering_angle");
+        std::string inputTopic = nh->param<std::string>("input_topic", "cmd_vel");
         mapFrame_ = nh->param<std::string>("map_frame", "map");
         carFrame_ = nh->param<std::string>("car_frame", "base_link");
         loop_Hz_ = nh->param<double>("loop_Hz", 30);
         mpc_dt_ = nh->param<double>("mpc_dt", 0.2);
         wheelbase_ = nh->param<double>("wheelbase", 3.0);
-        std::string inputTopic = nh->param<std::string>("input_topic", "cmd_vel");
 
+        if (nh_->hasParam("path_topic")) {
+            std::string pathTopic = nh_->param<std::string>("path_topic", "/path");
+            pathSub_ = nh->subscribe(pathTopic, 1, &RosMpc::pathCallback, this);
+        } else {
+            ROS_WARN("path_topic parameter not specified. Using hardcode internal path.");
+        }
         inputPub_ = nh->advertise<geometry_msgs::Twist>(inputTopic, 1);
-        twistSub_ = nh->subscribe(twistTopic_, 1, &RosMpc::twistCallback, this);
-        actualSteeringSub_ = nh->subscribe(actualSteeringTopic_, 1, &RosMpc::actualSteeringCallback, this);
+        twistSub_ = nh->subscribe(twistTopic, 1, &RosMpc::twistCallback, this);
+        actualSteeringSub_ = nh->subscribe(actualSteeringTopic, 1, &RosMpc::actualSteeringCallback, this);
     }
 
     MPCReturn RosMpc::solve() {
@@ -67,30 +73,41 @@ namespace mpc {
         return result;
     }
 
-    bool RosMpc::verifyInputs() const {
-        double waitTime = 10.0;
+    bool RosMpc::verifyInputs() {
+        ros::Duration waitTime{10.0};
 
         // check if twist publisher is publishing
-        while (ros::ok() && !ros::topic::waitForMessage<geometry_msgs::TwistStamped>(twistTopic_, ros::Duration{waitTime})) {
-            ROS_WARN("Waiting for twist message. Should be published at the topic: %s", twistTopic_.c_str());
+        std::string twistTopic = nh_->param<std::string>("twist_topic", "/twist");
+        while (ros::ok() && !ros::topic::waitForMessage<geometry_msgs::TwistStamped>(twistTopic, waitTime)) {
+            ROS_WARN("Waiting for twist message. Should be published at the topic: %s", twistTopic.c_str());
         }
 
-        // cheeck if actual steering angle is published
-        while (ros::ok() && !ros::topic::waitForMessage<std_msgs::Float64>(actualSteeringTopic_, ros::Duration{waitTime})) {
-            ROS_WARN("Waiting for actual steering angle. Should be publishd at the topic: %s", actualSteeringTopic_.c_str());
+        // check if actual steering angle is published
+        std::string actualSteeringTopic = nh_->param<std::string>("actual_steering_topic", "/actual_steering_angle");
+        while (ros::ok() && !ros::topic::waitForMessage<std_msgs::Float64>(actualSteeringTopic, waitTime)) {
+            ROS_WARN("Waiting for actual steering angle. Should be published at the topic: %s", actualSteeringTopic.c_str());
+        }
+
+        // if path topic parameter is provided. Get the intial path message.
+        if (nh_->hasParam("path_topic")) {
+            std::string pathTopic = nh_->param<std::string>("path_topic", "/path");
+            while (ros::ok()) {
+                nav_msgs::Path::ConstPtr firstPath = ros::topic::waitForMessage<nav_msgs::Path>(pathTopic, waitTime);
+                if (firstPath != nullptr) {
+                    mpc.setTrack(toVector(*firstPath));
+                    break;
+                }
+                ROS_WARN("Waiting for path message. Should be published at the topic: %s", pathTopic.c_str());
+            }
         }
 
         while (ros::ok()) {
-            bool ok = true; // if the transform was recived
             geometry_msgs::TransformStamped tfCar;
             try {
-                tfCar = tfBuffer_.lookupTransform(mapFrame_, carFrame_, ros::Time(0), ros::Duration{waitTime});
+                tfCar = tfBuffer_.lookupTransform(mapFrame_, carFrame_, ros::Time(0), waitTime);
+                break; // break if the previous function did not succed.
             } catch (tf2::TransformException& e) {
-                ROS_WARN("Waiting for transfrom from map to car.\n\t Error message: %s", e.what());
-                ok = false;
-            }
-            if (ok) {
-                break;
+                ROS_WARN("Waiting for transfrom from map: \"%s\" to car: \"%s\".\nError message: %s", mapFrame_.c_str(), carFrame_.c_str(), e.what());
             }
         }
         return true;
@@ -106,6 +123,10 @@ namespace mpc {
 
     void RosMpc::actualSteeringCallback(const std_msgs::Float64::ConstPtr& msg) {
         current_steering_angle_ = msg->data;
+    }
+
+    void RosMpc::pathCallback(const nav_msgs::Path::ConstPtr& msg) {
+        mpc.setTrack(toVector(*msg)); 
     }
 
     bool RosMpc::verifyParamsForMPC(ros::NodeHandle* nh) const {

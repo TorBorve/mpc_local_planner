@@ -12,6 +12,10 @@ actual_steering_topic: "/actual_steering_angle"
 # Where the output of the mpc is published. (input of the car). This is a twist message.
 input_topic: "/cmd_vel"
 
+# Where tha global path should be published. The path we want to follow. If this parameter is not provided
+# the mpc will use a internal hard coded path.
+path_topic: "/path"
+
 # The ""global"" frame. Typically map or odom. 
 map_frame: "odom"
 

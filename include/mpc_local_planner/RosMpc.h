@@ -5,6 +5,7 @@
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <std_msgs/Float64.h>
+#include <nav_msgs/Path.h>
 #include <tf2_ros/transform_listener.h>
 
 namespace mpc {
@@ -21,7 +22,7 @@ namespace mpc {
 
         /// @brief Check if all the topics and frames needed for the mpc exist and are active.
         /// @return True when all topics and frames are active.
-        bool verifyInputs() const;
+        bool verifyInputs();
     private:
 
         /// @brief callback function for subscriber to twist topic. 
@@ -31,6 +32,10 @@ namespace mpc {
         /// @brief callback function for subscriber to steering angle.
         /// @param[in] msg the current steering angle of the var.
         void actualSteeringCallback(const std_msgs::Float64::ConstPtr& msg);
+
+        /// @brief callback function for subscriber to path topic.
+        /// @param[in] msg the new path message. The path we want to follow.
+        void pathCallback(const nav_msgs::Path::ConstPtr& msg);
 
         /// @brief uses bicycle model to calculate the resulting angular velocity given the speed and steering angle
         /// @param[in] steeringAngle the wanted steering angle of the car.
@@ -59,23 +64,23 @@ namespace mpc {
         /// @brief subscriber to the steering angle of the car.
         ros::Subscriber actualSteeringSub_;
 
+        /// @brief subscriber to path topic. The path we want to follow.
+        ros::Subscriber pathSub_;
+
         /// @brief buffer for tf. Used to get the position of the car.
         tf2_ros::Buffer tfBuffer_;
 
         /// @brief tf listener
         tf2_ros::TransformListener tfListener_;
 
+        /// @brief pointer to nodehandle with access to private parameters.
+        ros::NodeHandle* nh_;
+
         /// @brief the latest velocity recived from car.
         double current_vel_ = 0;
 
         /// @brief the latest steering angle recived from car
         double current_steering_angle_ = 0;
-
-        /// @brief topic name for where the twist message is published
-        std::string twistTopic_;
-
-        /// @brief topic name for where the actual steering angle is published
-        std::string actualSteeringTopic_;
 
         /// @brief name of "origin" frame. Typically odom or map
         std::string mapFrame_;

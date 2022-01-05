@@ -5,6 +5,7 @@
 
 #include <nav_msgs/Path.h>
 #include <nav_msgs/Odometry.h>
+#include <geometry_msgs/Point.h>
 #include <ros/ros.h>
 
 #include <cppad/cppad.hpp>
@@ -93,7 +94,18 @@ namespace mpc{
     bool hasParamError(ros::NodeHandle* nh, const std::string& param);
 
     /// @brief checks if the parameter exist in nh. If not an warning is printed.
-
+    /// @param[in] nh pointer to nodeHandle that should have access to the parameter.
+    /// @param[in] param the parameter we want to check if exists.
     /// @return true if the parameter existed
     bool hasParamWarn(ros::NodeHandle* nh, const std::string& param);
+
+    /// @brief converts path message to vector of points.
+    /// @param[in] path the path message we want to convert.
+    /// @return the points stored in a vector.
+    std::vector<Point> toVector(const nav_msgs::Path& path);
+
+    /// @brief convert 3D point message to 2D Point. Removing the z value.
+    /// @param[in] p the point message.
+    /// @return mpc::Point object with the x and y values of p.
+    Point toPoint(const geometry_msgs::Point& p);
 }

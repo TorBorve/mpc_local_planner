@@ -183,4 +183,16 @@ namespace mpc{
         }
         return true;
     }
+
+    std::vector<Point> toVector(const nav_msgs::Path& path) {
+        std::vector<Point> pathVector(path.poses.size());
+        for (unsigned int i = 0; i < pathVector.size(); i++) {
+            pathVector.at(i) = toPoint(path.poses.at(i).pose.position);
+        }
+        return pathVector;
+    }
+
+    Point toPoint(const geometry_msgs::Point& p) {
+        return Point{p.x, p.y};
+    }
 }
