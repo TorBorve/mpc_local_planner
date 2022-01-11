@@ -1,7 +1,18 @@
 # **MPC local planner**
 A nonlinear MPC used to control an autonomous car.
 
-## **Description**
+- [:notebook_with_decorative_cover: **Description**](#-notebook-with-decorative-cover----description--)
+  * [**ROS interface**](#--ros-interface--)
+- [:hammer_and_wrench: **Install**](#-hammer-and-wrench----install--)
+- [:rocket: **Usage**](#-rocket----usage--)
+  * [**Parameters**](#--parameters--)
+  * [**Run**](#--run--)
+- [:link: **References**](#-link----references--)
+
+<!-- <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small> -->
+
+
+## :notebook_with_decorative_cover: **Description**
 This repository contains an implementation of a nonlinear MPC that is used to control an autonomous car. To do this [ipopt](https://coin-or.github.io/Ipopt/) is used to solve a nonlinear optimization problem. [CppAD](https://coin-or.github.io/CppAD/doc/cppad.htm) is used to interface with ipopt. See this [example](https://www.coin-or.org/CppAD/Doc/ipopt_solve_get_started.cpp.htm) for more information.
 The structure of the MPC is inspired by Udacity's [example MPC](https://medium.com/@techreigns/model-predictive-control-implementation-for-autonomous-vehicles-932c81598b49) for their simulator. On top of this there is implemented a ROS interface.
 
@@ -21,7 +32,7 @@ The output of the MPC is a steering angle and acceleration. Currently the accele
   <figcaption align="center">ROS interface for MPC</figcaption>
 </div>
 
-## **Install**
+## :hammer_and_wrench: **Install**
 The MPC requires several things to work. Mainly it is the optimizer ipopt and of course ROS.
 
 1. **ROS**
@@ -72,7 +83,7 @@ The MPC requires several things to work. Mainly it is the optimizer ipopt and of
    catkin build
    ```
  
-## **Usage**
+## :rocket: **Usage**
 
 ### **Parameters**
 Once everything is installed and built we are ready to define the parameters for the mpc. This is done using *rosparam*. The parameters are defined in a *.yaml* file in the folder *params*. These parameters need to be correct for your vehicle so that the mpc will work optimally. The parameters can be found and changed in *params/mpc.yaml*. If some critical parameters are not defined the code will not run. It will throw an error telling you what parameter it is missing. Other noncritical parameters cause warnings and some do not even do that. Therefore make sure your parameters are correct. It is not necessary to recompile the code after changing one or more parameters. Simply rerun it as explained in the next section.
@@ -97,7 +108,7 @@ It is also possible to only start rviz be using *rviz.launch*. The syntax is the
 roslaunch mpc_local_planner rviz.launch
 ```
  
-## **References**
+## :link: **References**
 - [ipopt](https://coin-or.github.io/Ipopt/)
 - [example mpc](https://medium.com/@techreigns/model-predictive-control-implementation-for-autonomous-vehicles-932c81598b49)
 - [CppAD](https://coin-or.github.io/CppAD/doc/cppad.htm)
