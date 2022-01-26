@@ -25,17 +25,19 @@ def costFunc(model):
     y1 = model.x[1]
     psi = model.x[2]
     v = model.x[3]
-    delta = model.u[0]
+    delta = model.x[4]
+    deltaDot = model.u[0]
     a = model.u[1]
+    coeffs = model.p
     
     vRef = 4
-    coeffs = np.array([0, -1, 0, 0.002])
     pathYaw = atan(3*coeffs[3]*x1*x1 + 2*coeffs[2]*x1 + coeffs[1])
     epsi = psi - pathYaw
     yPath = coeffs[3]*x1**3 + coeffs[2]*x1**2 + coeffs[1]*x1 + coeffs[0]
     cte = yPath - y1
     # return 10*y1**2 + 100*psi**2 + (v - vRef)**2 + 0.1*delta**2 + 0.1*a**2
-    return 10*cte**2 + 100*epsi**2 + 1*(v - vRef)**2 + 0.1*delta**2 + 0.1*a**2
+    return 10*cte**2 + 100*epsi**2 + 1*(v - vRef)**2 + 0.1*delta**2 + 0.1*a**2 + 0.1*deltaDot**2
+    # return vertcat(cte, epsi, v - vRef, delta, a)
 
 
 def main():
@@ -71,61 +73,83 @@ def main():
 
     aMax = 1
     deltaMax = 0.57
+    deltaDotMax = 0.8
     ocp.constraints.constr_type = "BGH"
-    ocp.constraints.lbu = np.array([-deltaMax, -aMax])
-    ocp.constraints.ubu = np.array([deltaMax, aMax])
+    ocp.constraints.lbx = np.array([-deltaMax])
+    ocp.constraints.ubx = np.array([deltaMax])
+    ocp.constraints.idxbx = np.array([4])
+    ocp.constraints.lbu = np.array([-deltaDotMax, -aMax])
+    ocp.constraints.ubu = np.array([deltaDotMax, aMax])
     ocp.constraints.idxbu = np.array([0, 1])
 
-    x0 = np.array([-10, 0, 0, 0])
+    x0 = np.array([-10, 0, 0, 0, 0])
     ocp.constraints.x0 = x0
 
-    ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM" #"PARTIAL_CONDENSING_HPIPM" "FULL_CONDENSING_QPOASES"
+    param = np.array([0, -1, 0, 0.002])
+    ocp.parameter_values = param
+
+    ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM" #"FULL_CONDENSING_QPOASES" "FULL_CONDENSING_HPIPM"
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
     ocp.solver_options.integrator_type = "ERK"
-    ocp.solver_options.nlp_solver_type = "SQP_RTI"
+    ocp.solver_options.nlp_solver_type = "SQP"
     ocp.solver_options.qp_solver_cond_N = N
     ocp.solver_options.tf = Tf
-    ocp.solver_options.qp_solver_iter_max = 1000
+    # ocp.solver_options.qp_solver_iter_max = 1000
+    # ocp.solver_options.nlp_solver_max_iter = 2000
 
     ocp_solver = AcadosOcpSolver(ocp, 'acados_ocp_' + ocp.model.name + '.json')
     ocp_integrator = AcadosSimSolver(ocp, 'acados_ocp_' + ocp.model.name + '.json')
+
     
-    Nsim = 100
-    simX = np.ndarray((Nsim + 1, nx))
-    simU = np.ndarray((Nsim, nu))
+    # Nsim = 100
+    # simX = np.ndarray((Nsim + 1, nx))
+    # simU = np.ndarray((Nsim, nu))
 
-    x_cur = x0
-    simX[0,:] = x0
+    # x_cur = x0
+    # simX[0,:] = x0
 
-    time_solve = 0
-    for i in range(Nsim):
+    # time_solve = 0
+    # for i in range(Nsim):
 
-        ocp_solver.set(0, "lbx", x_cur)
-        ocp_solver.set(0, "ubx", x_cur)
+    #     ocp_solver.set(0, "lbx", x_cur)
+    #     ocp_solver.set(0, "ubx", x_cur)
 
-        start = time.time()
-        solver_status = ocp_solver.solve()
-        t = time.time() - start
-        print(f'time: {t*1000:.2f}[ms], iter: {i}')
-        time_solve += t
+    #     # if (i >= Nsim / 2):
+    #     #     for j in range(N):
+    #     #         ocp_solver.set(j, "p", np.zeros(4))
 
-        if solver_status != 0:
-            raise Exception(f'solver error: {solver_status}')
+    #     start = time.time()
+    #     solver_status = ocp_solver.solve()
+    #     t = time.time() - start
+    #     print(f'time: {t*1000:.2f}[ms], iter: {i}')
+    #     time_solve += t
 
-        simU[i, :] = ocp_solver.get(0, "u")
+    #     if solver_status != 0:
+    #         print(f'solver error: {solver_status}')
+    #         # raise Exception(f'solver error: {solver_status}')
+
+    #     # xtraj = np.ndarray((N, nx))
+    #     # for i in range(N):
+    #     #     xtraj[i, :] = ocp_solver.get(i, "x")
+
+    #     # print("---xtraj---")
+    #     # print(xtraj)
+    #     # input("janjan: ")
+
+    #     simU[i, :] = ocp_solver.get(0, "u")
         
-        ocp_integrator.set("x", x_cur)
-        ocp_integrator.set("u", simU[i, :])
+    #     ocp_integrator.set("x", x_cur)
+    #     ocp_integrator.set("u", simU[i, :])
 
-        integrator_status = ocp_integrator.solve()
+    #     integrator_status = ocp_integrator.solve()
 
-        if integrator_status != 0:
-            raise Exception(f'integrator error: {integrator_status}')
+    #     if integrator_status != 0:
+    #         raise Exception(f'integrator error: {integrator_status}')
         
-        x_cur = ocp_integrator.get("x")
-        simX[i + 1, :] = x_cur
+    #     x_cur = ocp_integrator.get("x")
+    #     simX[i + 1, :] = x_cur
     
-    print(f'avg. time: {time_solve/Nsim*1000}[ms]')
-    plot(np.linspace(0, Tf/N*Nsim, Nsim + 1), simX)
+    # print(f'avg. time: {time_solve/Nsim*1000}[ms]')
+    # plot(np.linspace(0, Tf/N*Nsim, Nsim + 1), simX)
     
 main()

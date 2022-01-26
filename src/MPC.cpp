@@ -10,6 +10,46 @@
 
 #include <fstream>
 
+// standard
+#include <stdio.h>
+#include <stdlib.h>
+// acados
+#include "acados/utils/print.h"
+#include "acados/utils/math.h"
+#include "acados_c/ocp_nlp_interface.h"
+#include "acados_c/external_function_interface.h"
+#include "acados_solver_bicycle_model.h"
+
+#define NX     BICYCLE_MODEL_NX
+#define NZ     BICYCLE_MODEL_NZ
+#define NU     BICYCLE_MODEL_NU
+#define NP     BICYCLE_MODEL_NP
+#define NBX    BICYCLE_MODEL_NBX
+#define NBX0   BICYCLE_MODEL_NBX0
+#define NBU    BICYCLE_MODEL_NBU
+#define NSBX   BICYCLE_MODEL_NSBX
+#define NSBU   BICYCLE_MODEL_NSBU
+#define NSH    BICYCLE_MODEL_NSH
+#define NSG    BICYCLE_MODEL_NSG
+#define NSPHI  BICYCLE_MODEL_NSPHI
+#define NSHN   BICYCLE_MODEL_NSHN
+#define NSGN   BICYCLE_MODEL_NSGN
+#define NSPHIN BICYCLE_MODEL_NSPHIN
+#define NSBXN  BICYCLE_MODEL_NSBXN
+#define NS     BICYCLE_MODEL_NS
+#define NSN    BICYCLE_MODEL_NSN
+#define NG     BICYCLE_MODEL_NG
+#define NBXN   BICYCLE_MODEL_NBXN
+#define NGN    BICYCLE_MODEL_NGN
+#define NY0    BICYCLE_MODEL_NY0
+#define NY     BICYCLE_MODEL_NY
+#define NYN    BICYCLE_MODEL_NYN
+#define NH     BICYCLE_MODEL_NH
+#define NPHI   BICYCLE_MODEL_NPHI
+#define NHN    BICYCLE_MODEL_NHN
+#define NPHIN  BICYCLE_MODEL_NPHIN
+#define NR     BICYCLE_MODEL_NR
+
 namespace mpc {
 
     class FG_eval {
@@ -206,6 +246,8 @@ namespace mpc {
     }
 
     MPCReturn MPC::solve(const OptVariables& optVars, const Eigen::Vector4d& coeffs){
+
+#if 0
         using Dvector = CPPAD_TESTVECTOR(double);
         const State& state = optVars.x;
         const double maxInc = maxSteeringRotationSpeed_ * dt_;
@@ -323,6 +365,145 @@ namespace mpc {
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
         
         return toMPCReturn(solution, duration.count());
+#else
+        auto start = std::chrono::high_resolution_clock::now();
+        bicycle_model_solver_capsule *acados_ocp_capsule = bicycle_model_acados_create_capsule();
+        // there is an opportunity to change the number of shooting intervals in C without new code generation
+        int N = BICYCLE_MODEL_N;
+        // allocate the array and fill it accordingly
+        double* new_time_steps = NULL;
+        int status = bicycle_model_acados_create_with_discretization(acados_ocp_capsule, N, new_time_steps);
+
+        if (status)
+        {
+            printf("bicycle_model_acados_create() returned status %d. Exiting.\n", status);
+            exit(1);
+        }
+
+        ocp_nlp_config *nlp_config = bicycle_model_acados_get_nlp_config(acados_ocp_capsule);
+        ocp_nlp_dims *nlp_dims = bicycle_model_acados_get_nlp_dims(acados_ocp_capsule);
+        ocp_nlp_in *nlp_in = bicycle_model_acados_get_nlp_in(acados_ocp_capsule);
+        ocp_nlp_out *nlp_out = bicycle_model_acados_get_nlp_out(acados_ocp_capsule);
+        ocp_nlp_solver *nlp_solver = bicycle_model_acados_get_nlp_solver(acados_ocp_capsule);
+        void *nlp_opts = bicycle_model_acados_get_nlp_opts(acados_ocp_capsule);
+
+        // initial condition
+        int idxbx0[NBX0];
+        idxbx0[0] = 0;
+        idxbx0[1] = 1;
+        idxbx0[2] = 2;
+        idxbx0[3] = 3;
+        idxbx0[4] = 4;
+
+        double lbx0[NBX0];
+        double ubx0[NBX0];
+        lbx0[0] = optVars.x.x;
+        ubx0[0] = optVars.x.x;
+        lbx0[1] = optVars.x.y;
+        ubx0[1] = optVars.x.y;
+        lbx0[2] = optVars.x.psi;
+        ubx0[2] = optVars.x.psi;
+        lbx0[3] = optVars.x.vel;
+        ubx0[3] = optVars.x.vel;
+        lbx0[4] = optVars.u.delta;
+        ubx0[4] = optVars.u.delta;
+
+        ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "idxbx", idxbx0);
+        ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", lbx0);
+        ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "ubx", ubx0);
+
+        // initialization for state values
+        double x_init[NX];
+        x_init[0] = 0.0;
+        x_init[1] = 0.0;
+        x_init[2] = 0.0;
+        x_init[3] = 0.0;
+        x_init[4] = 0.0;
+
+        // initial value for control input
+        double u0[NU];
+        u0[0] = 0.0;
+        u0[1] = 0.0;
+        // set parameters
+        double p[NP];
+        p[0] = coeffs[0];
+        p[1] = coeffs[1];
+        p[2] = coeffs[2];
+        p[3] = coeffs[3];
+
+        for (int ii = 0; ii <= N; ii++)
+        {
+            bicycle_model_acados_update_params(acados_ocp_capsule, ii, p, NP);
+        }
+    
+
+        // prepare evaluation
+        int NTIMINGS = 1;
+        double min_time = 1e12;
+        double kkt_norm_inf;
+        double elapsed_time;
+        int sqp_iter;
+
+        double xtraj[NX * (N+1)];
+        double utraj[NU * N];
+
+
+        // solve ocp in loop
+        int rti_phase = 0;
+
+        for (int ii = 0; ii < NTIMINGS; ii++)
+        {
+            // initialize solution
+            for (int i = 0; i <= nlp_dims->N; i++)
+            {
+                ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, i, "x", x_init);
+                ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, i, "u", u0);
+            }
+            ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "rti_phase", &rti_phase);
+            status = bicycle_model_acados_solve(acados_ocp_capsule);
+            ocp_nlp_get(nlp_config, nlp_solver, "time_tot", &elapsed_time);
+            min_time = MIN(elapsed_time, min_time);
+        }
+
+        /* print solution and statistics */
+        for (int ii = 0; ii <= nlp_dims->N; ii++)
+            ocp_nlp_out_get(nlp_config, nlp_dims, nlp_out, ii, "x", &xtraj[ii*NX]);
+        for (int ii = 0; ii < nlp_dims->N; ii++)
+            ocp_nlp_out_get(nlp_config, nlp_dims, nlp_out, ii, "u", &utraj[ii*NU]);
+
+
+        // printf("\n--- xtraj ---\n");
+        // d_print_exp_tran_mat( NX, N+1, xtraj, NX);
+        // printf("\n--- utraj ---\n");
+        // d_print_exp_tran_mat( NU, N, utraj, NU );
+
+        // printf("\nsolved ocp %d times, solution printed above\n\n", NTIMINGS);
+
+        if (status == ACADOS_SUCCESS)
+        {
+            ROS_INFO("bicycle_model_acados_solve(): SUCCESS!\n");
+        }
+        else
+        {
+            ROS_ERROR("bicycle_model_acados_solve() failed with status %d.\n", status);
+        }
+
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        
+        MPCReturn ret;
+        ret.mpcHorizon.resize(N - 1);
+        ret.u0 = Input{utraj[1], utraj[0]};
+        for (int i = 0; i < N - 1; i++) {
+            State state{xtraj[0 + NX * i], xtraj[1 + NX * i], xtraj[2 + NX * i], xtraj[3 + NX * i], 0, 0};
+            Input input{utraj[1 + NU * i], utraj[0 + NU * i]};
+            ret.mpcHorizon.at(i) = OptVariables{state, input};
+        }
+        ret.cost = 0;
+        ret.success = true;
+        ret.computeTime = duration.count();
+        return ret;
+#endif
     }
 
     MPCReturn MPC::toMPCReturn(const CppAD::ipopt::solve_result<Dvector>& solution, double time){
