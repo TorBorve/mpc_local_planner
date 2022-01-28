@@ -3,10 +3,12 @@
 #include <vector>
 #include <eigen3/Eigen/Core>
 
-namespace mpc {
+namespace mpc
+{
 
     /// @brief State struct for car
-    struct State {
+    struct State
+    {
 
         /// @brief default constructor
         State() = default;
@@ -18,23 +20,20 @@ namespace mpc {
         /// @param[in] vel the current velocity
         /// @param[in] cte cross track error. Distance from trajectory to car.
         /// @param[in] epsi yaw error. Diffrence between car yaw and trajectory yaw.
-        State(double x, double y, double psi, double vel, double cte, double epsi) :
-            x{x}, y{y}, psi{psi}, vel{vel}, cte{cte}, epsi{epsi}
+        State(double x, double y, double psi, double vel, double cte, double epsi) : x{x}, y{y}, psi{psi}, vel{vel}, cte{cte}, epsi{epsi}
         {
-
         }
 
         /// @brief constructor with array containig values
         /// @param[in] arr array containg state variables
-        State(const std::array<double, 6>& arr) :
-            State{arr[0], arr[1], arr[2], arr[3], arr[4], arr[5]}
+        State(const std::array<double, 6> &arr) : State{arr[0], arr[1], arr[2], arr[3], arr[4], arr[5]}
         {
-
         }
 
         /// @brief convert state to array containg state varibles
         /// @return array with state varibles
-        std::array<double, 6> toArray() const {
+        std::array<double, 6> toArray() const
+        {
             return std::array<double, 6>{x, y, psi, vel, cte, epsi};
         }
 
@@ -58,7 +57,8 @@ namespace mpc {
     };
 
     /// @brief Input struct fro car. Inputs is what command that are sendt to the car.
-    struct Input {
+    struct Input
+    {
 
         /// @brief default constructor
         Input() = default;
@@ -66,10 +66,8 @@ namespace mpc {
         /// @brief constructor with values.
         /// @param[in] a acceleration
         /// @param[in] delta steering angle
-        Input(double a, double delta) :
-            a{a}, delta{delta}
+        Input(double a, double delta) : a{a}, delta{delta}
         {
-
         }
 
         /// @brief acceleration for car
@@ -80,7 +78,8 @@ namespace mpc {
     };
 
     /// @brief struct for optimal variables used in solver
-    struct OptVariables {
+    struct OptVariables
+    {
 
         /// @brief default constructor
         OptVariables() = default;
@@ -88,10 +87,8 @@ namespace mpc {
         /// @brief constructor with variables
         /// @param[in] x state variable
         /// @param[in] u input variable
-        OptVariables(const State& x, const Input& u) :
-            x{x}, u{u}
+        OptVariables(const State &x, const Input &u) : x{x}, u{u}
         {
-
         }
 
         /// @brief the state of the car
@@ -102,8 +99,9 @@ namespace mpc {
     };
 
     /// @brief struct for mpc solution
-    struct MPCReturn {
-        
+    struct MPCReturn
+    {
+
         /// @brief defualt constructor
         MPCReturn() = default;
 
@@ -113,12 +111,10 @@ namespace mpc {
         /// @param[in] computeTime the time the solver used in [ms]
         /// @param[in] cost the cost of the mpc horizon.
         /// @param[in] success boolean for indicating if the solver managed to solve the problem.
-        MPCReturn(const Input& u0, const std::vector<OptVariables>& mpcHorizon,
-                double computeTime, double cost, bool success) :
-                u0{u0}, mpcHorizon{mpcHorizon}, computeTime{computeTime},
-                cost{cost}, success{success}
+        MPCReturn(const Input &u0, const std::vector<OptVariables> &mpcHorizon,
+                  double computeTime, double cost, bool success) : u0{u0}, mpcHorizon{mpcHorizon}, computeTime{computeTime},
+                                                                   cost{cost}, success{success}
         {
-
         }
 
         /// @brief constructor with variables
@@ -126,11 +122,9 @@ namespace mpc {
         /// @param[in] computeTime the time the solver used in [ms]
         /// @param[in] cost the cost of the mpc horizon.
         /// @param[in] success boolean for indicating if the solver managed to solve the problem.
-        MPCReturn(const std::vector<OptVariables>& mpcHorizon,
-                double computeTime, double cost, bool success) :
-                MPCReturn{mpcHorizon.at(0).u, mpcHorizon, computeTime, cost, success}
+        MPCReturn(const std::vector<OptVariables> &mpcHorizon,
+                  double computeTime, double cost, bool success) : MPCReturn{mpcHorizon.at(0).u, mpcHorizon, computeTime, cost, success}
         {
-
         }
 
         /// @brief the first input. u0 = mpcHorizon[0].u;
@@ -150,18 +144,17 @@ namespace mpc {
     };
 
     /// @brief struct for point (x, y)
-    struct Point {
-        
+    struct Point
+    {
+
         /// @brief default constructor
         Point() = default;
 
         /// @brief constructor with values
         /// @param[in] x x value of point
         /// @param[in] y y value of point
-        Point(double x, double y) :
-            x{x}, y{y}
+        Point(double x, double y) : x{x}, y{y}
         {
-
         }
 
         /// @brief the x value

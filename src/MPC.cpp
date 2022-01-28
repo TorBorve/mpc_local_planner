@@ -20,76 +20,77 @@
 #include "acados_c/external_function_interface.h"
 #include "acados_solver_bicycle_model.h"
 
-#define NX     BICYCLE_MODEL_NX
-#define NZ     BICYCLE_MODEL_NZ
-#define NU     BICYCLE_MODEL_NU
-#define NP     BICYCLE_MODEL_NP
-#define NBX    BICYCLE_MODEL_NBX
-#define NBX0   BICYCLE_MODEL_NBX0
-#define NBU    BICYCLE_MODEL_NBU
-#define NSBX   BICYCLE_MODEL_NSBX
-#define NSBU   BICYCLE_MODEL_NSBU
-#define NSH    BICYCLE_MODEL_NSH
-#define NSG    BICYCLE_MODEL_NSG
-#define NSPHI  BICYCLE_MODEL_NSPHI
-#define NSHN   BICYCLE_MODEL_NSHN
-#define NSGN   BICYCLE_MODEL_NSGN
+#define NX BICYCLE_MODEL_NX
+#define NZ BICYCLE_MODEL_NZ
+#define NU BICYCLE_MODEL_NU
+#define NP BICYCLE_MODEL_NP
+#define NBX BICYCLE_MODEL_NBX
+#define NBX0 BICYCLE_MODEL_NBX0
+#define NBU BICYCLE_MODEL_NBU
+#define NSBX BICYCLE_MODEL_NSBX
+#define NSBU BICYCLE_MODEL_NSBU
+#define NSH BICYCLE_MODEL_NSH
+#define NSG BICYCLE_MODEL_NSG
+#define NSPHI BICYCLE_MODEL_NSPHI
+#define NSHN BICYCLE_MODEL_NSHN
+#define NSGN BICYCLE_MODEL_NSGN
 #define NSPHIN BICYCLE_MODEL_NSPHIN
-#define NSBXN  BICYCLE_MODEL_NSBXN
-#define NS     BICYCLE_MODEL_NS
-#define NSN    BICYCLE_MODEL_NSN
-#define NG     BICYCLE_MODEL_NG
-#define NBXN   BICYCLE_MODEL_NBXN
-#define NGN    BICYCLE_MODEL_NGN
-#define NY0    BICYCLE_MODEL_NY0
-#define NY     BICYCLE_MODEL_NY
-#define NYN    BICYCLE_MODEL_NYN
-#define NH     BICYCLE_MODEL_NH
-#define NPHI   BICYCLE_MODEL_NPHI
-#define NHN    BICYCLE_MODEL_NHN
-#define NPHIN  BICYCLE_MODEL_NPHIN
-#define NR     BICYCLE_MODEL_NR
+#define NSBXN BICYCLE_MODEL_NSBXN
+#define NS BICYCLE_MODEL_NS
+#define NSN BICYCLE_MODEL_NSN
+#define NG BICYCLE_MODEL_NG
+#define NBXN BICYCLE_MODEL_NBXN
+#define NGN BICYCLE_MODEL_NGN
+#define NY0 BICYCLE_MODEL_NY0
+#define NY BICYCLE_MODEL_NY
+#define NYN BICYCLE_MODEL_NYN
+#define NH BICYCLE_MODEL_NH
+#define NPHI BICYCLE_MODEL_NPHI
+#define NHN BICYCLE_MODEL_NHN
+#define NPHIN BICYCLE_MODEL_NPHIN
+#define NR BICYCLE_MODEL_NR
 
-namespace mpc {
+namespace mpc
+{
 
-    class FG_eval {
+    class FG_eval
+    {
     public:
         using ADvector = CPPAD_TESTVECTOR(CppAD::AD<double>);
-        
-        FG_eval(const Eigen::Vector4d& coeffs, size_t N, double dt, double wheelbase) :
-            coeffs{coeffs}, N{N}, dt{dt}, Lf{wheelbase}, x_start{0}, y_start{N}, 
-            psi_start{2*N}, v_start{3*N}, cte_start{4*N}, epsi_start{5*N}, 
-            delta_start{6*N}, a_start{7*N - 1} 
-        {
 
+        FG_eval(const Eigen::Vector4d &coeffs, size_t N, double dt, double wheelbase) : coeffs{coeffs}, N{N}, dt{dt}, Lf{wheelbase}, x_start{0}, y_start{N},
+                                                                                        psi_start{2 * N}, v_start{3 * N}, cte_start{4 * N}, epsi_start{5 * N},
+                                                                                        delta_start{6 * N}, a_start{7 * N - 1}
+        {
         }
-        
-        void operator()(ADvector& fg, const ADvector& vars) {
+
+        void operator()(ADvector &fg, const ADvector &vars)
+        {
             // cost function
             fg[0] = 0;
 
-            for (unsigned int i=0; i<N; i++)
+            for (unsigned int i = 0; i < N; i++)
             {
-            fg[0] += 500*CppAD::pow(vars[cte_start+i]-ref_cte, 2);
-            fg[0] += 2000*CppAD::pow(vars[epsi_start+i]-ref_epsi, 2);
-            fg[0] += 5*CppAD::pow(vars[v_start+i]-ref_v, 2);
+                fg[0] += 500 * CppAD::pow(vars[cte_start + i] - ref_cte, 2);
+                fg[0] += 2000 * CppAD::pow(vars[epsi_start + i] - ref_epsi, 2);
+                fg[0] += 5 * CppAD::pow(vars[v_start + i] - ref_v, 2);
             }
 
             // minimize the use of actuators
-            for (unsigned int i=0; i<N-1; i++)
+            for (unsigned int i = 0; i < N - 1; i++)
             {
-            fg[0] += 25*CppAD::pow(vars[delta_start+i], 2);
-            fg[0] += 25*CppAD::pow(vars[a_start+i], 2);
-            //fg[0] += 700*CppAD::pow(vars[delta_start + i] * vars[v_start+i], 2);
+                fg[0] += 25 * CppAD::pow(vars[delta_start + i], 2);
+                fg[0] += 25 * CppAD::pow(vars[a_start + i], 2);
+                // fg[0] += 700*CppAD::pow(vars[delta_start + i] * vars[v_start+i], 2);
             }
 
             // minimize the value gap between sequential actuations
-            for (unsigned int i=0; i<N-2; i++)
+            for (unsigned int i = 0; i < N - 2; i++)
             {
-            fg[0] += 200*CppAD::pow(vars[delta_start+i+1] - vars[delta_start+i], 2); 
-            fg[0] += 20*CppAD::pow(vars[a_start+i+1] - vars[a_start+i], 2);
+                fg[0] += 200 * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
+                fg[0] += 20 * CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
             }
-    
+
             //
             // Setup Constraints
             //
@@ -108,62 +109,64 @@ namespace mpc {
             fg[1 + epsi_start] = vars[epsi_start];
 
             // The rest of the constraints
-            for (unsigned int i = 0; i < N -1; i++) 
+            for (unsigned int i = 0; i < N - 1; i++)
             {
-            // The state at time t+1 .
-            CppAD::AD<double> x1 = vars[x_start + i + 1];
-            CppAD::AD<double> y1 = vars[y_start + i + 1];
-            CppAD::AD<double> psi1 = vars[psi_start + i + 1];
-            CppAD::AD<double> v1 = vars[v_start + i + 1];
-            CppAD::AD<double> cte1 = vars[cte_start + i + 1];
-            CppAD::AD<double> epsi1 = vars[epsi_start + i + 1];
+                // The state at time t+1 .
+                CppAD::AD<double> x1 = vars[x_start + i + 1];
+                CppAD::AD<double> y1 = vars[y_start + i + 1];
+                CppAD::AD<double> psi1 = vars[psi_start + i + 1];
+                CppAD::AD<double> v1 = vars[v_start + i + 1];
+                CppAD::AD<double> cte1 = vars[cte_start + i + 1];
+                CppAD::AD<double> epsi1 = vars[epsi_start + i + 1];
 
-            // The state at time t.
-            CppAD::AD<double> x0 = vars[x_start + i];
-            CppAD::AD<double> y0 = vars[y_start + i];
-            CppAD::AD<double> psi0 = vars[psi_start + i];
-            CppAD::AD<double> v0 = vars[v_start + i];
-            CppAD::AD<double> cte0 = vars[cte_start + i];
-            CppAD::AD<double> epsi0 = vars[epsi_start + i];
-            // Only consider the actuation at time t.
-            CppAD::AD<double> delta0 = vars[delta_start + i];
-            CppAD::AD<double> a0 = vars[a_start + i];
-            //if (i > 0) {   // use previous actuations (to account for latency)
-            //  a0 = vars[a_start + i - 1];
-            //  delta0 = vars[delta_start + i - 1];
-            //}
-            
-            CppAD::AD<double> f0 = coeffs[0] + coeffs[1]*x0 + coeffs[2]*x0*x0 + coeffs[3]*x0*x0*x0;
-            CppAD::AD<double> psides0 = CppAD::atan(3*coeffs[3]*x0*x0 + 2*coeffs[2]*x0 + coeffs[1]);
+                // The state at time t.
+                CppAD::AD<double> x0 = vars[x_start + i];
+                CppAD::AD<double> y0 = vars[y_start + i];
+                CppAD::AD<double> psi0 = vars[psi_start + i];
+                CppAD::AD<double> v0 = vars[v_start + i];
+                CppAD::AD<double> cte0 = vars[cte_start + i];
+                CppAD::AD<double> epsi0 = vars[epsi_start + i];
+                // Only consider the actuation at time t.
+                CppAD::AD<double> delta0 = vars[delta_start + i];
+                CppAD::AD<double> a0 = vars[a_start + i];
+                // if (i > 0) {   // use previous actuations (to account for latency)
+                //   a0 = vars[a_start + i - 1];
+                //   delta0 = vars[delta_start + i - 1];
+                // }
 
-            // Here's `x` to get you started.
-            // The idea here is to constraint this value to be 0.
-            //
-            // Recall the equations for the model:
-            // x_[t+1] = x[t] + v[t] * cos(psi[t]) * dt
-            // y_[t+1] = y[t] + v[t] * sin(psi[t]) * dt
-            // psi_[t+1] = psi[t] + v[t] / Lf * delta[t] * dt
-            // v_[t+1] = v[t] + a[t] * dt
-            // cte[t+1] = f(x[t]) - y[t] + v[t] * sin(epsi[t]) * dt
-            // epsi[t+1] = psi[t] - psides[t] + v[t] * delta[t] / Lf * dt
-            fg[2 + x_start + i] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
-            fg[2 + y_start + i] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
-            fg[2 + psi_start + i] = psi1 - (psi0 + v0 * CppAD::tan(delta0) / Lf * dt);
-            // fg[2 + v_start + i] = v1 - v0; //v1 - (v0 + a0 * dt);
-            fg[2 + v_start + i] = v1 - (v0 + a0 * dt);
-            fg[2 + cte_start + i] =
-                cte1 - ((f0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
-            fg[2 + epsi_start + i] =
-                epsi1 - ((psi0 - psides0) + v0 * CppAD::tan(delta0) / Lf * dt);
+                CppAD::AD<double> f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * x0 * x0 + coeffs[3] * x0 * x0 * x0;
+                CppAD::AD<double> psides0 = CppAD::atan(3 * coeffs[3] * x0 * x0 + 2 * coeffs[2] * x0 + coeffs[1]);
+
+                // Here's `x` to get you started.
+                // The idea here is to constraint this value to be 0.
+                //
+                // Recall the equations for the model:
+                // x_[t+1] = x[t] + v[t] * cos(psi[t]) * dt
+                // y_[t+1] = y[t] + v[t] * sin(psi[t]) * dt
+                // psi_[t+1] = psi[t] + v[t] / Lf * delta[t] * dt
+                // v_[t+1] = v[t] + a[t] * dt
+                // cte[t+1] = f(x[t]) - y[t] + v[t] * sin(epsi[t]) * dt
+                // epsi[t+1] = psi[t] - psides[t] + v[t] * delta[t] / Lf * dt
+                fg[2 + x_start + i] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
+                fg[2 + y_start + i] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
+                fg[2 + psi_start + i] = psi1 - (psi0 + v0 * CppAD::tan(delta0) / Lf * dt);
+                // fg[2 + v_start + i] = v1 - v0; //v1 - (v0 + a0 * dt);
+                fg[2 + v_start + i] = v1 - (v0 + a0 * dt);
+                fg[2 + cte_start + i] =
+                    cte1 - ((f0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
+                fg[2 + epsi_start + i] =
+                    epsi1 - ((psi0 - psides0) + v0 * CppAD::tan(delta0) / Lf * dt);
             }
 
-            for (unsigned int i = delta_start; i < delta_start + N - 2; i++) {
+            for (unsigned int i = delta_start; i < delta_start + N - 2; i++)
+            {
                 CppAD::AD<double> delta0 = vars[i];
                 CppAD::AD<double> delta1 = vars[i + 1];
                 fg[1 + i] = delta1 - delta0;
             }
             return;
         }
+
     private:
         Eigen::Vector4d coeffs;
         const size_t N;
@@ -181,13 +184,12 @@ namespace mpc {
         const double Lf;
         const double ref_cte = 0;
         const double ref_epsi = 0;
-        const double ref_v = 10.0; 
+        const double ref_v = 10.0;
     };
 
-    MPC::MPC(const std::vector<Point>& track, size_t N, double dt, Bound steeringAngle, double maxSteeringRotationSpeed, double wheelbase) : 
-            track_{track}, N_{N}, dt_{dt}, steeringAngle_{steeringAngle}, maxSteeringRotationSpeed_{maxSteeringRotationSpeed}, 
-            wheelbase_{wheelbase}, x_start_{0}, y_start_{N}, psi_start_{2*N}, v_start_{3*N}, cte_start_{4*N}, epsi_start_{5*N},
-            delta_start_{6*N}, a_start_{7*N - 1} // -1 due to N-1 actuator variables
+    MPC::MPC(const std::vector<Point> &track, size_t N, double dt, Bound steeringAngle, double maxSteeringRotationSpeed, double wheelbase) : track_{track}, N_{N}, dt_{dt}, steeringAngle_{steeringAngle}, maxSteeringRotationSpeed_{maxSteeringRotationSpeed},
+                                                                                                                                             wheelbase_{wheelbase}, x_start_{0}, y_start_{N}, psi_start_{2 * N}, v_start_{3 * N}, cte_start_{4 * N}, epsi_start_{5 * N},
+                                                                                                                                             delta_start_{6 * N}, a_start_{7 * N - 1} // -1 due to N-1 actuator variables
     {
         ros::NodeHandle nh;
         trackPub_ = nh.advertise<nav_msgs::Path>("global_path", 1);
@@ -195,8 +197,9 @@ namespace mpc {
         polynomPub_ = nh.advertise<nav_msgs::Path>("interpolated_path", 1);
     }
 
-    MPCReturn MPC::solve(const OptVariables& optVars) {
-        const State& state = optVars.x;
+    MPCReturn MPC::solve(const OptVariables &optVars)
+    {
+        const State &state = optVars.x;
 
         pubTf(state);
 
@@ -208,28 +211,31 @@ namespace mpc {
         State transformedState{0, 0, rotation, state.vel, 0, 0};
         calcState(transformedState, coeffs, forward);
         OptVariables transformedOptVar{transformedState, optVars.u};
-        if(optVars.x.vel < 1) {
+        if (optVars.x.vel < 1)
+        {
             transformedOptVar.x.vel = 1;
         }
         auto result = solve(transformedOptVar, coeffs);
 
         double rotangle = state.psi - rotation;
-        auto& x = result.mpcHorizon;
-        for (unsigned int i = 0; i < x.size(); i++) {
+        auto &x = result.mpcHorizon;
+        for (unsigned int i = 0; i < x.size(); i++)
+        {
             // rotate back
             double dx = x[i].x.x;
             double dy = x[i].x.y;
             x[i].x.x = dx * cos(rotangle) - dy * sin(rotangle);
             x[i].x.y = dx * sin(rotangle) + dy * cos(rotangle);
-            
+
             // // shift coordinates
             x[i].x.x += state.x;
-            x[i].x.y += state.y;         
+            x[i].x.y += state.y;
         }
 
         auto polyPath = getPathMsg(coeffs);
-        auto& points = polyPath.poses;
-        for (unsigned int i = 0; i < points.size(); i++) {
+        auto &points = polyPath.poses;
+        for (unsigned int i = 0; i < points.size(); i++)
+        {
             double dx = points[i].pose.position.x;
             double dy = points[i].pose.position.y;
             points[i].pose.position.x = dx * cos(rotangle) - dy * sin(rotangle);
@@ -245,7 +251,8 @@ namespace mpc {
         return result;
     }
 
-    MPCReturn MPC::solve(const OptVariables& optVars, const Eigen::Vector4d& coeffs){
+    MPCReturn MPC::solve(const OptVariables &optVars, const Eigen::Vector4d &coeffs)
+    {
 
 #if 0
         using Dvector = CPPAD_TESTVECTOR(double);
@@ -371,7 +378,7 @@ namespace mpc {
         // there is an opportunity to change the number of shooting intervals in C without new code generation
         int N = BICYCLE_MODEL_N;
         // allocate the array and fill it accordingly
-        double* new_time_steps = NULL;
+        double *new_time_steps = NULL;
         int status = bicycle_model_acados_create_with_discretization(acados_ocp_capsule, N, new_time_steps);
 
         if (status)
@@ -435,7 +442,6 @@ namespace mpc {
         {
             bicycle_model_acados_update_params(acados_ocp_capsule, ii, p, NP);
         }
-    
 
         // prepare evaluation
         int NTIMINGS = 1;
@@ -444,9 +450,8 @@ namespace mpc {
         double elapsed_time;
         int sqp_iter;
 
-        double xtraj[NX * (N+1)];
+        double xtraj[NX * (N + 1)];
         double utraj[NU * N];
-
 
         // solve ocp in loop
         int rti_phase = 0;
@@ -467,10 +472,9 @@ namespace mpc {
 
         /* print solution and statistics */
         for (int ii = 0; ii <= nlp_dims->N; ii++)
-            ocp_nlp_out_get(nlp_config, nlp_dims, nlp_out, ii, "x", &xtraj[ii*NX]);
+            ocp_nlp_out_get(nlp_config, nlp_dims, nlp_out, ii, "x", &xtraj[ii * NX]);
         for (int ii = 0; ii < nlp_dims->N; ii++)
-            ocp_nlp_out_get(nlp_config, nlp_dims, nlp_out, ii, "u", &utraj[ii*NU]);
-
+            ocp_nlp_out_get(nlp_config, nlp_dims, nlp_out, ii, "u", &utraj[ii * NU]);
 
         // printf("\n--- xtraj ---\n");
         // d_print_exp_tran_mat( NX, N+1, xtraj, NX);
@@ -490,11 +494,12 @@ namespace mpc {
 
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-        
+
         MPCReturn ret;
         ret.mpcHorizon.resize(N - 1);
         ret.u0 = Input{utraj[1], utraj[0]};
-        for (int i = 0; i < N - 1; i++) {
+        for (int i = 0; i < N - 1; i++)
+        {
             State state{xtraj[0 + NX * i], xtraj[1 + NX * i], xtraj[2 + NX * i], xtraj[3 + NX * i], 0, 0};
             Input input{utraj[1 + NU * i], utraj[0 + NU * i]};
             ret.mpcHorizon.at(i) = OptVariables{state, input};
@@ -506,12 +511,14 @@ namespace mpc {
 #endif
     }
 
-    MPCReturn MPC::toMPCReturn(const CppAD::ipopt::solve_result<Dvector>& solution, double time){
-        const auto& x = solution.x;
+    MPCReturn MPC::toMPCReturn(const CppAD::ipopt::solve_result<Dvector> &solution, double time)
+    {
+        const auto &x = solution.x;
         MPCReturn ret;
         ret.mpcHorizon.resize(N_ - 1); // TODO should be N error due to a?
         ret.u0 = Input{x[a_start_], x[delta_start_]};
-        for (int i = 0; i < N_ - 1; i++){ // TODO should be N error due to a?
+        for (int i = 0; i < N_ - 1; i++)
+        { // TODO should be N error due to a?
             State state{x[x_start_ + i], x[y_start_ + i], x[psi_start_ + i], x[v_start_ + i],
                         x[cte_start_ + i], x[epsi_start_ + i]};
             Input input{x[a_start_ + i], x[delta_start_ + i]};
@@ -523,16 +530,19 @@ namespace mpc {
         return ret;
     }
 
-    void MPC::calcCoeffs(const State& state, double& rotation, Eigen::Vector4d& coeffs, bool& forward) const {
+    void MPC::calcCoeffs(const State &state, double &rotation, Eigen::Vector4d &coeffs, bool &forward) const
+    {
         size_t start, end;
         getTrackSection(start, end, state);
 
         double minCost = 1e19;
-        for (double rot = -M_PI_2; rot < 0; rot += M_PI_2 / 3) {
+        for (double rot = -M_PI_2; rot < 0; rot += M_PI_2 / 3)
+        {
             double curCost = minCost + 1;
             bool curForward = true;
             Eigen::Vector4d curCoeffs = interpolate(state, rot, start, end, curCost, curForward);
-            if (curCost < minCost) {
+            if (curCost < minCost)
+            {
                 minCost = curCost;
                 forward = curForward;
                 coeffs = curCoeffs;
@@ -542,40 +552,52 @@ namespace mpc {
         return;
     }
 
-    void MPC::calcState(State& state, const Eigen::Vector4d& coeffs, bool& forward) const {
+    void MPC::calcState(State &state, const Eigen::Vector4d &coeffs, bool &forward) const
+    {
         state.cte = state.y - polyEval(state.x, coeffs);
         double dy = coeffs[1] + 2 * state.x * coeffs[2] + 3 * coeffs[3] * state.x * state.x;
         double dx = 1;
-        if (dy > 100) {
+        if (dy > 100)
+        {
             dy = 100;
-        } else if (dy < -100) {
+        }
+        else if (dy < -100)
+        {
             dy = -100;
         }
 
-        if (forward) {
+        if (forward)
+        {
             state.epsi = state.psi - atan2(dy, dx);
-        } else {
+        }
+        else
+        {
             state.epsi = state.psi - atan2(-dy, -dx);
         }
 
-        if (state.epsi > M_PI) {
+        if (state.epsi > M_PI)
+        {
             state.epsi -= 2 * M_PI;
-        } else if (state.epsi < -M_PI) {
+        }
+        else if (state.epsi < -M_PI)
+        {
             state.epsi += 2 * M_PI;
         }
         return;
     }
 
-    Eigen::Vector4d MPC::interpolate(const State& state, double rotation, size_t start, size_t end, double& cost, bool& forward) const {
+    Eigen::Vector4d MPC::interpolate(const State &state, double rotation, size_t start, size_t end, double &cost, bool &forward) const
+    {
         Eigen::VectorXd xVals(end - start);
         Eigen::VectorXd yVals(end - start);
         double angle = rotation - state.psi;
 
-        for (unsigned int i = start; i < end; i++) {
+        for (unsigned int i = start; i < end; i++)
+        {
             // shift points so that the state is in the origo
             double dx = track_[i].x - state.x;
             double dy = track_[i].y - state.y;
-            
+
             // rotate points so that state.psi = 0 in the new refrence frame
             xVals[i - start] = dx * cos(angle) - dy * sin(angle);
             yVals[i - start] = dx * sin(angle) + dy * cos(angle);
@@ -585,30 +607,39 @@ namespace mpc {
         assert(coeffs.size() == 4);
 
         cost = 0;
-        for (unsigned int i = 0; i < yVals.size(); i++) {
+        for (unsigned int i = 0; i < yVals.size(); i++)
+        {
             cost += distSqrd(yVals[i] - polyEval(xVals[i], coeffs), 0);
         }
 
-        if (xVals[0] <= xVals[xVals.size() - 1]) {
+        if (xVals[0] <= xVals[xVals.size() - 1])
+        {
             forward = true;
-        } else {
+        }
+        else
+        {
             forward = false;
         }
         return coeffs;
     }
 
-    void MPC::model(OptVariables& optVars, const Input& u) {
+    void MPC::model(OptVariables &optVars, const Input &u)
+    {
         model(optVars, u, this->dt_);
     }
 
-    void MPC::model(OptVariables& optVars, const Input& u, double dt){
+    void MPC::model(OptVariables &optVars, const Input &u, double dt)
+    {
         const double maxInc = maxSteeringRotationSpeed_ * dt_;
-        State& state = optVars.x;
+        State &state = optVars.x;
         double delta = u.delta;
-        if (delta < optVars.u.delta - maxInc) {
+        if (delta < optVars.u.delta - maxInc)
+        {
             delta = optVars.u.delta - maxInc;
             ROS_WARN("Unable to turn wheels fast enough");
-        } else if (delta > optVars.u.delta + maxInc) {
+        }
+        else if (delta > optVars.u.delta + maxInc)
+        {
             delta = optVars.u.delta + maxInc;
             ROS_WARN("Unable to turn wheels fast enough");
         }
@@ -619,13 +650,16 @@ namespace mpc {
         state.vel += u.a * dt;
     }
 
-    void MPC::getTrackSection(size_t& start, size_t& end, const State& state) const {
+    void MPC::getTrackSection(size_t &start, size_t &end, const State &state) const
+    {
         double maxLen = 3;
         double minDistSqrd = distSqrd(state.x - track_[0].x, state.y - track_[0].y);
         size_t minIndex = 0;
-        for (unsigned int i = 1; i < track_.size(); i++) {
+        for (unsigned int i = 1; i < track_.size(); i++)
+        {
             double curDistSqrd = distSqrd(state.x - track_[i].x, state.y - track_[i].y);
-            if (curDistSqrd < minDistSqrd) {
+            if (curDistSqrd < minDistSqrd)
+            {
                 minDistSqrd = curDistSqrd;
                 minIndex = i;
             }
@@ -634,25 +668,29 @@ namespace mpc {
         double len = 0;
         size_t frontIndex = minIndex;
         size_t backIndex = minIndex;
-        while(len < maxLen * maxLen && frontIndex < track_.size() - 1 && backIndex > 0) {
+        while (len < maxLen * maxLen && frontIndex < track_.size() - 1 && backIndex > 0)
+        {
             frontIndex++;
             // backIndex--;
             len += distSqrd(track_[frontIndex].x - track_[frontIndex - 1].x, track_[frontIndex].y - track_[frontIndex - 1].y);
             // len += distSqrd(track_[backIndex].x - track_[backIndex + 1].x, track_[backIndex].y - track_[backIndex + 1].y);
         }
         start = backIndex;
-        end = frontIndex;  
-        if (end - start < 4) {
+        end = frontIndex;
+        if (end - start < 4)
+        {
             end = start + 4;
         }
-        if (end >= track_.size()) {
+        if (end >= track_.size())
+        {
             start = 0;
             end = start + 4;
         }
-        assert(end < track_.size());      
+        assert(end < track_.size());
     }
 
-    void MPC::pubTf(const State& state) const {
+    void MPC::pubTf(const State &state) const
+    {
         static tf2_ros::TransformBroadcaster br;
 
         geometry_msgs::TransformStamped transformStamped;

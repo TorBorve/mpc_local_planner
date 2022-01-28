@@ -1,7 +1,8 @@
 #include "mpc_local_planner/RosMpc.h"
 #include <ros/ros.h>
 
-int main(int argc, char** argv){
+int main(int argc, char **argv)
+{
     ros::init(argc, argv, "MPC");
     ROS_INFO("MPC node intitialized");
 
@@ -14,7 +15,8 @@ int main(int argc, char** argv){
     ros::Duration(2).sleep(); // sleep for two sec
 
     ros::Rate loopRate(rate);
-    while(ros::ok()) {
+    while (ros::ok())
+    {
         ros::spinOnce();
         mpc.solve();
         loopRate.sleep();
