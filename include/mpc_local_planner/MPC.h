@@ -47,7 +47,7 @@ namespace mpc
         MPCReturn solve(const OptVariables &optVars);
 
         /// @brief solve function for mpc. Uses states and coefficients of a third order polynomial
-        ///         that is threated at desired trajectory.
+        ///        that is threated at desired trajectory.
         /// @param[in] optVars the state of the car. (position, velocity, steering angle, ...)
         /// @param[in] coeffs coefficients of third degree polynomial. Used as desired trajectory.
         /// @return solution from mpc. See definition of MPCReturn.
@@ -71,6 +71,9 @@ namespace mpc
         void model(OptVariables &optVars, const Input &u, double dt);
 
     private:
+        /// @brief enum for different solvers available
+        enum class Solver {CppAD = 0, Acados = 1};
+
         /// @brief calculates coefficients of third order polynomial that fits the disired trajectory best.
         /// @param[in] state current state of the car.
         /// @param[in] rotation refrence frame roation relative too the car.
@@ -117,6 +120,20 @@ namespace mpc
         /// @param[in] state the state give to the mpc
         void pubTf(const State &state) const;
 
+        /// @brief solve function for mpc. Uses states and coefficients of a third order polynomial
+        ///        that is threated at desired trajectory. CppAD is used to solve the nlp.
+        /// @param[in] optVars the state of the car. (position, velocity, steering angle, ...)
+        /// @param[in] coeffs coefficients of third degree polynomial. Used as desired trajectory.
+        /// @return solution from mpc. See definition of MPCReturn.
+        MPCReturn solveCppAD(const OptVariables &optVars, const Eigen::Vector4d &coeffs);
+
+        /// @brief solve function for mpc. Uses states and coefficients of a third order polynomial
+        ///        that is threated at desired trajectory. Acados library is used to solve the nlp.
+        /// @param[in] optVars the state of the car. (position, velocity, steering angle, ...)
+        /// @param[in] coeffs coefficients of third degree polynomial. Used as desired trajectory.
+        /// @return solution from mpc. See definition of MPCReturn.
+        MPCReturn solveAcados(const OptVariables &optVars, const Eigen::Vector4d &coeffs);
+
         /// @brief discrete points representing desired trajectory
         std::vector<Point> track_;
 
@@ -143,6 +160,9 @@ namespace mpc
 
         /// @brief maxSteeringRotationsSpeed the maximum speed the wheels can turn at. Given in [rad/s].
         double maxSteeringRotationSpeed_;
+
+        /// @brief what solver should be used when solving the nlp.
+        Solver solver_ = Solver::Acados;
 
         /// @brief start index for x variables in mpc variables
         const size_t x_start_;
