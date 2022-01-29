@@ -16,7 +16,7 @@ input_topic: "/cmd_vel"
 # the mpc will use a internal hard coded path.
 path_topic: "/path"
 
-# The ""global"" frame. Typically map or odom. 
+# The ""global"" frame. Typically map or odom.
 map_frame: "odom"
 
 # The frame where the car is located. The mpc model assumes that this is the middel of the rear axle.
