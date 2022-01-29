@@ -4,22 +4,6 @@ project(mpc_local_planner)
 # CHANGE TO YOUR PATH TO ACADOS
 set(ACADOS_LIB "/home/torb/libraries/acados")
 
-execute_process(
-  COMMAND ${ACADOS_LIB}/build/env/bin/python3 ${PROJECT_SOURCE_DIR}/acados/main.py 
-  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/acados
-  RESULT_VARIABLE RET_PROCESS
-)
-
-# add_custom_target(gen_code_script ALL
-#   COMMAND ${ACADOS_LIB}/build/env/bin/python3 ${PROJECT_SOURCE_DIR}/acados/main.py 
-#   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/acados
-# )
-
-if((NOT RET_PROCESS) EQUAL "0")
-    message( FATAL_ERROR "could not generate c_code from acados/main.py.\
-    Check the location of your virtual enviroment for acaods. Return: " ${RET_PROCESS})
-endif()
-
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
@@ -70,17 +54,24 @@ link_directories(
   ${ACADOS_LIB}/lib
 )
 
-# FILE(GLOB SOURCES "src/*.cpp")
+add_custom_command(
+  OUTPUT gen_acados_c_code
+  COMMAND ${ACADOS_LIB}/build/env/bin/python3 main.py 
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/acados
+  DEPENDS ${PROJECT_SOURCE_DIR}/acados/main.py
+)
 add_custom_target(
   acados_generated_lib
-  COMMAND make shared_lib
+  COMMAND $(MAKE) shared_lib
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/acados/c_generated_code/
+  DEPENDS gen_acados_c_code
 )
 
 add_library( myacadoslib SHARED IMPORTED )
 set_target_properties( myacadoslib PROPERTIES IMPORTED_LOCATION ${PROJECT_SOURCE_DIR}/acados/c_generated_code/libacados_ocp_solver_bicycle_model.so )
 
-add_executable(main src/main.cpp src/utilities.cpp src/MPC.cpp src/bounds.cpp src/RosMpc.cpp src/solverCppAD.cpp)
+FILE(GLOB SOURCES "src/*.cpp")
+add_executable(main ${SOURCES})
 target_link_libraries(main ipopt myacadoslib acados hpipm blasfeo m ${catkin_LIBRARIES})
 add_dependencies(main acados_generated_lib)
 
