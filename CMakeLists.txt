@@ -56,9 +56,9 @@ link_directories(
 
 add_custom_command(
   OUTPUT gen_acados_c_code
-  COMMAND ${ACADOS_LIB}/build/env/bin/python3 main.py 
+  COMMAND ${ACADOS_LIB}/build/env/bin/python3 genCode.py 
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/acados
-  DEPENDS ${PROJECT_SOURCE_DIR}/acados/main.py
+  DEPENDS ${PROJECT_SOURCE_DIR}/acados/genCode.py
 )
 add_custom_target(
   acados_generated_lib
