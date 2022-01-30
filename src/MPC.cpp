@@ -461,26 +461,26 @@ namespace mpc
 
     MPCReturn MPC::solveAcados(const OptVariables &optVars, const Eigen::Vector4d &coeffs)
     {
-        auto start = std::chrono::high_resolution_clock::now();
-        bicycle_model_solver_capsule *acados_ocp_capsule = bicycle_model_acados_create_capsule();
+        // static is used so that new and delete is not called every time. 
+        static bicycle_model_solver_capsule *acados_ocp_capsule = bicycle_model_acados_create_capsule();
         // there is an opportunity to change the number of shooting intervals in C without new code generation
-        int N = BICYCLE_MODEL_N;
+        static int N = BICYCLE_MODEL_N;
         // allocate the array and fill it accordingly
-        double *new_time_steps = NULL;
-        int status = bicycle_model_acados_create_with_discretization(acados_ocp_capsule, N, new_time_steps);
-
+        static double *new_time_steps = NULL;
+        static int status = bicycle_model_acados_create_with_discretization(acados_ocp_capsule, N, new_time_steps);
+        static ocp_nlp_config *nlp_config = bicycle_model_acados_get_nlp_config(acados_ocp_capsule);
+        static ocp_nlp_dims *nlp_dims = bicycle_model_acados_get_nlp_dims(acados_ocp_capsule);
+        static ocp_nlp_in *nlp_in = bicycle_model_acados_get_nlp_in(acados_ocp_capsule);
+        static ocp_nlp_out *nlp_out = bicycle_model_acados_get_nlp_out(acados_ocp_capsule);
+        static ocp_nlp_solver *nlp_solver = bicycle_model_acados_get_nlp_solver(acados_ocp_capsule);
+        static void *nlp_opts = bicycle_model_acados_get_nlp_opts(acados_ocp_capsule);
+        
+        auto start = std::chrono::high_resolution_clock::now();
         if (status)
         {
             printf("bicycle_model_acados_create() returned status %d. Exiting.\n", status);
             exit(1);
         }
-
-        ocp_nlp_config *nlp_config = bicycle_model_acados_get_nlp_config(acados_ocp_capsule);
-        ocp_nlp_dims *nlp_dims = bicycle_model_acados_get_nlp_dims(acados_ocp_capsule);
-        ocp_nlp_in *nlp_in = bicycle_model_acados_get_nlp_in(acados_ocp_capsule);
-        ocp_nlp_out *nlp_out = bicycle_model_acados_get_nlp_out(acados_ocp_capsule);
-        ocp_nlp_solver *nlp_solver = bicycle_model_acados_get_nlp_solver(acados_ocp_capsule);
-        void *nlp_opts = bicycle_model_acados_get_nlp_opts(acados_ocp_capsule);
 
         // initial condition
         int idxbx0[NBX0];
@@ -543,7 +543,7 @@ namespace mpc
 
         // solve ocp in loop
         int rti_phase = 0;
-
+        
         for (int ii = 0; ii < NTIMINGS; ii++)
         {
             // initialize solution
