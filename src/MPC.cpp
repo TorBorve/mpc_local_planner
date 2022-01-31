@@ -578,6 +578,27 @@ namespace mpc
         else
         {
             ROS_ERROR("bicycle_model_acados_solve() failed with status %d.\n", status);
+            // delete alocated memory to solver pointers
+            // free solver
+            status = bicycle_model_acados_free(acados_ocp_capsule);
+            if (status) {
+                ROS_ERROR("bicycle_model_acados_free() returned status %d. \n", status);
+            }
+            // free solver capsule
+            status = bicycle_model_acados_free_capsule(acados_ocp_capsule);
+            if (status) {
+                ROS_ERROR("bicycle_model_acados_free_capsule() returned status %d. \n", status);
+            }
+            // reinit variables
+            acados_ocp_capsule = bicycle_model_acados_create_capsule();
+            new_time_steps = NULL;
+            status = bicycle_model_acados_create_with_discretization(acados_ocp_capsule, N, new_time_steps);
+            nlp_config = bicycle_model_acados_get_nlp_config(acados_ocp_capsule);
+            nlp_dims = bicycle_model_acados_get_nlp_dims(acados_ocp_capsule);
+            nlp_in = bicycle_model_acados_get_nlp_in(acados_ocp_capsule);
+            nlp_out = bicycle_model_acados_get_nlp_out(acados_ocp_capsule);
+            nlp_solver = bicycle_model_acados_get_nlp_solver(acados_ocp_capsule);
+            nlp_opts = bicycle_model_acados_get_nlp_opts(acados_ocp_capsule);
         }
 
         auto end = std::chrono::high_resolution_clock::now();
