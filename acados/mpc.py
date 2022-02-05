@@ -5,21 +5,19 @@ import scipy.linalg
 
 def bicycleModel():
     modelName = "bicycle_model"
-
+    #distance between front and rear axle
     Lf = 2.65
     #states
     x1 = SX.sym("x1") # x position
     y1 = SX.sym("y1") # y position
     psi = SX.sym("psi") # angle of car
     v = SX.sym("v") # velocity
-    # cte = SX.sym("cte") # cross track error
-    # epsi = SX.sym("epsi") # yaw error
     delta = SX.sym("delta") # steering angle
     a = SX.sym("a") # acceleration
 
     x = vertcat(x1, y1, psi, v, delta)
 
-    deltaDotInput = SX.sym("delta_dot")
+    deltaDotInput = SX.sym("delta_dot_input")
 
 
     u = vertcat(deltaDotInput, a)
@@ -83,9 +81,9 @@ def ocpSolver():
     ny = nx + nu
 
     ocp.cost.cost_type = "NONLINEAR_LS"
-    ocp.cost.yref = np.array([0, 0, 4, 0, 0, 0])
+    ocp.cost.yref = np.array([0, 0, 7.5, 0, 0, 0])
     ocp.model.cost_y_expr = costFunc(ocp.model)
-    ocp.cost.W = 2*np.diag([10, 100, 1, 0.1, 0.1, 0.1])
+    ocp.cost.W = 2*np.diag([500, 500, 50, 25, 200, 25])
 
     aMax = 1
     deltaMax = 0.57
@@ -104,10 +102,10 @@ def ocpSolver():
     param = np.array([0, -1, 0, 0.002])
     ocp.parameter_values = param
 
-    ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM" #"FULL_CONDENSING_QPOASES" "FULL_CONDENSING_HPIPM"
+    ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM" #"PARTIAL_CONDENSING_HPIPM" "FULL_CONDENSING_QPOASES" 
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
     ocp.solver_options.integrator_type = "ERK"
-    ocp.solver_options.nlp_solver_type = "SQP"
+    ocp.solver_options.nlp_solver_type = "SQP_RTI"
     ocp.solver_options.qp_solver_cond_N = N
     ocp.solver_options.tf = Tf
     # ocp.solver_options.qp_solver_iter_max = 1000
