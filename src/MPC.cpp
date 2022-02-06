@@ -220,12 +220,12 @@ namespace mpc
         if (delta < optVars.u.delta - maxInc)
         {
             delta = optVars.u.delta - maxInc;
-            ROS_WARN("Unable to turn wheels fast enough");
+            ROS_WARN("Unable to turn wheels fast enough: %.2f", optVars.u.delta - delta);
         }
         else if (delta > optVars.u.delta + maxInc)
         {
             delta = optVars.u.delta + maxInc;
-            ROS_WARN("Unable to turn wheels fast enough");
+            ROS_WARN("Unable to turn wheels fast enough: %.2f", optVars.u.delta - delta);
         }
         optVars.u.delta = delta;
         state.x += state.vel * cos(state.psi) * dt;
@@ -502,16 +502,16 @@ namespace mpc
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
         MPCReturn ret;
-        ret.mpcHorizon.resize(N - 1);
-        ret.u0 = Input{utraj[1], utraj[0]};
-        for (int i = 0; i < N - 1; i++)
+        ret.mpcHorizon.resize(N);
+        ret.u0 = Input{utraj[1], xtraj[4 + NX]};
+        for (int i = 0; i < N; i++)
         {
             State state{xtraj[0 + NX * i], xtraj[1 + NX * i], xtraj[2 + NX * i], xtraj[3 + NX * i], 0, 0};
-            Input input{utraj[1 + NU * i], utraj[0 + NU * i]};
+            Input input{utraj[1 + NU * i], xtraj[4 + NX * i]};
             ret.mpcHorizon.at(i) = OptVariables{state, input};
         }
-        ret.cost = 0;
-        ret.success = true;
+        ret.cost = -1;
+        ret.success = status == ACADOS_SUCCESS;
         ret.computeTime = duration.count();
         return ret;
     }
