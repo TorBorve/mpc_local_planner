@@ -220,12 +220,12 @@ namespace mpc
         if (delta < optVars.u.delta - maxInc)
         {
             delta = optVars.u.delta - maxInc;
-            ROS_WARN("Unable to turn wheels fast enough: %.2f", optVars.u.delta - delta);
+            ROS_WARN("Unable to turn wheels fast enough");
         }
         else if (delta > optVars.u.delta + maxInc)
         {
             delta = optVars.u.delta + maxInc;
-            ROS_WARN("Unable to turn wheels fast enough: %.2f", optVars.u.delta - delta);
+            ROS_WARN("Unable to turn wheels fast enough");
         }
         optVars.u.delta = delta;
         state.x += state.vel * cos(state.psi) * dt;
@@ -423,96 +423,6 @@ namespace mpc
     MPCReturn MPC::solveAcados(const OptVariables &optVars, const Eigen::Vector4d &coeffs)
     {
         static AcadosSolver solver{optVars};
-
-        int N = BICYCLE_MODEL_N;
-        auto start = std::chrono::high_resolution_clock::now();
-
-        // initial condition
-        int idxbx0[NBX0];
-        idxbx0[0] = 0;
-        idxbx0[1] = 1;
-        idxbx0[2] = 2;
-        idxbx0[3] = 3;
-        idxbx0[4] = 4;
-
-        double lbx0[NBX0];
-        double ubx0[NBX0];
-        lbx0[0] = optVars.x.x;
-        ubx0[0] = optVars.x.x;
-        lbx0[1] = optVars.x.y;
-        ubx0[1] = optVars.x.y;
-        lbx0[2] = optVars.x.psi;
-        ubx0[2] = optVars.x.psi;
-        lbx0[3] = optVars.x.vel;
-        ubx0[3] = optVars.x.vel;
-        lbx0[4] = optVars.u.delta;
-        ubx0[4] = optVars.u.delta;
-
-        ocp_nlp_constraints_model_set(solver.config, solver.dims, solver.in, 0, "idxbx", idxbx0);
-        ocp_nlp_constraints_model_set(solver.config, solver.dims, solver.in, 0, "lbx", lbx0);
-        ocp_nlp_constraints_model_set(solver.config, solver.dims, solver.in, 0, "ubx", ubx0);
-
-        // set parameters
-        double p[NP];
-        p[0] = coeffs[0];
-        p[1] = coeffs[1];
-        p[2] = coeffs[2];
-        p[3] = coeffs[3];
-
-        for (int ii = 0; ii <= N; ii++)
-        {
-            bicycle_model_acados_update_params(solver.capsule, ii, p, NP);
-        }
-
-        // prepare evaluation
-        int NTIMINGS = 1;
-        double min_time = 1e12;
-        double kkt_norm_inf;
-        double elapsed_time;
-        int sqp_iter;
-
-        double xtraj[NX * (N + 1)];
-        double utraj[NU * N];
-
-        // solve ocp in loop
-        int rti_phase = 0;
-        int status;
-
-        for (int ii = 0; ii < NTIMINGS; ii++)
-        {
-            ocp_nlp_solver_opts_set(solver.config, solver.opts, "rti_phase", &rti_phase);
-            status = bicycle_model_acados_solve(solver.capsule);
-            ocp_nlp_get(solver.config, solver.solver, "time_tot", &elapsed_time);
-            min_time = MIN(elapsed_time, min_time);
-        }
-
-        // get the solution
-        for (int ii = 0; ii <= solver.dims->N; ii++)
-            ocp_nlp_out_get(solver.config, solver.dims, solver.out, ii, "x", &xtraj[ii * NX]);
-        for (int ii = 0; ii < solver.dims->N; ii++)
-            ocp_nlp_out_get(solver.config, solver.dims, solver.out, ii, "u", &utraj[ii * NU]);
-
-        if (status != ACADOS_SUCCESS)
-        {
-            ROS_ERROR("bicycle_model_acados_solve() failed with status %d.\n", status);
-            solver.reInit(optVars);
-        }
-
-        auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
-        MPCReturn ret;
-        ret.mpcHorizon.resize(N);
-        ret.u0 = Input{utraj[1], xtraj[4 + NX]};
-        for (int i = 0; i < N; i++)
-        {
-            State state{xtraj[0 + NX * i], xtraj[1 + NX * i], xtraj[2 + NX * i], xtraj[3 + NX * i], 0, 0};
-            Input input{utraj[1 + NU * i], xtraj[4 + NX * i]};
-            ret.mpcHorizon.at(i) = OptVariables{state, input};
-        }
-        ret.cost = -1;
-        ret.success = status == ACADOS_SUCCESS;
-        ret.computeTime = duration.count();
-        return ret;
+        return solver.solve(optVars, coeffs);
     }
 }
