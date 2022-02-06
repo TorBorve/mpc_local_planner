@@ -2,7 +2,7 @@
 #include "mpc_local_planner/bounds.h"
 #include "mpc_local_planner/utilities.h"
 #include "mpc_local_planner/solverCppAD.h"
-#include "mpc_local_planner/solverAcados.h"
+#include "mpc_local_planner/AcadosSolver.h"
 
 #include <cppad/cppad.hpp>
 #include <cppad/ipopt/solve.hpp>
@@ -11,46 +11,6 @@
 #include <ros/ros.h>
 
 #include <fstream>
-
-// standard
-#include <stdio.h>
-#include <stdlib.h>
-// acados
-#include "acados/utils/print.h"
-#include "acados/utils/math.h"
-#include "acados_c/ocp_nlp_interface.h"
-#include "acados_c/external_function_interface.h"
-#include "acados_solver_bicycle_model.h"
-
-#define NX BICYCLE_MODEL_NX
-#define NZ BICYCLE_MODEL_NZ
-#define NU BICYCLE_MODEL_NU
-#define NP BICYCLE_MODEL_NP
-#define NBX BICYCLE_MODEL_NBX
-#define NBX0 BICYCLE_MODEL_NBX0
-#define NBU BICYCLE_MODEL_NBU
-#define NSBX BICYCLE_MODEL_NSBX
-#define NSBU BICYCLE_MODEL_NSBU
-#define NSH BICYCLE_MODEL_NSH
-#define NSG BICYCLE_MODEL_NSG
-#define NSPHI BICYCLE_MODEL_NSPHI
-#define NSHN BICYCLE_MODEL_NSHN
-#define NSGN BICYCLE_MODEL_NSGN
-#define NSPHIN BICYCLE_MODEL_NSPHIN
-#define NSBXN BICYCLE_MODEL_NSBXN
-#define NS BICYCLE_MODEL_NS
-#define NSN BICYCLE_MODEL_NSN
-#define NG BICYCLE_MODEL_NG
-#define NBXN BICYCLE_MODEL_NBXN
-#define NGN BICYCLE_MODEL_NGN
-#define NY0 BICYCLE_MODEL_NY0
-#define NY BICYCLE_MODEL_NY
-#define NYN BICYCLE_MODEL_NYN
-#define NH BICYCLE_MODEL_NH
-#define NPHI BICYCLE_MODEL_NPHI
-#define NHN BICYCLE_MODEL_NHN
-#define NPHIN BICYCLE_MODEL_NPHIN
-#define NR BICYCLE_MODEL_NR
 
 namespace mpc
 {
@@ -463,26 +423,8 @@ namespace mpc
     MPCReturn MPC::solveAcados(const OptVariables &optVars, const Eigen::Vector4d &coeffs)
     {
         static AcadosSolver solver{optVars};
-        int N = BICYCLE_MODEL_N;
-        // // static is used so that new and delete is not called every time.
-        // static bicycle_model_solver_capsule *acados_ocp_capsule = bicycle_model_acados_create_capsule();
-        // // there is an opportunity to change the number of shooting intervals in C without new code generation
-        // static int N = BICYCLE_MODEL_N;
-        // // allocate the array and fill it accordingly
-        // static double *new_time_steps = NULL;
-        // static int status = bicycle_model_acados_create_with_discretization(acados_ocp_capsule, N, new_time_steps);
-        // static ocp_nlp_config *nlp_config = bicycle_model_acados_get_nlp_config(acados_ocp_capsule);
-        // static ocp_nlp_dims *nlp_dims = bicycle_model_acados_get_nlp_dims(acados_ocp_capsule);
-        // static ocp_nlp_in *nlp_in = bicycle_model_acados_get_nlp_in(acados_ocp_capsule);
-        // static ocp_nlp_out *nlp_out = bicycle_model_acados_get_nlp_out(acados_ocp_capsule);
-        // static ocp_nlp_solver *nlp_solver = bicycle_model_acados_get_nlp_solver(acados_ocp_capsule);
-        // static void *nlp_opts = bicycle_model_acados_get_nlp_opts(acados_ocp_capsule);
 
-        // if (status)
-        // {
-        //     printf("bicycle_model_acados_create() returned status %d. Exiting.\n", status);
-        //     exit(1);
-        // }
+        int N = BICYCLE_MODEL_N;
         auto start = std::chrono::high_resolution_clock::now();
 
         // initial condition
@@ -510,18 +452,6 @@ namespace mpc
         ocp_nlp_constraints_model_set(solver.config, solver.dims, solver.in, 0, "lbx", lbx0);
         ocp_nlp_constraints_model_set(solver.config, solver.dims, solver.in, 0, "ubx", ubx0);
 
-        // initialization for state values
-        // double x_init[NX];
-        // x_init[0] = 0.0;
-        // x_init[1] = 0.0;
-        // x_init[2] = 0.0;
-        // x_init[3] = 0.0;
-        // x_init[4] = 0.0;
-
-        // // initial value for control input
-        // double u0[NU];
-        // u0[0] = 0.0;
-        // u0[1] = 0.0;
         // set parameters
         double p[NP];
         p[0] = coeffs[0];
@@ -550,60 +480,22 @@ namespace mpc
 
         for (int ii = 0; ii < NTIMINGS; ii++)
         {
-            // initialize solution
-            // for (int i = 0; i <= nlp_dims->N; i++)
-            // {
-            //     ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, i, "x", x_init);
-            //     ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, i, "u", u0);
-            // }
             ocp_nlp_solver_opts_set(solver.config, solver.opts, "rti_phase", &rti_phase);
             status = bicycle_model_acados_solve(solver.capsule);
             ocp_nlp_get(solver.config, solver.solver, "time_tot", &elapsed_time);
             min_time = MIN(elapsed_time, min_time);
         }
 
-        /* print solution and statistics */
+        // get the solution
         for (int ii = 0; ii <= solver.dims->N; ii++)
             ocp_nlp_out_get(solver.config, solver.dims, solver.out, ii, "x", &xtraj[ii * NX]);
         for (int ii = 0; ii < solver.dims->N; ii++)
             ocp_nlp_out_get(solver.config, solver.dims, solver.out, ii, "u", &utraj[ii * NU]);
 
-        // printf("\n--- xtraj ---\n");
-        // d_print_exp_tran_mat( NX, N+1, xtraj, NX);
-        // printf("\n--- utraj ---\n");
-        // d_print_exp_tran_mat( NU, N, utraj, NU );
-
-        // printf("\nsolved ocp %d times, solution printed above\n\n", NTIMINGS);
-
-        if (status == ACADOS_SUCCESS)
-        {
-            ROS_INFO("bicycle_model_acados_solve(): SUCCESS!\n");
-        }
-        else
+        if (status != ACADOS_SUCCESS)
         {
             ROS_ERROR("bicycle_model_acados_solve() failed with status %d.\n", status);
-            // delete alocated memory to solver pointers
             solver.reInit(optVars);
-            // free solver
-            // status = bicycle_model_acados_free(acacapsule);
-            // if (status) {
-            //     ROS_ERROR("bicycle_model_acados_free() returned status %d. \n", status);
-            // }
-            // // free solver capsule
-            // status = bicycle_model_acados_free_capsule(acados_ocp_capsule);
-            // if (status) {
-            //     ROS_ERROR("bicycle_model_acados_free_capsule() returned status %d. \n", status);
-            // }
-            // // reinit variables
-            // acados_ocp_capsule = bicycle_model_acados_create_capsule();
-            // new_time_steps = NULL;
-            // status = bicycle_model_acados_create_with_discretization(acados_ocp_capsule, N, new_time_steps);
-            // nlp_config = bicycle_model_acados_get_nlp_config(acados_ocp_capsule);
-            // nlp_dims = bicycle_model_acados_get_nlp_dims(acados_ocp_capsule);
-            // nlp_in = bicycle_model_acados_get_nlp_in(acados_ocp_capsule);
-            // nlp_out = bicycle_model_acados_get_nlp_out(acados_ocp_capsule);
-            // nlp_solver = bicycle_model_acados_get_nlp_solver(acados_ocp_capsule);
-            // nlp_opts = bicycle_model_acados_get_nlp_opts(acados_ocp_capsule);
         }
 
         auto end = std::chrono::high_resolution_clock::now();
