@@ -1,4 +1,5 @@
 #include "mpc_local_planner/RosMpc.h"
+#include "mpc_local_planner/utilities.h"
 #include <ros/ros.h>
 
 int main(int argc, char **argv)
@@ -18,7 +19,12 @@ int main(int argc, char **argv)
     while (ros::ok())
     {
         ros::spinOnce();
-        mpc.solve();
+        auto start = std::chrono::high_resolution_clock::now();
+        auto ret = mpc.solve();
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        LOG_DEBUG("Total time: %ld[ms]", duration.count());
+        LOG_DEBUG("Time diff: %f[ms]", duration.count() - ret.computeTime);
         loopRate.sleep();
     }
     return 0;
