@@ -37,8 +37,8 @@ namespace mpc
         if (status)
         {
             std::stringstream error;
-            error << "bicycle_model_acados_create() returned status: " << std::to_string(status) << ". Exiting.";
-            ROS_ERROR(error.str().c_str());
+            error << "bicycle_model_acados_create() returned status: " << status << ". Exiting.";
+            ROS_ERROR_STREAM(error.str());
             throw std::runtime_error{error.str()};
         }
 
