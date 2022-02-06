@@ -48,24 +48,67 @@
 
 namespace mpc
 {
+    /// @brief Class for acados solver. Using functions and more for the generated c code.
     class AcadosSolver
     {
     public:
+        /// @brief consturctor used to allocated memory and initialize
+        /// @param[in] optVars current state and inputs
         AcadosSolver(const OptVariables &optVars);
+
+        /// @brief destructor used to free allocated memory
         ~AcadosSolver();
+
+        /// @brief reinitalize solver.
+        /// @param[in] optVars current state and inputs. Used in init.
         void reInit(const OptVariables &optVars);
 
-        bicycle_model_solver_capsule *capsule;
-        ocp_nlp_config *config;
-        ocp_nlp_dims *dims;
-        ocp_nlp_in *in;
-        ocp_nlp_out *out;
-        ocp_nlp_solver *solver;
-        void *opts;
+        /// @brief set constraints for the inital state
+        /// @param[in] optVars the current state and inputs
+        void setInitCondition(const OptVariables &optVars);
+
+        /// @brief set parameters used by solver. In this case it is the coefficients for the interpolated third degree polynomial
+        /// @param[in] coeffs the coeffs for polynomial defining track
+        void setParams(const Eigen::Vector4d &coeffs);
+
+        /// @brief set the initalguess for states and inputs in solver. Here we set them to the current state and u = 0
+        /// @param[in] optVars the current positon and inputs.
+        void setInitGuess(const OptVariables &optVars);
+
+        /// @brief solve function for solving NMPC
+        /// @param[in] optVars current state and inputs.
+        /// @param[in] coeffs coefficients for polynomial defining track
+        /// @return the optimal solution as MPCReturn type.
+        MPCReturn solve(const OptVariables &optVars, const Eigen::Vector4d &coeffs);
 
     private:
-        void init(const OptVariables &optVars);
+        /// @brief initalize class
+        /// @param[in] optVars current state and inputs
+        void init();
+
+        /// @brief free allocated memory in class
         void freeAllocated();
+
+        /// @brief solver capsule from acados
+        bicycle_model_solver_capsule *capsule_;
+
+        /// @brief config from capsule
+        ocp_nlp_config *config_;
+
+        /// @brief dimensions of nlp
+        ocp_nlp_dims *dims_;
+
+        /// @brief nlp in
+        ocp_nlp_in *in_;
+
+        /// @brief nlp out
+        ocp_nlp_out *out_;
+
+        /// @brief nlp_solver
+        ocp_nlp_solver *solver_;
+
+        /// @brief options pointer
+        void *opts_;
     };
 }
 
