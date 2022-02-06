@@ -38,7 +38,6 @@ catkin_package(
 
 include_directories(
   include
-  tests
   ${catkin_INCLUDE_DIRS}
   ${ACADOS_LIB}/include/acados
   ${ACADOS_LIB}/include/blasfeo/include
@@ -76,6 +75,9 @@ add_executable(main ${SOURCES})
 target_link_libraries(main ipopt myacadoslib acados hpipm blasfeo m ${catkin_LIBRARIES})
 add_dependencies(main acados_generated_lib)
 
-add_executable(testMpc tests/main.cpp src/bounds.cpp src/utilities.cpp src/MPC.cpp src/solverCppAD.cpp)
+include_directories(
+  tests
+)
+add_executable(testMpc tests/main.cpp src/bounds.cpp src/utilities.cpp src/MPC.cpp src/solverCppAD.cpp src/AcadosSolver.cpp)
 target_link_libraries(testMpc ipopt myacadoslib acados hpipm blasfeo m ${catkin_LIBRARIES})
 add_dependencies(testMpc acados_generated_lib) 
