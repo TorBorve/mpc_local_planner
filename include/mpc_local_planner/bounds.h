@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MPC_BOUNDS_H_
+#define MPC_BOUNDS_H_
 
 #include <vector>
 
@@ -46,3 +47,5 @@ namespace mpc
     /// @return std::vector with lower bounds
     std::vector<double> getLower(const BoundVector &vec);
 }
+
+#endif

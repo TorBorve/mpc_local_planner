@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MPC_MPC_H_
+#define MPC_MPC_H_
 
 #include <eigen3/Eigen/Core>
 #include <cppad/cppad.hpp>
@@ -72,7 +73,11 @@ namespace mpc
 
     private:
         /// @brief enum for different solvers available
-        enum class Solver {CppAD = 0, Acados = 1};
+        enum class Solver
+        {
+            CppAD = 0,
+            Acados = 1
+        };
 
         /// @brief calculates coefficients of third order polynomial that fits the disired trajectory best.
         /// @param[in] state current state of the car.
@@ -190,3 +195,5 @@ namespace mpc
     };
 
 }
+
+#endif

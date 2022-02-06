@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MPC_TYPES_H_
+#define MPC_TYPES_H_ 
 
 #include <vector>
 #include <eigen3/Eigen/Core>
@@ -164,3 +165,5 @@ namespace mpc
         double y;
     };
 }
+
+#endif

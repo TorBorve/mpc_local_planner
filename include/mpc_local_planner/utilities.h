@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MPC_UTILITIES_H_
+#define MPC_UTILITIES_H_
 
 #include "mpc_local_planner/MPC.h"
 #include "mpc_local_planner/bounds.h"
@@ -112,3 +113,5 @@ namespace mpc
     /// @return mpc::Point object with the x and y values of p.
     Point toPoint(const geometry_msgs::Point &p);
 }
+
+#endif

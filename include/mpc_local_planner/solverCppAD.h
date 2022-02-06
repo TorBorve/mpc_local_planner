@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MPC_SOLVER_CPPAD_H_
+#define MPC_SOLVER_CPPAD_H_
 
 #include <cppad/cppad.hpp>
 #include <cppad/ipopt/solve.hpp>
@@ -35,3 +36,5 @@ namespace mpc
         const double ref_v = 10.0;
     };
 }
+
+#endif

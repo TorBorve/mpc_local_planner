@@ -1,4 +1,6 @@
-#pragma once
+#ifndef MPC_ROS_MPC_H_
+#define MPC_ROS_MPC_H_
+
 #include "mpc_local_planner/MPC.h"
 
 #include <ros/ros.h>
@@ -100,3 +102,5 @@ namespace mpc
         double wheelbase_;
     };
 }
+
+#endif
