@@ -33,6 +33,7 @@ namespace mpc
         idxbx0[2] = 2;
         idxbx0[3] = 3;
         idxbx0[4] = 4;
+        idxbx0[5] = 5;
 
         double lbx0[NBX0];
         double ubx0[NBX0];
@@ -46,6 +47,8 @@ namespace mpc
         ubx0[3] = optVars.x.vel;
         lbx0[4] = optVars.u.delta;
         ubx0[4] = optVars.u.delta;
+        lbx0[5] = optVars.u.a;
+        ubx0[5] = optVars.u.a;
 
         ocp_nlp_constraints_model_set(config_, dims_, in_, 0, "idxbx", idxbx0);
         ocp_nlp_constraints_model_set(config_, dims_, in_, 0, "lbx", lbx0);
@@ -66,8 +69,10 @@ namespace mpc
         }
     }
 
-    MPCReturn AcadosSolver::solve(const OptVariables &optVars, const Eigen::Vector4d &coeffs)
+    MPCReturn AcadosSolver::solve(OptVariables &optVars, const Eigen::Vector4d &coeffs)
     {
+        static double prevThrottle = 0.0;
+        optVars.u.a = prevThrottle;
         int N = dims_->N;
         auto start = std::chrono::high_resolution_clock::now();
 
@@ -107,11 +112,12 @@ namespace mpc
 
         MPCReturn ret;
         ret.mpcHorizon.resize(N);
-        ret.u0 = Input{utraj[1], xtraj[4 + NX]};
+        ret.u0 = Input{xtraj[5 + NX], xtraj[4 + NX]};
+        prevThrottle = ret.u0.a;
         for (int i = 0; i < N; i++)
         {
             State state{xtraj[0 + NX * i], xtraj[1 + NX * i], xtraj[2 + NX * i], xtraj[3 + NX * i], 0, 0};
-            Input input{utraj[1 + NU * i], xtraj[4 + NX * i]};
+            Input input{xtraj[5 + NX * i], xtraj[4 + NX * i]};
             ret.mpcHorizon.at(i) = OptVariables{state, input};
         }
         ret.cost = -1;
@@ -129,6 +135,7 @@ namespace mpc
         x_init[2] = optVars.x.psi;
         x_init[3] = optVars.x.vel;
         x_init[4] = optVars.u.delta;
+        x_init[5] = 0;
 
         // initial value for control input
         double u0[NU];
