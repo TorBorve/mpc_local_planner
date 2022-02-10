@@ -61,6 +61,7 @@ namespace mpc
 
         /// @brief publicher for the steering angle.
         ros::Publisher steeringPub_;
+        ros::Publisher throttlePub_;
 
         /// @brief subscriber to the twist message send by the car.
         ros::Subscriber twistSub_;

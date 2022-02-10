@@ -21,7 +21,7 @@ def plot(shootingNodes, simX):
 def main():
     ocp_solver = mpc.ocpSolver()
     ocp_integrator = AcadosSimSolver(ocp_solver.acados_ocp, 'acados_ocp_' + ocp_solver.acados_ocp.model.name + '.json')
-    Nsim = 100
+    Nsim = 200
     nx = ocp_solver.acados_ocp.model.x.size()[0]
     nu = ocp_solver.acados_ocp.model.u.size()[0]
     ny = nx + nu
@@ -31,7 +31,7 @@ def main():
     simX = np.ndarray((Nsim + 1, nx))
     simU = np.ndarray((Nsim, nu))
 
-    x0 = np.array([-10, 0, 0, 0, 0])
+    x0 = np.array([-30, 0, 0, 0, 0, 0])
     x_cur = x0
     simX[0,:] = x0
 

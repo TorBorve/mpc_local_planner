@@ -13,30 +13,36 @@ def bicycleModel():
     psi = SX.sym("psi") # angle of car
     v = SX.sym("v") # velocity
     delta = SX.sym("delta") # steering angle
-    a = SX.sym("a") # acceleration
+    throttle = SX.sym("throttle") # throttle
 
-    x = vertcat(x1, y1, psi, v, delta)
+    x = vertcat(x1, y1, psi, v, delta, throttle)
 
+    #inputs
     deltaDotInput = SX.sym("delta_dot_input")
+    throttleDotInput = SX.sym("throttle_dot_input")
 
 
-    u = vertcat(deltaDotInput, a)
+    u = vertcat(deltaDotInput, throttleDotInput)
 
     x1Dot = SX.sym("x1_dot")
     y1Dot = SX.sym("y1_dot")
     psiDot = SX.sym("psi_dot")
     vDot = SX.sym("v_dot")
     deltaDotState = SX.sym("delta_dot_state")
+    throttleDotState = SX.sym("throttle_dot_state")
 
 
-    xDot = vertcat(x1Dot, y1Dot, psiDot, vDot, deltaDotState)
+
+    xDot = vertcat(x1Dot, y1Dot, psiDot, vDot, deltaDotState, throttleDotState)
+
 
     fExpl = vertcat(
             v*cos(psi),
             v*sin(psi),
             v/Lf*delta,
-            a,
-            deltaDotInput)
+            5.0*throttle - 0.087*v,
+            deltaDotInput,
+            throttleDotInput)
     fImpl = xDot - fExpl            
     model = AcadosModel()
 
@@ -44,7 +50,7 @@ def bicycleModel():
 
     model.name = modelName
     model.f_expl_expr = fExpl
-    model.f_impl_expr = fImpl
+    # model.f_impl_expr = fImpl
     model.xdot = xDot
     model.x = x
     model.u = u
@@ -58,22 +64,24 @@ def costFunc(model):
     psi = model.x[2]
     v = model.x[3]
     delta = model.x[4]
+    throttle = model.x[5]
     deltaDot = model.u[0]
-    a = model.u[1]
+    throttleDot = model.u[1]
     coeffs = model.p
     
     pathYaw = atan(3*coeffs[3]*x1*x1 + 2*coeffs[2]*x1 + coeffs[1])
     epsi = psi - pathYaw
     yPath = coeffs[3]*x1**3 + coeffs[2]*x1**2 + coeffs[1]*x1 + coeffs[0]
     cte = yPath - y1
-    return vertcat(cte, epsi, v, delta, deltaDot, a)
+    return vertcat(cte, epsi, v, delta, throttle, deltaDot, throttleDot)
 
 def ocpSolver():
     ocp = AcadosOcp()
     ocp.model = bicycleModel()
-
-    Tf = 2.0
+    
+    Hz = 30
     N = 20
+    Tf = 2.0
     ocp.dims.N = N
 
     nx = ocp.model.x.size()[0]
@@ -81,22 +89,24 @@ def ocpSolver():
     ny = nx + nu
 
     ocp.cost.cost_type = "NONLINEAR_LS"
-    ocp.cost.yref = np.array([0, 0, 7.5, 0, 0, 0])
+    ocp.cost.yref = np.array([0, 0, 6.0, 0, 0, 0, 0])
     ocp.model.cost_y_expr = costFunc(ocp.model)
-    ocp.cost.W = 2*np.diag([500, 500, 50, 25, 200, 25])
+    ocp.cost.W = 2*np.diag([500, 500, 100, 1, 10, 50, 1])
 
-    aMax = 1
     deltaMax = 0.57
     deltaDotMax = 0.8
+    throttleMin = 0.0
+    throttleMax = 0.5
+    throttleDotMax = 0.33    
     ocp.constraints.constr_type = "BGH"
-    ocp.constraints.lbx = np.array([-deltaMax])
-    ocp.constraints.ubx = np.array([deltaMax])
-    ocp.constraints.idxbx = np.array([4])
-    ocp.constraints.lbu = np.array([-deltaDotMax, -aMax])
-    ocp.constraints.ubu = np.array([deltaDotMax, aMax])
+    ocp.constraints.lbx = np.array([-deltaMax, throttleMin])
+    ocp.constraints.ubx = np.array([deltaMax, throttleMax])
+    ocp.constraints.idxbx = np.array([4, 5])
+    ocp.constraints.lbu = np.array([-deltaDotMax, -throttleDotMax])
+    ocp.constraints.ubu = np.array([deltaDotMax, throttleDotMax])
     ocp.constraints.idxbu = np.array([0, 1])
 
-    x0 = np.array([-10, 0, 0, 0, 0])
+    x0 = np.array([-10, 0, 0, 0, 0, 0])
     ocp.constraints.x0 = x0
 
     param = np.array([0, -1, 0, 0.002])
@@ -105,7 +115,7 @@ def ocpSolver():
     ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM" #"PARTIAL_CONDENSING_HPIPM" "FULL_CONDENSING_QPOASES" 
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
     ocp.solver_options.integrator_type = "ERK"
-    ocp.solver_options.nlp_solver_type = "SQP_RTI"
+    ocp.solver_options.nlp_solver_type = "SQP"
     ocp.solver_options.qp_solver_cond_N = N
     ocp.solver_options.tf = Tf
     # ocp.solver_options.qp_solver_iter_max = 1000

@@ -79,7 +79,7 @@ namespace mpc
         /// @param[in] optVars current state and inputs.
         /// @param[in] coeffs coefficients for polynomial defining track
         /// @return the optimal solution as MPCReturn type.
-        MPCReturn solve(const OptVariables &optVars, const Eigen::Vector4d &coeffs);
+        MPCReturn solve(OptVariables &optVars, const Eigen::Vector4d &coeffs);
 
     private:
         /// @brief initalize class

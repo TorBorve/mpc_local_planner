@@ -423,6 +423,7 @@ namespace mpc
     MPCReturn MPC::solveAcados(const OptVariables &optVars, const Eigen::Vector4d &coeffs)
     {
         static AcadosSolver solver{optVars};
-        return solver.solve(optVars, coeffs);
+        auto nonConstOptVars = optVars;
+        return solver.solve(nonConstOptVars, coeffs);
     }
 }

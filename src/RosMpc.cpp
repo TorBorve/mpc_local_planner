@@ -36,6 +36,8 @@ namespace mpc
             ROS_WARN("path_topic parameter not specified. Using hardcode internal path.");
         }
         inputPub_ = nh->advertise<geometry_msgs::Twist>(inputTopic, 1);
+        throttlePub_ = nh->advertise<std_msgs::Float64>("/throttle_cmd", 1);
+        steeringPub_ = nh->advertise<std_msgs::Float64>("/steering_cmd", 1);
         twistSub_ = nh->subscribe(twistTopic, 1, &RosMpc::twistCallback, this);
         actualSteeringSub_ = nh->subscribe(actualSteeringTopic, 1, &RosMpc::actualSteeringCallback, this);
     }
@@ -65,16 +67,22 @@ namespace mpc
         // mpc.model(optVars, input, 1.0 / loop_Hz_); // get predicted state after calculation is finished
 
         const auto result = mpc.solve(optVars);
-        double ref_vel = current_vel_ + 5 * result.u0.a * mpc_dt_;
-        ref_vel = std::max(2.0, ref_vel);
+        std_msgs::Float64 msg;
+        msg.data = result.u0.a;
+        throttlePub_.publish(msg);
+        constexpr double AUDIBOT_STEERING_RATIO = 17.3; 
+        msg.data = result.u0.delta * AUDIBOT_STEERING_RATIO;
+        steeringPub_.publish(msg);
+        // double ref_vel = current_vel_ + 5 * result.u0.a * mpc_dt_;
+        // ref_vel = std::max(2.0, ref_vel);
 
-        geometry_msgs::Twist twist;
-        twist.linear.x = ref_vel;
-        twist.angular.z = rotationSpeed(result.u0.delta, result.mpcHorizon[0].x.vel);
-        inputPub_.publish(twist);
+        // geometry_msgs::Twist twist;
+        // twist.linear.x = ref_vel;
+        // twist.angular.z = rotationSpeed(result.u0.delta, result.mpcHorizon[0].x.vel);
+        // inputPub_.publish(twist);
 
         LOG_DEBUG("Time: %i [ms]", (int)result.computeTime);
-        LOG_DEBUG("refvel: %.2f, carVel: %.2f, steering: %.2f [deg], accel: %.2f", ref_vel, state.vel, result.u0.delta * 180.0 / M_PI, result.u0.a);
+        LOG_DEBUG("carVel: %.2f, steering: %.2f [deg], throttle: %.2f", state.vel, result.u0.delta * 180.0 / M_PI, result.u0.a);
         LOG_DEBUG("yaw error: %.2f", result.mpcHorizon.at(0).x.epsi * 180.0 / M_PI);
         return result;
     }
