@@ -69,14 +69,15 @@ namespace mpc
         }
     }
 
-    MPCReturn AcadosSolver::solve(OptVariables &optVars, const Eigen::Vector4d &coeffs)
+    MPCReturn AcadosSolver::solve(const OptVariables &optVars, const Eigen::Vector4d &coeffs)
     {
+        OptVariables optVarsCopy{optVars};
         static double prevThrottle = 0.0;
-        optVars.u.a = prevThrottle;
+        optVarsCopy.u.a = prevThrottle;
         int N = dims_->N;
         auto start = std::chrono::high_resolution_clock::now();
 
-        setInitCondition(optVars);
+        setInitCondition(optVarsCopy);
         setParams(coeffs);
 
         // prepare evaluation
@@ -104,7 +105,7 @@ namespace mpc
         if (status != ACADOS_SUCCESS)
         {
             ROS_ERROR("bicycle_model_acados_solve() failed with status %d.\n", status);
-            reInit(optVars);
+            reInit(optVarsCopy);
         }
 
         auto end = std::chrono::high_resolution_clock::now();
@@ -135,7 +136,7 @@ namespace mpc
         x_init[2] = optVars.x.psi;
         x_init[3] = optVars.x.vel;
         x_init[4] = optVars.u.delta;
-        x_init[5] = 0;
+        x_init[5] = optVars.u.a;
 
         // initial value for control input
         double u0[NU];

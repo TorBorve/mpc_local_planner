@@ -1,4 +1,3 @@
-// #pragma once
 #ifndef MPC_ACADOS_SOLVER_H_
 #define MPC_ACADOS_SOLVER_H_
 
@@ -79,7 +78,7 @@ namespace mpc
         /// @param[in] optVars current state and inputs.
         /// @param[in] coeffs coefficients for polynomial defining track
         /// @return the optimal solution as MPCReturn type.
-        MPCReturn solve(OptVariables &optVars, const Eigen::Vector4d &coeffs);
+        MPCReturn solve(const OptVariables &optVars, const Eigen::Vector4d &coeffs);
 
     private:
         /// @brief initalize class
