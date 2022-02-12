@@ -38,21 +38,20 @@ namespace mpc
         State transformedState{0, 0, rotation, state.vel, 0, 0};
         calcState(transformedState, coeffs, forward);
         OptVariables transformedOptVar{transformedState, optVars.u};
-        if (optVars.x.vel < 1)
-        {
-            transformedOptVar.x.vel = 1;
-        }
+
         auto result = solve(transformedOptVar, coeffs);
 
-        double rotangle = state.psi - rotation;
+        const double rotAngle = state.psi - rotation;
+        const double sinRot = sin(rotAngle);
+        const double cosRot = cos(rotAngle);
         auto &x = result.mpcHorizon;
         for (unsigned int i = 0; i < x.size(); i++)
         {
             // rotate back
             double dx = x[i].x.x;
             double dy = x[i].x.y;
-            x[i].x.x = dx * cos(rotangle) - dy * sin(rotangle);
-            x[i].x.y = dx * sin(rotangle) + dy * cos(rotangle);
+            x[i].x.x = dx * cosRot - dy * sinRot;
+            x[i].x.y = dx * sinRot + dy * cosRot;
 
             // // shift coordinates
             x[i].x.x += state.x;
@@ -65,8 +64,8 @@ namespace mpc
         {
             double dx = points[i].pose.position.x;
             double dy = points[i].pose.position.y;
-            points[i].pose.position.x = dx * cos(rotangle) - dy * sin(rotangle);
-            points[i].pose.position.y = dx * sin(rotangle) + dy * cos(rotangle);
+            points[i].pose.position.x = dx * cosRot - dy * sinRot;
+            points[i].pose.position.y = dx * sinRot + dy * cosRot;
 
             points[i].pose.position.x += state.x;
             points[i].pose.position.y += state.y;
@@ -423,7 +422,6 @@ namespace mpc
     MPCReturn MPC::solveAcados(const OptVariables &optVars, const Eigen::Vector4d &coeffs)
     {
         static AcadosSolver solver{optVars};
-        auto nonConstOptVars = optVars;
-        return solver.solve(nonConstOptVars, coeffs);
+        return solver.solve(optVars, coeffs);
     }
 }
