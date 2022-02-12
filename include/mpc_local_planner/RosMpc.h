@@ -41,12 +41,6 @@ namespace mpc
         /// @param[in] msg the new path message. The path we want to follow.
         void pathCallback(const nav_msgs::Path::ConstPtr &msg);
 
-        /// @brief uses bicycle model to calculate the resulting angular velocity given the speed and steering angle
-        /// @param[in] steeringAngle the wanted steering angle of the car.
-        /// @param[in] vel the current speed of the car.
-        /// @return resulting angular velocity [rad / s]
-        double rotationSpeed(double steeringAngle, double vel);
-
         /// @brief checks if the desired parameters is given to the MPC class.
         /// @param[in] nh pointer to Nodehandle with access to the parameters
         /// @return true if all parameters was defined. False otherwise.
@@ -56,11 +50,10 @@ namespace mpc
         /// @brief mpc class that solves the problem given our state and desired trajectory.
         MPC mpc;
 
-        /// @brief publisher for the inputs. Given as e twist message. linear speed and angular speed.
-        ros::Publisher inputPub_;
-
-        /// @brief publicher for the steering angle.
+        /// @brief publisher for the steering angle.
         ros::Publisher steeringPub_;
+
+        /// @brief publisher for throttle value
         ros::Publisher throttlePub_;
 
         /// @brief subscriber to the twist message send by the car.
@@ -82,10 +75,10 @@ namespace mpc
         ros::NodeHandle *nh_;
 
         /// @brief the latest velocity recived from car.
-        double current_vel_ = 0;
+        double currentVel_ = 0;
 
         /// @brief the latest steering angle recived from car
-        double current_steering_angle_ = 0;
+        double currentSteeringAngle_ = 0;
 
         /// @brief name of "origin" frame. Typically odom or map
         std::string mapFrame_;
@@ -94,10 +87,10 @@ namespace mpc
         std::string carFrame_;
 
         /// @brief frequency that the mpc is run at.
-        double loop_Hz_;
+        double loopHz_;
 
         /// @brief time between steps in the mpc calculations.
-        double mpc_dt_;
+        double mpcDt_;
 
         /// @brief distance between the front and rear wheels.
         double wheelbase_;

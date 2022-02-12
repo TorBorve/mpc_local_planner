@@ -19,11 +19,10 @@ namespace mpc
 
         std::string twistTopic = nh_->param<std::string>("twist_topic", "twist");
         std::string actualSteeringTopic = nh_->param<std::string>("actual_steering_topic", "actual_steering_angle");
-        std::string inputTopic = nh->param<std::string>("input_topic", "cmd_vel");
         mapFrame_ = nh->param<std::string>("map_frame", "map");
         carFrame_ = nh->param<std::string>("car_frame", "base_link");
-        loop_Hz_ = nh->param<double>("loop_Hz", 30);
-        mpc_dt_ = nh->param<double>("mpc_dt", 0.2);
+        loopHz_ = nh->param<double>("loop_Hz", 30);
+        mpcDt_ = nh->param<double>("mpc_dt", 0.2);
         wheelbase_ = nh->param<double>("wheelbase", 3.0);
 
         if (nh_->hasParam("path_topic"))
@@ -35,7 +34,6 @@ namespace mpc
         {
             ROS_WARN("path_topic parameter not specified. Using hardcode internal path.");
         }
-        inputPub_ = nh->advertise<geometry_msgs::Twist>(inputTopic, 1);
         throttlePub_ = nh->advertise<std_msgs::Float64>("/throttle_cmd", 1);
         steeringPub_ = nh->advertise<std_msgs::Float64>("/steering_cmd", 1);
         twistSub_ = nh->subscribe(twistTopic, 1, &RosMpc::twistCallback, this);
@@ -44,42 +42,43 @@ namespace mpc
 
     MPCReturn RosMpc::solve()
     {
+        static double prevThrottle = 0;
+
         geometry_msgs::TransformStamped tfCar;
         try
         {
+            // get position of vehicle
             tfCar = tfBuffer_.lookupTransform(mapFrame_, carFrame_, ros::Time(0));
         }
         catch (tf2::TransformException &e)
         {
-            ROS_WARN_STREAM("Error thrown: " << e.what());
+            ROS_ERROR_STREAM("Could not get transform from " << mapFrame_ << " to " << carFrame_ << ". Error thrown: " << e.what());
+            return MPCReturn{};
         }
         State state{
             tfCar.transform.translation.x,
             tfCar.transform.translation.y,
             getYaw(tfCar.transform.rotation),
-            current_vel_,
+            currentVel_,
             0,
             0};
         Input input{
-            0,
-            current_steering_angle_};
+            prevThrottle,
+            currentSteeringAngle_};
         OptVariables optVars{state, input};
         // mpc.model(optVars, input, 1.0 / loop_Hz_); // get predicted state after calculation is finished
 
+        // solve mpc
         const auto result = mpc.solve(optVars);
+    
+        // publish inputs
         std_msgs::Float64 msg;
         msg.data = result.u0.a;
         throttlePub_.publish(msg);
+        prevThrottle = result.u0.a;
         constexpr double AUDIBOT_STEERING_RATIO = 17.3; 
         msg.data = result.u0.delta * AUDIBOT_STEERING_RATIO;
         steeringPub_.publish(msg);
-        // double ref_vel = current_vel_ + 5 * result.u0.a * mpc_dt_;
-        // ref_vel = std::max(2.0, ref_vel);
-
-        // geometry_msgs::Twist twist;
-        // twist.linear.x = ref_vel;
-        // twist.angular.z = rotationSpeed(result.u0.delta, result.mpcHorizon[0].x.vel);
-        // inputPub_.publish(twist);
 
         LOG_DEBUG("Time: %i [ms]", (int)result.computeTime);
         LOG_DEBUG("carVel: %.2f, steering: %.2f [deg], throttle: %.2f", state.vel, result.u0.delta * 180.0 / M_PI, result.u0.a);
@@ -90,7 +89,7 @@ namespace mpc
     bool RosMpc::verifyInputs()
     {
         ros::Duration waitTime{10.0};
-
+        ros::Duration{0.1}.sleep();
         // check if twist publisher is publishing
         std::string twistTopic = nh_->param<std::string>("twist_topic", "/twist");
         while (ros::ok() && !ros::topic::waitForMessage<geometry_msgs::TwistStamped>(twistTopic, waitTime))
@@ -137,19 +136,14 @@ namespace mpc
         return true;
     }
 
-    double RosMpc::rotationSpeed(double steeringAngle, double vel)
-    {
-        return tan(steeringAngle) * vel / wheelbase_;
-    }
-
     void RosMpc::twistCallback(const geometry_msgs::TwistStamped::ConstPtr &msg)
     {
-        current_vel_ = length(msg->twist.linear);
+        currentVel_ = length(msg->twist.linear);
     }
 
     void RosMpc::actualSteeringCallback(const std_msgs::Float64::ConstPtr &msg)
     {
-        current_steering_angle_ = msg->data;
+        currentSteeringAngle_ = msg->data;
     }
 
     void RosMpc::pathCallback(const nav_msgs::Path::ConstPtr &msg)
