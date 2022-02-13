@@ -57,7 +57,7 @@ namespace mpc
                     << step.x.vel << '\t'
                     << step.x.cte << '\t'
                     << step.x.epsi << '\t'
-                    << step.u.a << '\t'
+                    << step.u.throttle << '\t'
                     << step.u.delta << std::endl;
         }
     }

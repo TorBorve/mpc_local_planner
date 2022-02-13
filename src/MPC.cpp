@@ -1,7 +1,6 @@
 #include "mpc_local_planner/MPC.h"
 #include "mpc_local_planner/bounds.h"
 #include "mpc_local_planner/utilities.h"
-#include "mpc_local_planner/solverCppAD.h"
 #include "mpc_local_planner/AcadosSolver.h"
 
 #include <cppad/cppad.hpp>
@@ -14,9 +13,9 @@
 
 namespace mpc
 {
-    MPC::MPC(const std::vector<Point> &track, size_t N, double dt, Bound steeringAngle, double maxSteeringRotationSpeed, double wheelbase) : track_{track}, N_{N}, dt_{dt}, steeringAngle_{steeringAngle}, maxSteeringRotationSpeed_{maxSteeringRotationSpeed},
-                                                                                                                                             wheelbase_{wheelbase}, x_start_{0}, y_start_{N}, psi_start_{2 * N}, v_start_{3 * N}, cte_start_{4 * N}, epsi_start_{5 * N},
-                                                                                                                                             delta_start_{6 * N}, a_start_{7 * N - 1} // -1 due to N-1 actuator variables
+    MPC::MPC(const std::vector<Point> &track, size_t N, double dt, Bound steeringAngle, double maxSteeringRotationSpeed, 
+            double wheelbase) : track_{track}, N_{N}, dt_{dt}, steeringAngle_{steeringAngle}, 
+                                maxSteeringRotationSpeed_{maxSteeringRotationSpeed}, wheelbase_{wheelbase}
     {
         ros::NodeHandle nh;
         trackPub_ = nh.advertise<nav_msgs::Path>("global_path", 1);
@@ -79,38 +78,8 @@ namespace mpc
 
     MPCReturn MPC::solve(const OptVariables &optVars, const Eigen::Vector4d &coeffs)
     {
-        switch (solver_)
-        {
-        case Solver::Acados:
-            return solveAcados(optVars, coeffs);
-            break;
-        case Solver::CppAD:
-            return solveCppAD(optVars, coeffs);
-            break;
-        default:
-            std::string error = "invalid solver. solver_ variable not set correctly.";
-            ROS_ERROR_STREAM(error);
-            throw std::runtime_error{error};
-        }
-    }
-
-    MPCReturn MPC::toMPCReturn(const CppAD::ipopt::solve_result<Dvector> &solution, double time)
-    {
-        const auto &x = solution.x;
-        MPCReturn ret;
-        ret.mpcHorizon.resize(N_ - 1); // TODO should be N error due to a?
-        ret.u0 = Input{x[a_start_], x[delta_start_]};
-        for (int i = 0; i < N_ - 1; i++)
-        { // TODO should be N error due to a?
-            State state{x[x_start_ + i], x[y_start_ + i], x[psi_start_ + i], x[v_start_ + i],
-                        x[cte_start_ + i], x[epsi_start_ + i]};
-            Input input{x[a_start_ + i], x[delta_start_ + i]};
-            ret.mpcHorizon[i] = OptVariables{state, input};
-        }
-        ret.cost = solution.obj_value;
-        ret.success = solution.success;
-        ret.computeTime = time;
-        return ret;
+        static AcadosSolver solver{optVars};
+        return solver.solve(optVars, coeffs);
     }
 
     void MPC::calcCoeffs(const State &state, double &rotation, Eigen::Vector4d &coeffs, bool &forward) const
@@ -213,6 +182,7 @@ namespace mpc
 
     void MPC::model(OptVariables &optVars, const Input &u, double dt)
     {
+        ROS_WARN("model is out dated and needs to be updated...");
         const double maxInc = maxSteeringRotationSpeed_ * dt_;
         State &state = optVars.x;
         double delta = u.delta;
@@ -230,7 +200,7 @@ namespace mpc
         state.x += state.vel * cos(state.psi) * dt;
         state.y += state.vel * sin(state.psi) * dt;
         state.psi += state.vel * tan(delta) / wheelbase_ * dt;
-        state.vel += u.a * dt;
+        state.vel += u.throttle * dt;
     }
 
     void MPC::getTrackSection(size_t &start, size_t &end, const State &state) const
@@ -290,138 +260,5 @@ namespace mpc
         transformStamped.transform.rotation.z = q.z();
         transformStamped.transform.rotation.w = q.w();
         br.sendTransform(transformStamped);
-    }
-
-    MPCReturn MPC::solveCppAD(const OptVariables &optVars, const Eigen::Vector4d &coeffs)
-    {
-        using Dvector = CPPAD_TESTVECTOR(double);
-        const State &state = optVars.x;
-        const double maxInc = maxSteeringRotationSpeed_ * dt_;
-
-        auto start = std::chrono::high_resolution_clock::now();
-
-        double x = state.x;
-        double y = state.y;
-        double psi = state.psi;
-        double v = state.vel;
-        double cte = state.cte;
-        double epsi = state.epsi;
-        double delta = optVars.u.delta;
-
-        // TODO: Set the number of model variables (includes both states and inputs).
-        // For example: If the state is a 4 element vector, the actuators is a 2
-        // element vector and there are 10 timesteps. The number of variables is:
-        //
-        // 4 * 10 + 2 * 9
-        size_t n_vars = N_ * 6 + (N_ - 1) * 2;
-        // TODO: Set the number of constraints
-        size_t n_constraints = N_ * 6 + N_ - 2;
-
-        // Initial value of the independent variables.
-        // SHOULD BE 0 besides initial state.
-        Dvector vars(n_vars);
-        for (unsigned int i = 0; i < n_vars; i++)
-        {
-            vars[i] = 0;
-        }
-
-        for (unsigned int i = 0; i < N_; i++)
-        {
-            vars[x_start_ + i] = x;
-            vars[y_start_ + i] = y;
-            vars[psi_start_ + i] = psi;
-            vars[v_start_ + i] = v;
-            vars[cte_start_ + i] = cte;
-            vars[epsi_start_ + i] = epsi;
-        }
-
-        BoundVector varBounds(n_vars, Bound::noBound());
-
-        // upper/lower limits for delta set to -25/25
-        // degrees(values in radians)
-        for (unsigned int i = delta_start_; i < a_start_; i++)
-        {
-            varBounds[i] = steeringAngle_;
-        }
-
-        // acceleration/deceleration upper/lower limits
-        for (unsigned int i = a_start_; i < n_vars; i++)
-        {
-            varBounds[i] = Bound{-1, 1};
-        }
-
-        // Lower and upper limits for the constraints
-        // Should be 0 besides initial state.
-        BoundVector constraintBounds(n_constraints, Bound::zeroBound());
-
-        constraintBounds[x_start_] = Bound{x, x};
-        constraintBounds[y_start_] = Bound{y, y};
-        constraintBounds[psi_start_] = Bound{psi, psi};
-        constraintBounds[v_start_] = Bound{v, v};
-        constraintBounds[cte_start_] = Bound{cte, cte};
-        constraintBounds[epsi_start_] = Bound{epsi, epsi};
-
-        for (unsigned int i = delta_start_; i < delta_start_ + N_ - 2; i++)
-        {
-            constraintBounds[i] = Bound{-maxInc, maxInc};
-        }
-
-        Bound deltaBound = steeringAngle_;
-        if ((delta - maxInc) > deltaBound.lower)
-        {
-            deltaBound.lower = delta - maxInc;
-        }
-        if ((delta + maxInc) < deltaBound.upper)
-        {
-            deltaBound.upper = delta + maxInc;
-        }
-
-        // object that computes objective and constraints
-        FG_eval fg_eval(coeffs, N_, dt_, wheelbase_);
-
-        //
-        // NOTE: You don't have to worry about these options
-        //
-        // options for IPOPT solver
-        std::string options;
-        // Uncomment this if you'd like more print information
-        options += "Integer print_level  0\n";
-        // NOTE: Setting sparse to true allows the solver to take advantage
-        // of sparse routines, this makes the computation MUCH FASTER. If you
-        // can uncomment 1 of these and see if it makes a difference or not but
-        // if you uncomment both the computation time should go up in orders of
-        // magnitude.
-        options += "Sparse  true        forward\n";
-        options += "Sparse  true        reverse\n";
-        // NOTE: Currently the solver has a maximum time limit of 0.5 seconds.
-        // Change this as you see fit.
-        options += "Numeric max_cpu_time          10.0\n";
-
-        // place to return solution
-        CppAD::ipopt::solve_result<Dvector> solution;
-
-        // solve the problem
-        Dvector varsLower = toCppAD(getLower(varBounds));
-        Dvector varsUpper = toCppAD(getUpper(varBounds));
-        Dvector constraintsLower = toCppAD(getLower(constraintBounds));
-        Dvector constraintsUpper = toCppAD(getUpper(constraintBounds));
-        CppAD::ipopt::solve<Dvector, FG_eval>(
-            options, vars, varsLower, varsUpper, constraintsLower,
-            constraintsUpper, fg_eval, solution);
-
-        if (!solution.status == CppAD::ipopt::solve_result<Dvector>::success)
-        {
-            std::cout << "Error: Failed to solve nlp\n";
-        }
-        auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
-        return toMPCReturn(solution, duration.count());
-    }
-
-    MPCReturn MPC::solveAcados(const OptVariables &optVars, const Eigen::Vector4d &coeffs)
-    {
-        static AcadosSolver solver{optVars};
-        return solver.solve(optVars, coeffs);
     }
 }

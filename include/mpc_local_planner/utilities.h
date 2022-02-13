@@ -27,10 +27,6 @@ namespace mpc
     /// @brief convert State class to Pose message
     geometry_msgs::Pose toMsg(const State &state);
 
-    /// @brief convert a std::vector too a CppAD vector
-    CPPAD_TESTVECTOR(double)
-    toCppAD(const std::vector<double> &vec);
-
     /// @brief save solution to file
     /// @param[in] solution the solution that should be solved
     /// @param[in] curState the current state of the car

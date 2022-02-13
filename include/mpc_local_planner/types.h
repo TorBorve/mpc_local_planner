@@ -65,14 +65,14 @@ namespace mpc
         Input() = default;
 
         /// @brief constructor with values.
-        /// @param[in] a acceleration
+        /// @param[in] throttle throttle
         /// @param[in] delta steering angle
-        Input(double a, double delta) : a{a}, delta{delta}
+        Input(double throttle, double delta) : throttle{throttle}, delta{delta}
         {
         }
 
-        /// @brief acceleration for car
-        double a;
+        /// @brief throttle for car
+        double throttle;
 
         /// @brief steering angle on wheels
         double delta;
