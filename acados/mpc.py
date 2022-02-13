@@ -1,3 +1,4 @@
+from configparser import Interpolation
 from casadi import SX, vertcat, sin, cos, atan
 from acados_template import AcadosOcp, AcadosSimSolver, AcadosModel, AcadosOcpSolver
 import numpy as np

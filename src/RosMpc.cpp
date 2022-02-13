@@ -73,15 +73,15 @@ namespace mpc
     
         // publish inputs
         std_msgs::Float64 msg;
-        msg.data = result.u0.a;
+        msg.data = result.u0.throttle;
         throttlePub_.publish(msg);
-        prevThrottle = result.u0.a;
+        prevThrottle = result.u0.throttle;
         constexpr double AUDIBOT_STEERING_RATIO = 17.3; 
         msg.data = result.u0.delta * AUDIBOT_STEERING_RATIO;
         steeringPub_.publish(msg);
 
         LOG_DEBUG("Time: %i [ms]", (int)result.computeTime);
-        LOG_DEBUG("carVel: %.2f, steering: %.2f [deg], throttle: %.2f", state.vel, result.u0.delta * 180.0 / M_PI, result.u0.a);
+        LOG_DEBUG("carVel: %.2f, steering: %.2f [deg], throttle: %.2f", state.vel, result.u0.delta * 180.0 / M_PI, result.u0.throttle);
         LOG_DEBUG("yaw error: %.2f", result.mpcHorizon.at(0).x.epsi * 180.0 / M_PI);
         return result;
     }

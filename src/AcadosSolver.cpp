@@ -47,8 +47,8 @@ namespace mpc
         ubx0[3] = optVars.x.vel;
         lbx0[4] = optVars.u.delta;
         ubx0[4] = optVars.u.delta;
-        lbx0[5] = optVars.u.a;
-        ubx0[5] = optVars.u.a;
+        lbx0[5] = optVars.u.throttle;
+        ubx0[5] = optVars.u.throttle;
 
         ocp_nlp_constraints_model_set(config_, dims_, in_, 0, "idxbx", idxbx0);
         ocp_nlp_constraints_model_set(config_, dims_, in_, 0, "lbx", lbx0);
@@ -73,7 +73,7 @@ namespace mpc
     {
         OptVariables optVarsCopy{optVars};
         static double prevThrottle = 0.0;
-        optVarsCopy.u.a = prevThrottle;
+        optVarsCopy.u.throttle = prevThrottle;
         int N = dims_->N;
         auto start = std::chrono::high_resolution_clock::now();
 
@@ -114,7 +114,7 @@ namespace mpc
         MPCReturn ret;
         ret.mpcHorizon.resize(N);
         ret.u0 = Input{xtraj[5 + NX], xtraj[4 + NX]};
-        prevThrottle = ret.u0.a;
+        prevThrottle = ret.u0.throttle;
         for (int i = 0; i < N; i++)
         {
             State state{xtraj[0 + NX * i], xtraj[1 + NX * i], xtraj[2 + NX * i], xtraj[3 + NX * i], 0, 0};
@@ -136,7 +136,7 @@ namespace mpc
         x_init[2] = optVars.x.psi;
         x_init[3] = optVars.x.vel;
         x_init[4] = optVars.u.delta;
-        x_init[5] = optVars.u.a;
+        x_init[5] = optVars.u.throttle;
 
         // initial value for control input
         double u0[NU];
