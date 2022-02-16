@@ -8,7 +8,7 @@ namespace mpc
 {
 
     RosMpc::RosMpc(ros::NodeHandle *nh) : mpc{getTestTrack(), (size_t)nh->param<int>("mpc_N", 10), nh->param<double>("mpc_dt", 0.2),
-                                              Bound{nh->param<double>("min_steering_angle", -0.57), nh->param<double>("max_steering_angle", 0.57)},
+                                              Bound{-nh->param<double>("max_steering_angle", 0.57), nh->param<double>("max_steering_angle", 0.57)},
                                               nh->param<double>("max_steering_rotation_speed", 0.80), nh->param<double>("wheelbase", 3.0)},
                                           tfListener_{tfBuffer_}, nh_{nh}
     {
@@ -23,7 +23,6 @@ namespace mpc
         carFrame_ = nh->param<std::string>("car_frame", "base_link");
         loopHz_ = nh->param<double>("loop_Hz", 30);
         mpcDt_ = nh->param<double>("mpc_dt", 0.2);
-        wheelbase_ = nh->param<double>("wheelbase", 3.0);
 
         if (nh_->hasParam("path_topic"))
         {
@@ -156,7 +155,6 @@ namespace mpc
         bool ok = true;
         ok &= hasParamError(nh, "mpc_N");
         ok &= hasParamError(nh, "mpc_dt");
-        ok &= hasParamWarn(nh, "min_steering_angle");
         ok &= hasParamWarn(nh, "max_steering_angle");
         ok &= hasParamWarn(nh, "max_steering_rotation_speed");
         ok &= hasParamWarn(nh, "wheelbase");

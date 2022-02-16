@@ -34,7 +34,7 @@ def main():
     x0 = np.array([-30, 0, 0, 0, 0, 0])
     x_cur = x0
     simX[0,:] = x0
-
+    
     time_solve = 0
     for i in range(Nsim):
 

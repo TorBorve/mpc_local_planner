@@ -56,7 +56,7 @@ add_custom_command(
   OUTPUT ${PROJECT_SOURCE_DIR}/acados/c_generated_code/main_bicycle_model.c
   COMMAND ${ACADOS_LIB}/build/env/bin/python3 genCode.py 
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/acados
-  DEPENDS acados/genCode.py acados/mpc.py
+  DEPENDS acados/genCode.py acados/mpc.py params/mpc.yaml
 )
 
 add_custom_target(

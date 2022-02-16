@@ -1,4 +1,4 @@
-# Here we define parameters for the mpc.
+# Here we define parameters for the mpc. These are used for generating the mpc with acados and also for running the mpc
 
 # The frequency that the mpc is run at. Given that the pc is able to run the code fast enough.
 loop_Hz: 30
@@ -9,12 +9,15 @@ twist_topic: "/twist"
 # The topic where the current steering angle of the car is published. The message type should be Float64
 actual_steering_topic: "/actual_steering_angle"
 
-# Where the output of the mpc is published. (input of the car). This is a twist message.
-input_topic: "/cmd_vel"
+# The topic where the desired steering angle is published.
+steering_topic: "/steering_cmd"
+
+# The topic where the desired throttle value is published
+throttle_topic: "/throttle_cmd"
 
 # Where tha global path should be published. The path we want to follow. If this parameter is not provided
 # the mpc will use a internal hard coded path.
-path_topic: "/path"
+# path_topic: "/path"
 
 # The ""global"" frame. Typically map or odom.
 map_frame: "odom"
@@ -22,20 +25,23 @@ map_frame: "odom"
 # The frame where the car is located. The mpc model assumes that this is the middel of the rear axle.
 car_frame: "base_footprint"
 
-# Number of steps in the mpc simulation
-mpc_N: 10
+# Number of steps in the mpc horizon
+mpc_N: 20
 
-# Time between the steps in the mpc simulation.
+# Time between the steps in the mpc horizon.
 mpc_dt: 0.15
 
-# Maximum steering angle of the car (to the left). Given in [rad]
+# Maximum steering angle of the car (to the left and right). Given in [rad]
 max_steering_angle: 0.57
-
-# Minimum steering angle of the car (to the right). Given in [rad]
-min_steering_angle: -0.57
 
 # Maximum rotation speed of the wheels. How fast the wheels can turn. Given in [rad/s]
 max_steering_rotation_speed: 0.80
 
 # Distance between front and rear wheels on the car.
 wheelbase: 2.65
+
+# Maximum value for throttle
+throttle_max: 0.5
+
+# Maximum allowed value for change throttle value pr second
+throttle_dot_max: 0.33

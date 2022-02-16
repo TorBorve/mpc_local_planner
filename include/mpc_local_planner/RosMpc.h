@@ -93,7 +93,7 @@ namespace mpc
         double mpcDt_;
 
         /// @brief distance between the front and rear wheels.
-        double wheelbase_;
+        // double wheelbase_;
     };
 }
 

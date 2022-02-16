@@ -2,11 +2,12 @@ from casadi import SX, vertcat, sin, cos, atan
 from acados_template import AcadosOcp, AcadosSimSolver, AcadosModel, AcadosOcpSolver
 import numpy as np
 import scipy.linalg
+import yaml
 
-def bicycleModel():
+def bicycleModel(params):
     modelName = "bicycle_model"
     #distance between front and rear axle
-    Lf = 2.65
+    Lf = params["wheelbase"]
     #states
     x1 = SX.sym("x1") # x position
     y1 = SX.sym("y1") # y position
@@ -76,12 +77,15 @@ def costFunc(model):
     return vertcat(cte, epsi, v, delta, throttle, deltaDot, throttleDot)
 
 def ocpSolver():
+    with open("../params/mpc.yaml", "r") as paramFile:
+            params = yaml.safe_load(paramFile)
+
     ocp = AcadosOcp()
-    ocp.model = bicycleModel()
+    ocp.model = bicycleModel(params)
     
-    Hz = 30
-    N = 20
-    Tf = 2.0
+    N = params["mpc_N"]
+    dt = params["mpc_dt"]
+    Tf = N*dt
     ocp.dims.N = N
 
     nx = ocp.model.x.size()[0]
@@ -93,11 +97,11 @@ def ocpSolver():
     ocp.model.cost_y_expr = costFunc(ocp.model)
     ocp.cost.W = 2*np.diag([500, 500, 100, 1, 10, 50, 1])
 
-    deltaMax = 0.57
-    deltaDotMax = 0.8
+    deltaMax = params["max_steering_angle"]
+    deltaDotMax = params["max_steering_rotation_speed"]
     throttleMin = 0.0
-    throttleMax = 0.5
-    throttleDotMax = 0.33    
+    throttleMax = params["throttle_max"]
+    throttleDotMax = params["throttle_dot_max"]   
     ocp.constraints.constr_type = "BGH"
     ocp.constraints.lbx = np.array([-deltaMax, throttleMin])
     ocp.constraints.ubx = np.array([deltaMax, throttleMax])
