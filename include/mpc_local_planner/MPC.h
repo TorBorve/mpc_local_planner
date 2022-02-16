@@ -16,9 +16,6 @@ namespace mpc
     class MPC
     {
     public:
-        /// @brief alias for CppAD vector
-        using Dvector = CPPAD_TESTVECTOR(double);
-
         /// @brief constructor for MPC class
         /// @param[in] track vector with points that define desired trajectory
         /// @param[in] N number of steps in simulation
@@ -54,12 +51,6 @@ namespace mpc
         /// @return solution from mpc. See definition of MPCReturn.
         MPCReturn solve(const OptVariables &optVars, const Eigen::Vector4d &coeffs);
 
-        /// @brief converts solution from CppAD solver to custom solution class
-        /// @param[in] solution solution from CppAD solver. Includes cost, optimal inputs, predicted state and more
-        /// @param[in] time time used by solver in [ms]
-        /// @return custom solution class for mpc. See MPCReturn for more information.
-        MPCReturn toMPCReturn(const CppAD::ipopt::solve_result<Dvector> &solution, double time);
-
         /// @brief model of a car. Used to predict state evolution.
         /// @param[in/out] optVars state thate should be updated
         /// @param[in] u inputs on car (acceleration and steering angle)
@@ -72,13 +63,6 @@ namespace mpc
         void model(OptVariables &optVars, const Input &u, double dt);
 
     private:
-        /// @brief enum for different solvers available
-        enum class Solver
-        {
-            CppAD = 0,
-            Acados = 1
-        };
-
         /// @brief calculates coefficients of third order polynomial that fits the disired trajectory best.
         /// @param[in] state current state of the car.
         /// @param[in] rotation refrence frame roation relative too the car.
@@ -125,20 +109,6 @@ namespace mpc
         /// @param[in] state the state give to the mpc
         void pubTf(const State &state) const;
 
-        /// @brief solve function for mpc. Uses states and coefficients of a third order polynomial
-        ///        that is threated at desired trajectory. CppAD is used to solve the nlp.
-        /// @param[in] optVars the state of the car. (position, velocity, steering angle, ...)
-        /// @param[in] coeffs coefficients of third degree polynomial. Used as desired trajectory.
-        /// @return solution from mpc. See definition of MPCReturn.
-        MPCReturn solveCppAD(const OptVariables &optVars, const Eigen::Vector4d &coeffs);
-
-        /// @brief solve function for mpc. Uses states and coefficients of a third order polynomial
-        ///        that is threated at desired trajectory. Acados library is used to solve the nlp.
-        /// @param[in] optVars the state of the car. (position, velocity, steering angle, ...)
-        /// @param[in] coeffs coefficients of third degree polynomial. Used as desired trajectory.
-        /// @return solution from mpc. See definition of MPCReturn.
-        MPCReturn solveAcados(const OptVariables &optVars, const Eigen::Vector4d &coeffs);
-
         /// @brief discrete points representing desired trajectory
         std::vector<Point> track_;
 
@@ -165,33 +135,6 @@ namespace mpc
 
         /// @brief maxSteeringRotationsSpeed the maximum speed the wheels can turn at. Given in [rad/s].
         double maxSteeringRotationSpeed_;
-
-        /// @brief what solver should be used when solving the nlp.
-        Solver solver_ = Solver::Acados;
-
-        /// @brief start index for x variables in mpc variables
-        const size_t x_start_;
-
-        /// @brief start index for y variables in mpc variables
-        const size_t y_start_;
-
-        /// @brief start index for psi variables in mpc variables
-        const size_t psi_start_;
-
-        /// @brief start index for vel variables in mpc variables
-        const size_t v_start_;
-
-        /// @brief start index for cte variables in mpc variables
-        const size_t cte_start_;
-
-        /// @brief start index for epsi variables in mpc variables
-        const size_t epsi_start_;
-
-        /// @brief start index for delta variables in mpc variables
-        const size_t delta_start_;
-
-        /// @brief start index for accel variables in mpc variables
-        const size_t a_start_;
     };
 
 }

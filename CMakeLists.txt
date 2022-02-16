@@ -7,7 +7,7 @@ set(ACADOS_LIB $ENV{ACADOS_SOURCE_DIR})
 # add_compile_options(-std=c++11)
 
 # Uncomment if you want debugging
-set(CMAKE_BUILD_TYPE Debug)
+# set(CMAKE_BUILD_TYPE Debug)
 
 # Default build type
 if(NOT CMAKE_BUILD_TYPE)
@@ -32,7 +32,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES mpc_local_planner
-#  CATKIN_DEPENDS nav_msgs roscpp rospy std_msgs
+   CATKIN_DEPENDS nav_msgs roscpp rospy std_msgs tf2 tf2_ros
 #  DEPENDS system_lib
 )
 
@@ -78,6 +78,6 @@ add_dependencies(main acados_generated_lib)
 include_directories(
   tests
 )
-add_executable(testMpc tests/main.cpp src/bounds.cpp src/utilities.cpp src/MPC.cpp src/solverCppAD.cpp src/AcadosSolver.cpp)
-target_link_libraries(testMpc ipopt myacadoslib acados hpipm blasfeo m ${catkin_LIBRARIES})
-add_dependencies(testMpc acados_generated_lib) 
+# add_executable(testMpc tests/main.cpp src/bounds.cpp src/utilities.cpp src/MPC.cpp src/solverCppAD.cpp src/AcadosSolver.cpp)
+# target_link_libraries(testMpc ipopt myacadoslib acados hpipm blasfeo m ${catkin_LIBRARIES})
+# add_dependencies(testMpc acados_generated_lib) 
