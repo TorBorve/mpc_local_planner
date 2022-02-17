@@ -40,6 +40,7 @@ The MPC requires several things to work. Mainly it is the library Acados and of 
  
    ROS is used to send and receive data. It can be installed by following [this]((http://wiki.ros.org/noetic/Installation)) tutorial. If you already have ROS installed you can skip this. ROS noetic is used, however other versions may also work.
 2. **Clone**
+
    Clone this repository into the src folder in a catkin workspace. Example:
 
    ```terminal
@@ -48,12 +49,15 @@ The MPC requires several things to work. Mainly it is the library Acados and of 
    ```
 3. **Acados**
  
-  Firstly follow this [guide](https://docs.acados.org/installation/index.html) to download and build the acados library. **Choose the Cmake alternative**. Once that is done we need to set it up with the python interface. I recommend using a virtual environment for this (as do they). To make compiling this code easier make sure to create the virtual environment in *<acados_root>/build/*. If you do not do this the code will not compile. You will have to change CmakeLists.txt. Follow the steps in this [guide](https://docs.acados.org/python_interface/index.html). Remember to add the lines from step four into *.bashrc*
-5. **MPC**
-  Now we are ready to build the mpc. This is done by using catkin build or catkin_make in your catkin workspace. Example:
-  ```terminal
-  catkin build
-  ```
+   Firstly follow this [guide](https://docs.acados.org/installation/index.html) to download and build the acados library. **Choose the Cmake alternative**. Once that is done we need to set it up with the python interface. I recommend using a virtual environment for this (as do they). To make compiling this code easier make sure to create the virtual environment in *<acados_root>/build/*. If you do not do this the code will not compile. You will have to change CmakeLists.txt. Follow the steps in this [guide](https://docs.acados.org/python_interface/index.html). Remember to add the lines from step four into *.bashrc*
+
+4. **MPC**
+
+   Now we are ready to build the mpc. This is done by using catkin build or catkin_make in your catkin workspace. Example:
+   ```terminal
+   catkin build
+   ```
+   
 ## :rocket: **Usage** <a name="usage"></a>
  
 ### **Parameters** <a name="parameters"></a>
