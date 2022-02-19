@@ -3,8 +3,7 @@ project(mpc_local_planner)
 
 set(ACADOS_LIB $ENV{ACADOS_SOURCE_DIR})
 
-## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++14)
 
 # Uncomment if you want debugging
 # set(CMAKE_BUILD_TYPE Debug)
