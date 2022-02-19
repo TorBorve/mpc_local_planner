@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(mpc_local_planner)
 
-## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+set(ACADOS_LIB $ENV{ACADOS_SOURCE_DIR})
+
+add_compile_options(-std=c++14)
 
 # Uncomment if you want debugging
 # set(CMAKE_BUILD_TYPE Debug)
@@ -30,23 +31,52 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES mpc_local_planner
-#  CATKIN_DEPENDS nav_msgs roscpp rospy std_msgs
+   CATKIN_DEPENDS nav_msgs roscpp rospy std_msgs tf2 tf2_ros
 #  DEPENDS system_lib
 )
 
 include_directories(
   include
-  tests
   ${catkin_INCLUDE_DIRS}
+  ${ACADOS_LIB}/include/acados
+  ${ACADOS_LIB}/include/blasfeo/include
+  ${ACADOS_LIB}/include/hpipm/include
+  ${ACADOS_LIB}/include
+  ${PROJECT_SOURCE_DIR}/acados/c_generated_code
+  /usr/local/include
 )
 
-include_directories(/usr/local/include)
-link_directories(/usr/local/lib)
+link_directories(
+  /usr/local/lib
+  ${ACADOS_LIB}/lib
+)
 
-# FILE(GLOB SOURCES "src/*.cpp")
+add_custom_command(
+  OUTPUT ${PROJECT_SOURCE_DIR}/acados/c_generated_code/main_bicycle_model.c
+  COMMAND ${ACADOS_LIB}/build/env/bin/python3 genCode.py 
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/acados
+  DEPENDS acados/genCode.py acados/mpc.py params/mpc.yaml
+)
 
-add_executable(main src/main.cpp src/utilities.cpp src/MPC.cpp src/bounds.cpp src/RosMpc.cpp)
-target_link_libraries(main ${catkin_LIBRARIES} ipopt)
+add_custom_target(
+  acados_generated_lib
+  COMMAND $(MAKE) shared_lib
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/acados/c_generated_code/
+  DEPENDS ${PROJECT_SOURCE_DIR}/acados/c_generated_code/main_bicycle_model.c
+)
 
-add_executable(testMpc tests/main.cpp src/bounds.cpp src/utilities.cpp src/MPC.cpp)
-target_link_libraries(testMpc ${catkin_LIBRARIES} ipopt)
+add_library( myacadoslib SHARED IMPORTED )
+set_target_properties( myacadoslib PROPERTIES IMPORTED_LOCATION ${PROJECT_SOURCE_DIR}/acados/c_generated_code/libacados_ocp_solver_bicycle_model.so )
+
+FILE(GLOB SOURCES "src/*.cpp")
+
+add_executable(main ${SOURCES})
+target_link_libraries(main ipopt myacadoslib acados hpipm blasfeo m ${catkin_LIBRARIES})
+add_dependencies(main acados_generated_lib)
+
+include_directories(
+  tests
+)
+# add_executable(testMpc tests/main.cpp src/bounds.cpp src/utilities.cpp src/MPC.cpp src/solverCppAD.cpp src/AcadosSolver.cpp)
+# target_link_libraries(testMpc ipopt myacadoslib acados hpipm blasfeo m ${catkin_LIBRARIES})
+# add_dependencies(testMpc acados_generated_lib) 

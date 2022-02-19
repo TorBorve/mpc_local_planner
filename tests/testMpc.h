@@ -5,8 +5,10 @@
 #include <ros/ros.h>
 #include <thread>
 
-namespace mpc {
-    void testMpc() {
+namespace mpc
+{
+    void testMpc()
+    {
         auto track = mpc::getTestTrack();
         mpc::OptVariables initialOptVars{State{41, 0, M_PI_2, 5.0, 0, 0}, Input{0, 0}};
         constexpr size_t N = 10;
@@ -22,9 +24,10 @@ namespace mpc {
         std::this_thread::sleep_for(std::chrono::seconds(1)); // wait for rviz
         double totalTime = 0;
         size_t iterations = 0;
-        while(ros::ok()){
+        while (ros::ok())
+        {
             auto solution = MPC.solve(optVars);
-            
+
             std::string filePath = __PATH__;
             filePath += "/logs/log.txt";
             mpc::logSolution(solution, optVars.x, filePath);

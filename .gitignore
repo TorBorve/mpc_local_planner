@@ -1,0 +1,6 @@
+logs/
+**/c_generated_code
+acados_python/
+.vscode
+**/__pycache__
+acados/*.json
