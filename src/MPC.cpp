@@ -3,8 +3,6 @@
 #include "mpc_local_planner/utilities.h"
 #include "mpc_local_planner/AcadosSolver.h"
 
-#include <cppad/cppad.hpp>
-#include <cppad/ipopt/solve.hpp>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <ros/ros.h>

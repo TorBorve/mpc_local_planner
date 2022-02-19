@@ -52,7 +52,7 @@ def bicycleModel(params):
 
     model.name = modelName
     model.f_expl_expr = fExpl
-    # model.f_impl_expr = fImpl
+    model.f_impl_expr = fImpl
     model.xdot = xDot
     model.x = x
     model.u = u

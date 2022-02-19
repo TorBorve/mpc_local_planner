@@ -125,7 +125,7 @@ namespace mpc
     nav_msgs::Path getPathMsg(const Eigen::Vector4d &coeffs)
     {
         double start = -30, finish = 30;
-        double step = 0.1;
+        double step = 0.5;
         nav_msgs::Path path;
         std_msgs::Header header;
         header.frame_id = "odom";
