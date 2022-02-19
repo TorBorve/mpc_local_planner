@@ -42,3 +42,7 @@ echo "--add variables to ~/.bashrc--"
 echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:'${acados_dir}/lib >> ~/.bashrc
 echo "export ACADOS_SOURCE_DIR=$acados_dir" >> ~/.bashrc
 source ~/.bashrc
+
+printf "\n Install finised. To test the installation you can run one of the examples in $ACADOS_SOURCE_DIR/examples. \
+ Remember to source the virtual enviroment by running:\
+ source $ACADOS_SOURCE_DIR/build/env/bin/activate before running python3 <your_python_file.py> \n"
