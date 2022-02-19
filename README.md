@@ -48,8 +48,14 @@ The MPC requires several things to work. Mainly it is the library Acados and of 
    git clone https://gitlab.stud.idi.ntnu.no/fuelfighter/autonomous/planning-control/mpc_local_planner.git
    ```
 3. **Acados**
+
+   The easiest is to use the install script *install_acados.sh*. The script requires the path to where you want to install acados. It can be used as follows:
+
+   ```terminal
+   bash install_acados.sh /path/to/install/location
+   ```
  
-   Firstly follow this [guide](https://docs.acados.org/installation/index.html) to download and build the acados library. **Choose the Cmake alternative**. Once that is done we need to set it up with the python interface. I recommend using a virtual environment for this (as do they). To make compiling this code easier make sure to create the virtual environment in *<acados_root>/build/*. If you do not do this the code will not compile. You will have to change CmakeLists.txt. Follow the steps in this [guide](https://docs.acados.org/python_interface/index.html). Remember to add the lines from step four into *.bashrc*
+   You can also install it manually by doing the following steps. Firstly follow this [guide](https://docs.acados.org/installation/index.html) to download and build the acados library. **Choose the Cmake alternative**. Once that is done we need to set it up with the python interface. I recommend using a virtual environment for this (as do they). To make compiling this code easier make sure to create the virtual environment in *<acados_root>/build/*. If you do not do this the code will not compile. You will have to change CmakeLists.txt. Follow the steps in this [guide](https://docs.acados.org/python_interface/index.html). Remember to add the lines from step four into *.bashrc*
 
 4. **MPC**
 
