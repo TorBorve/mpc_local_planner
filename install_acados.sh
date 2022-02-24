@@ -28,7 +28,6 @@ then
     command pip3 -v
 fi
 
-exit
 cd $1
 
 echo "--Cloning acados--"
