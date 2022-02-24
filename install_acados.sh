@@ -3,7 +3,7 @@
 
 if [ -z $1 ]
 then
-    echo "Specifiy the location of the Ipopt source directory in the first argument."
+    echo -e "\033[31m Specifiy the location of the Ipopt source directory in the first argument. \033[0m"
     exit
 fi
 
@@ -11,10 +11,24 @@ python3_version=$(python3 -c 'import sys; print(sys.version_info[1])')
 
 if [ -z $python3_version ]
 then
-    echo "Could not find python3 version"
+    echo -e "\033[31m Could not find python3 version. \033[0m"
     exit
 fi
 
+if ! command -v virtualenv &> /dev/null
+then
+    echo -e "\033[31m Could not find virtualenv command. Please install it.\033[0m"
+    command virtualenv -v
+    exit
+fi
+
+if ! command -v pip3 &> /dev/null
+then 
+    echo -e "\033[31m Could not find pip3 command. Please install it.\033[0m"
+    command pip3 -v
+fi
+
+exit
 cd $1
 
 echo "--Cloning acados--"
