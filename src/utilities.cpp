@@ -225,4 +225,13 @@ namespace mpc
     {
         return Point{p.x, p.y};
     }
+
+    ff_msgs::carControl toMsg(Input u)
+    {
+        ff_msgs::carControl msg;
+        msg.header.stamp = ros::Time::now();
+        msg.steering = u.delta;
+        msg.throttle = u.throttle;
+        return msg;
+    }
 }
