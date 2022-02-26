@@ -108,7 +108,10 @@ namespace mpc
     /// @return mpc::Point object with the x and y values of p.
     Point toPoint(const geometry_msgs::Point &p);
 
-    ff_msgs::carControl toMsg(Input u);
+    /// @brief convert Input from mpc to carControl message.
+    /// @param[in] u the input from mpc.
+    /// @return the control message sent to the car.
+    ff_msgs::carControl toMsg(const Input& u);
 }
 
 #endif
