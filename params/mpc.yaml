@@ -9,6 +9,9 @@ twist_topic: "/twist"
 # The topic where the current steering angle of the car is published. The message type should be Float64
 actual_steering_topic: "/actual_steering_angle"
 
+# The topic wher the commands to the car is sent. This is the steering angle and throttle value.
+command_topic: "/car_cmd"
+
 # The topic where the desired steering angle is published.
 steering_topic: "/steering_cmd"
 
