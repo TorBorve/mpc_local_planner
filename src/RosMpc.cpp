@@ -3,6 +3,7 @@
 
 #include <geometry_msgs/Twist.h>
 #include <std_msgs/Float64.h>
+#include "ff_msgs/carControl.h"
 
 namespace mpc
 {
@@ -19,6 +20,9 @@ namespace mpc
 
         std::string twistTopic = nh_->param<std::string>("twist_topic", "twist");
         std::string actualSteeringTopic = nh_->param<std::string>("actual_steering_topic", "actual_steering_angle");
+        std::string commandTopic = nh_->param<std::string>("command_topic", "car_cmd");
+        std::string steeringTopic = nh_->param<std::string>("steering_topic", "steering_cmd");
+        std::string throttleTopic = nh_->param<std::string>("throttle_topic", "throttle_cmd");
         mapFrame_ = nh->param<std::string>("map_frame", "map");
         carFrame_ = nh->param<std::string>("car_frame", "base_link");
         loopHz_ = nh->param<double>("loop_Hz", 30);
@@ -33,8 +37,9 @@ namespace mpc
         {
             ROS_WARN("path_topic parameter not specified. Using hardcode internal path.");
         }
-        throttlePub_ = nh->advertise<std_msgs::Float64>("/throttle_cmd", 1);
-        steeringPub_ = nh->advertise<std_msgs::Float64>("/steering_cmd", 1);
+        commandPub_ = nh->advertise<ff_msgs::carControl>(commandTopic, 1);
+        throttlePub_ = nh->advertise<std_msgs::Float64>(throttleTopic, 1);
+        steeringPub_ = nh->advertise<std_msgs::Float64>(steeringTopic, 1);
         twistSub_ = nh->subscribe(twistTopic, 1, &RosMpc::twistCallback, this);
         actualSteeringSub_ = nh->subscribe(actualSteeringTopic, 1, &RosMpc::actualSteeringCallback, this);
     }
@@ -78,6 +83,7 @@ namespace mpc
         constexpr double AUDIBOT_STEERING_RATIO = 17.3; 
         msg.data = result.u0.delta * AUDIBOT_STEERING_RATIO;
         steeringPub_.publish(msg);
+        commandPub_.publish(toMsg(result.u0));
 
         LOG_DEBUG("Time: %i [ms]", (int)result.computeTime);
         LOG_DEBUG("carVel: %.2f, steering: %.2f [deg], throttle: %.2f", state.vel, result.u0.delta * 180.0 / M_PI, result.u0.throttle);
@@ -158,6 +164,12 @@ namespace mpc
         ok &= hasParamWarn(nh, "max_steering_angle");
         ok &= hasParamWarn(nh, "max_steering_rotation_speed");
         ok &= hasParamWarn(nh, "wheelbase");
+        ok &= hasParamWarn(nh, "twist_topic");
+        ok &= hasParamWarn(nh, "actual_steering_topic");
+        ok &= hasParamWarn(nh, "command_topic");
+        ok &= hasParamWarn(nh, "map_frame");
+        ok &= hasParamWarn(nh, "car_frame");
+        ok &= hasParamWarn(nh, "loop_hz");
         return ok;
     }
 }

@@ -50,6 +50,9 @@ namespace mpc
         /// @brief mpc class that solves the problem given our state and desired trajectory.
         MPC mpc;
 
+        /// @brief publisher for command to car. This is the steering angle and throttle value.
+        ros::Publisher commandPub_;
+
         /// @brief publisher for the steering angle.
         ros::Publisher steeringPub_;
 

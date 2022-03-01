@@ -8,8 +8,7 @@
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Point.h>
 #include <ros/ros.h>
-
-#include <cppad/cppad.hpp>
+#include "ff_msgs/carControl.h"
 
 #ifdef NDEBUG                               // true if the build type is not debug
 #define LOG_DEBUG_STREAM(args...) ((void)0) // define as do nothing
@@ -108,6 +107,11 @@ namespace mpc
     /// @param[in] p the point message.
     /// @return mpc::Point object with the x and y values of p.
     Point toPoint(const geometry_msgs::Point &p);
+
+    /// @brief convert Input from mpc to carControl message.
+    /// @param[in] u the input from mpc.
+    /// @return the control message sent to the car.
+    ff_msgs::carControl toMsg(const Input& u);
 }
 
 #endif

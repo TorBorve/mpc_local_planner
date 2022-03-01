@@ -10,6 +10,8 @@
 
   <depend>tf2</depend>
   <depend>tf2_ros</depend>
+  <build_depend>ff_msgs</build_depend>
+  <exec_depend>ff_msgs</exec_depend>
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>nav_msgs</build_depend>
