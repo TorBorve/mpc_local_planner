@@ -169,7 +169,7 @@ namespace mpc
         ok &= hasParamWarn(nh, "command_topic");
         ok &= hasParamWarn(nh, "map_frame");
         ok &= hasParamWarn(nh, "car_frame");
-        ok &= hasParamWarn(nh, "loop_hz");
+        ok &= hasParamWarn(nh, "loop_Hz");
         return ok;
     }
 }

@@ -23,15 +23,6 @@ namespace mpc
         return pose;
     }
 
-    CppAD::vector<double> toCppAD(const std::vector<double> &vec)
-    {
-        CppAD::vector<double> cppADVec(vec.size());
-        for (int i = 0; i < vec.size(); i++)
-        {
-            cppADVec[i] = vec[i];
-        }
-        return cppADVec;
-    }
 
     void logSolution(const MPCReturn &solution, const State &curState, const std::string &filename)
     {

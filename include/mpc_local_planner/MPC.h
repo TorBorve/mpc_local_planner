@@ -2,8 +2,6 @@
 #define MPC_MPC_H_
 
 #include <eigen3/Eigen/Core>
-#include <cppad/cppad.hpp>
-#include <cppad/ipopt/solve.hpp>
 #include <ros/ros.h>
 
 #include "mpc_local_planner/types.h"
