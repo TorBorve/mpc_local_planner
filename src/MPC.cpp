@@ -29,11 +29,10 @@ namespace mpc
 
         double rotation;
         Eigen::Vector4d coeffs;
-        bool forward;
-        calcCoeffs(state, rotation, coeffs, forward);
+        calcCoeffs(state, rotation, coeffs);
 
         State transformedState{0, 0, rotation, state.vel, 0, 0};
-        calcState(transformedState, coeffs, forward);
+        calcState(transformedState, coeffs);
         OptVariables transformedOptVar{transformedState, optVars.u};
 
         auto result = solve(transformedOptVar, coeffs);
@@ -80,7 +79,7 @@ namespace mpc
         return solver.solve(optVars, coeffs);
     }
 
-    void MPC::calcCoeffs(const State &state, double &rotation, Eigen::Vector4d &coeffs, bool &forward) const
+    void MPC::calcCoeffs(const State &state, double &rotation, Eigen::Vector4d &coeffs) const
     {
         size_t start, end;
         getTrackSection(start, end, state);
@@ -88,13 +87,11 @@ namespace mpc
         double minCost = 1e19;
         for (double rot = -M_PI_2; rot < 0; rot += M_PI_2 / 3)
         {
-            double curCost = minCost + 1;
-            bool curForward = true;
-            Eigen::Vector4d curCoeffs = interpolate(state, rot, start, end, curCost, curForward);
+            double curCost =  1e19;
+            Eigen::Vector4d curCoeffs = interpolate(state, rot, start, end, curCost);
             if (curCost < minCost)
             {
                 minCost = curCost;
-                forward = curForward;
                 coeffs = curCoeffs;
                 rotation = rot;
             }
@@ -102,41 +99,15 @@ namespace mpc
         return;
     }
 
-    void MPC::calcState(State &state, const Eigen::Vector4d &coeffs, bool &forward) const
+    void MPC::calcState(State &state, const Eigen::Vector4d &coeffs) const
     {
         state.cte = state.y - polyEval(state.x, coeffs);
         double dy = coeffs[1] + 2 * state.x * coeffs[2] + 3 * coeffs[3] * state.x * state.x;
-        double dx = 1;
-        if (dy > 100)
-        {
-            dy = 100;
-        }
-        else if (dy < -100)
-        {
-            dy = -100;
-        }
-
-        if (forward)
-        {
-            state.epsi = state.psi - atan2(dy, dx);
-        }
-        else
-        {
-            state.epsi = state.psi - atan2(-dy, -dx);
-        }
-
-        if (state.epsi > M_PI)
-        {
-            state.epsi -= 2 * M_PI;
-        }
-        else if (state.epsi < -M_PI)
-        {
-            state.epsi += 2 * M_PI;
-        }
+        state.epsi = state.psi - atan2(dy, 1);
         return;
     }
 
-    Eigen::Vector4d MPC::interpolate(const State &state, double rotation, size_t start, size_t end, double &cost, bool &forward) const
+    Eigen::Vector4d MPC::interpolate(const State &state, double rotation, size_t start, size_t end, double &cost) const
     {
         Eigen::VectorXd xVals(end - start);
         Eigen::VectorXd yVals(end - start);
@@ -160,15 +131,6 @@ namespace mpc
         for (unsigned int i = 0; i < yVals.size(); i++)
         {
             cost += distSqrd(yVals[i] - polyEval(xVals[i], coeffs), 0);
-        }
-
-        if (xVals[0] <= xVals[xVals.size() - 1])
-        {
-            forward = true;
-        }
-        else
-        {
-            forward = false;
         }
         return coeffs;
     }
@@ -203,7 +165,7 @@ namespace mpc
 
     void MPC::getTrackSection(size_t &start, size_t &end, const State &state) const
     {
-        double maxLen = 3;
+        double maxLen = 15;
         double minDistSqrd = distSqrd(state.x - track_[0].x, state.y - track_[0].y);
         size_t minIndex = 0;
         for (unsigned int i = 1; i < track_.size(); i++)
@@ -218,15 +180,12 @@ namespace mpc
 
         double len = 0;
         size_t frontIndex = minIndex;
-        size_t backIndex = minIndex;
-        while (len < maxLen * maxLen && frontIndex < track_.size() - 1 && backIndex > 0)
+        while (len < maxLen && frontIndex < track_.size() - 1)
         {
             frontIndex++;
-            // backIndex--;
-            len += distSqrd(track_[frontIndex].x - track_[frontIndex - 1].x, track_[frontIndex].y - track_[frontIndex - 1].y);
-            // len += distSqrd(track_[backIndex].x - track_[backIndex + 1].x, track_[backIndex].y - track_[backIndex + 1].y);
+            len += sqrt(distSqrd(track_[frontIndex].x - track_[frontIndex - 1].x, track_[frontIndex].y - track_[frontIndex - 1].y));
         }
-        start = backIndex;
+        start = minIndex;
         end = frontIndex;
         if (end - start < 4)
         {

@@ -65,9 +65,7 @@ namespace mpc
         /// @param[in] state current state of the car.
         /// @param[in] rotation refrence frame roation relative too the car.
         /// @param[out] coeffs the calculated coefficients for the polynomial
-        /// @param[in] forward true if the car is facing forward along the track. This means that the angle
-        /// between the car and track, epsi, is between [-M_PI/2, M_PI/2].
-        void calcCoeffs(const State &state, double &rotation, Eigen::Vector4d &coeffs, bool &forward) const;
+        void calcCoeffs(const State &state, double &rotation, Eigen::Vector4d &coeffs) const;
 
         /// @brief interpolates third order polynomial to fit the track between start and end.
         /// @param[in] state current state. Used for refrence frame rotation and translation.
@@ -76,16 +74,12 @@ namespace mpc
         /// @param[in] end the end index for the track section.
         /// @param[out] cost sum of squares between polynomial and points. Least squares method.
         /// @return coefficient for the polynomial found using least squares method.
-        /// @param[in] forward true if the car is facing forward along the track. This means that the angle
-        /// between the car and track, epsi, is between [-M_PI/2, M_PI/2].
-        Eigen::Vector4d interpolate(const State &state, double rotation, size_t start, size_t end, double &cost, bool &forward) const;
+        Eigen::Vector4d interpolate(const State &state, double rotation, size_t start, size_t end, double &cost) const;
 
         /// @brief calculate the rest of the state. i.e. crosstrack error and yaw error
         /// @param[in/out] state state with valid yaw, x, y and vel. Updated with cte and epsi.
         /// @param[in] coeffs coefficients for third degree polynomial that represents desired trajectory.
-        /// @param[in] forward true if the car is facing forward along the track. This means that the angle
-        /// between the car and track, epsi, is between [-M_PI/2, M_PI/2].
-        void calcState(State &state, const Eigen::Vector4d &coeffs, bool &forward) const;
+        void calcState(State &state, const Eigen::Vector4d &coeffs) const;
 
         /// @brief calculate y value of third order polynomial. y = f(x)
         /// @param[in] x the x value for the function.
