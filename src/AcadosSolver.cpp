@@ -34,6 +34,7 @@ namespace mpc
         idxbx0[3] = 3;
         idxbx0[4] = 4;
         idxbx0[5] = 5;
+        idxbx0[6] = 6;
 
         double lbx0[NBX0];
         double ubx0[NBX0];
@@ -49,6 +50,8 @@ namespace mpc
         ubx0[4] = optVars.u.delta;
         lbx0[5] = optVars.u.throttle;
         ubx0[5] = optVars.u.throttle;
+        lbx0[6] = optVars.x.cte;
+        ubx0[6] = optVars.x.cte;
 
         ocp_nlp_constraints_model_set(config_, dims_, in_, 0, "idxbx", idxbx0);
         ocp_nlp_constraints_model_set(config_, dims_, in_, 0, "lbx", lbx0);
@@ -137,6 +140,7 @@ namespace mpc
         x_init[3] = optVars.x.vel;
         x_init[4] = optVars.u.delta;
         x_init[5] = optVars.u.throttle;
+        x_init[6] = optVars.x.cte;
 
         // initial value for control input
         double u0[NU];

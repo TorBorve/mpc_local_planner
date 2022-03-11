@@ -16,8 +16,9 @@ def bicycleModel(params):
     v = SX.sym("v") # velocity
     delta = SX.sym("delta") # steering angle
     throttle = SX.sym("throttle") # throttle
+    cte = SX.sym("cte")
 
-    x = vertcat(x1, y1, psi, v, delta, throttle)
+    x = vertcat(x1, y1, psi, v, delta, throttle, cte)
 
     #inputs
     deltaDotInput = SX.sym("delta_dot_input")
@@ -32,11 +33,14 @@ def bicycleModel(params):
     vDot = SX.sym("v_dot")
     deltaDotState = SX.sym("delta_dot_state")
     throttleDotState = SX.sym("throttle_dot_state")
+    cte_dot = SX.sym("cte_dot")
 
 
 
-    xDot = vertcat(x1Dot, y1Dot, psiDot, vDot, deltaDotState, throttleDotState)
+    xDot = vertcat(x1Dot, y1Dot, psiDot, vDot, deltaDotState, throttleDotState, cte_dot)
 
+    # x = vertcat(x1, y1, psi, v, delta, throttle)
+    p = vertcat(SX.sym("coeff_0"), SX.sym("coeff_1"), SX.sym("coeff_2"), SX.sym("coeff_3"))
 
     fExpl = vertcat(
             v*cos(psi),
@@ -44,11 +48,14 @@ def bicycleModel(params):
             v/Lf*delta,
             5.0*throttle - 0.087*v,
             deltaDotInput,
-            throttleDotInput)
+            throttleDotInput,
+            v*sin(psi) - (3*p[3]*x1**2 + 2*p[2]*x1 + p[1])*v*cos(psi)
+        )
+
     fImpl = xDot - fExpl            
     model = AcadosModel()
 
-    p = vertcat(SX.sym("coeff_0"), SX.sym("coeff_1"), SX.sym("coeff_2"), SX.sym("coeff_3"))
+    
 
     model.name = modelName
     model.f_expl_expr = fExpl
@@ -57,6 +64,7 @@ def bicycleModel(params):
     model.x = x
     model.u = u
     model.p = p
+    model.con_h_expr = vertcat(cte)
 
     return model
 
@@ -96,22 +104,33 @@ def ocpSolver():
     ocp.cost.cost_type = "NONLINEAR_LS"
     ocp.cost.yref = np.array([0, 0, 6.0, 0, 0, 0, 0])
     ocp.model.cost_y_expr = costFunc(ocp.model)
-    ocp.cost.W = 2*np.diag([500, 500, 100, 1, 10, 50, 1])
+    ocp.cost.W = 2*np.diag([0, 0, 20, 100, 10, 10, 1])
 
     deltaMax = params["max_steering_angle"]
     deltaDotMax = params["max_steering_rotation_speed"]
     throttleMin = 0.0
     throttleMax = params["throttle_max"]
-    throttleDotMax = params["throttle_dot_max"]   
+    throttleDotMax = params["throttle_dot_max"]  
+    trackWidth = 4 
     ocp.constraints.constr_type = "BGH"
     ocp.constraints.lbx = np.array([-deltaMax, throttleMin])
     ocp.constraints.ubx = np.array([deltaMax, throttleMax])
     ocp.constraints.idxbx = np.array([4, 5])
+
     ocp.constraints.lbu = np.array([-deltaDotMax, -throttleDotMax])
     ocp.constraints.ubu = np.array([deltaDotMax, throttleDotMax])
     ocp.constraints.idxbu = np.array([0, 1])
 
-    x0 = np.array([-10, 0, 0, 0, 0, 0])
+    ocp.cost.zl = 100 * np.ones((1,))
+    ocp.cost.Zl = 0 * np.ones((1,))
+    ocp.cost.zu = 100 * np.ones((1,))
+    ocp.cost.Zu = 0 * np.ones((1,))
+    ocp.constraints.lh = np.array([-trackWidth/2])
+    ocp.constraints.uh = np.array([trackWidth/2])
+
+    ocp.constraints.idxsh = np.array([0])
+
+    x0 = np.array([-10, 0, 0, 0, 0, 0, 0])
     ocp.constraints.x0 = x0
 
     param = np.array([0, -1, 0, 0.002])
