@@ -3,7 +3,6 @@
 
 #include <geometry_msgs/Twist.h>
 #include <std_msgs/Float64.h>
-#include "ff_msgs/carControl.h"
 
 namespace mpc
 {
@@ -37,7 +36,6 @@ namespace mpc
         {
             ROS_WARN("path_topic parameter not specified. Using hardcode internal path.");
         }
-        commandPub_ = nh->advertise<ff_msgs::carControl>(commandTopic, 1);
         throttlePub_ = nh->advertise<std_msgs::Float64>(throttleTopic, 1);
         steeringPub_ = nh->advertise<std_msgs::Float64>(steeringTopic, 1);
         twistSub_ = nh->subscribe(twistTopic, 1, &RosMpc::twistCallback, this);
@@ -83,7 +81,6 @@ namespace mpc
         constexpr double AUDIBOT_STEERING_RATIO = 17.3; 
         msg.data = result.u0.delta * AUDIBOT_STEERING_RATIO;
         steeringPub_.publish(msg);
-        commandPub_.publish(toMsg(result.u0));
 
         LOG_DEBUG("Time: %i [ms]", (int)result.computeTime);
         LOG_DEBUG("carVel: %.2f, steering: %.2f [deg], throttle: %.2f", state.vel, result.u0.delta * 180.0 / M_PI, result.u0.throttle);
