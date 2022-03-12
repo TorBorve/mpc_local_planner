@@ -26,6 +26,7 @@ if ! command -v pip3 &> /dev/null
 then 
     echo -e "\033[31m Could not find pip3 command. Please install it.\033[0m"
     command pip3 -v
+    exit
 fi
 
 cd $1

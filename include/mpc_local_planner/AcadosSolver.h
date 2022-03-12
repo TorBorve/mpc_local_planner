@@ -1,18 +1,18 @@
 #ifndef MPC_ACADOS_SOLVER_H_
 #define MPC_ACADOS_SOLVER_H_
 
-#include "mpc_local_planner/types.h"
-
 #include <ros/ros.h>
+
+#include "mpc_local_planner/types.h"
 
 // standard
 #include <stdio.h>
 #include <stdlib.h>
 // acados
-#include "acados/utils/print.h"
 #include "acados/utils/math.h"
-#include "acados_c/ocp_nlp_interface.h"
+#include "acados/utils/print.h"
 #include "acados_c/external_function_interface.h"
+#include "acados_c/ocp_nlp_interface.h"
 #include "acados_solver_bicycle_model.h"
 
 #define NX BICYCLE_MODEL_NX
@@ -45,70 +45,69 @@
 #define NPHIN BICYCLE_MODEL_NPHIN
 #define NR BICYCLE_MODEL_NR
 
-namespace mpc
-{
-    /// @brief Class for acados solver. Using functions and more for the generated c code.
-    class AcadosSolver
-    {
-    public:
-        /// @brief consturctor used to allocated memory and initialize
-        /// @param[in] optVars current state and inputs
-        AcadosSolver(const OptVariables &optVars);
+namespace mpc {
 
-        /// @brief destructor used to free allocated memory
-        ~AcadosSolver();
+/// @brief Class for acados solver. Using functions and more for the generated c code.
+class AcadosSolver {
+   public:
+    /// @brief consturctor used to allocated memory and initialize
+    /// @param[in] optVars current state and inputs
+    AcadosSolver(const OptVariables &optVars);
 
-        /// @brief reinitalize solver.
-        /// @param[in] optVars current state and inputs. Used in init.
-        void reInit(const OptVariables &optVars);
+    /// @brief destructor used to free allocated memory
+    ~AcadosSolver();
 
-        /// @brief set constraints for the inital state
-        /// @param[in] optVars the current state and inputs
-        void setInitCondition(const OptVariables &optVars);
+    /// @brief reinitalize solver.
+    /// @param[in] optVars current state and inputs. Used in init.
+    void reInit(const OptVariables &optVars);
 
-        /// @brief set parameters used by solver. In this case it is the coefficients for the interpolated third degree polynomial
-        /// @param[in] coeffs the coeffs for polynomial defining track
-        void setParams(const Eigen::Vector4d &coeffs);
+    /// @brief set constraints for the inital state
+    /// @param[in] optVars the current state and inputs
+    void setInitCondition(const OptVariables &optVars);
 
-        /// @brief set the initalguess for states and inputs in solver. Here we set them to the current state and u = 0
-        /// @param[in] optVars the current positon and inputs.
-        void setInitGuess(const OptVariables &optVars);
+    /// @brief set parameters used by solver. In this case it is the coefficients for the interpolated third degree polynomial
+    /// @param[in] coeffs the coeffs for polynomial defining track
+    void setParams(const Eigen::Vector4d &coeffs);
 
-        /// @brief solve function for solving NMPC
-        /// @param[in] optVars current state and inputs.
-        /// @param[in] coeffs coefficients for polynomial defining track
-        /// @return the optimal solution as MPCReturn type.
-        MPCReturn solve(const OptVariables &optVars, const Eigen::Vector4d &coeffs);
+    /// @brief set the initalguess for states and inputs in solver. Here we set them to the current state and u = 0
+    /// @param[in] optVars the current positon and inputs.
+    void setInitGuess(const OptVariables &optVars);
 
-    private:
-        /// @brief initalize class
-        /// @param[in] optVars current state and inputs
-        void init();
+    /// @brief solve function for solving NMPC
+    /// @param[in] optVars current state and inputs.
+    /// @param[in] coeffs coefficients for polynomial defining track
+    /// @return the optimal solution as MPCReturn type.
+    MPCReturn solve(const OptVariables &optVars, const Eigen::Vector4d &coeffs);
 
-        /// @brief free allocated memory in class
-        void freeAllocated();
+   private:
+    /// @brief initalize class
+    /// @param[in] optVars current state and inputs
+    void init();
 
-        /// @brief solver capsule from acados
-        bicycle_model_solver_capsule *capsule_;
+    /// @brief free allocated memory in class
+    void freeAllocated();
 
-        /// @brief config from capsule
-        ocp_nlp_config *config_;
+    /// @brief solver capsule from acados
+    bicycle_model_solver_capsule *capsule_;
 
-        /// @brief dimensions of nlp
-        ocp_nlp_dims *dims_;
+    /// @brief config from capsule
+    ocp_nlp_config *config_;
 
-        /// @brief nlp in
-        ocp_nlp_in *in_;
+    /// @brief dimensions of nlp
+    ocp_nlp_dims *dims_;
 
-        /// @brief nlp out
-        ocp_nlp_out *out_;
+    /// @brief nlp in
+    ocp_nlp_in *in_;
 
-        /// @brief nlp_solver
-        ocp_nlp_solver *solver_;
+    /// @brief nlp out
+    ocp_nlp_out *out_;
 
-        /// @brief options pointer
-        void *opts_;
-    };
-}
+    /// @brief nlp_solver
+    ocp_nlp_solver *solver_;
+
+    /// @brief options pointer
+    void *opts_;
+};
+}  // namespace mpc
 
 #endif
