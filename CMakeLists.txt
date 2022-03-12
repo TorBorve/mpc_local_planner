@@ -70,9 +70,9 @@ set_target_properties( myacadoslib PROPERTIES IMPORTED_LOCATION ${PROJECT_SOURCE
 
 FILE(GLOB SOURCES "src/*.cpp")
 
-add_executable(main ${SOURCES})
-target_link_libraries(main myacadoslib acados hpipm blasfeo m ${catkin_LIBRARIES})
-add_dependencies(main acados_generated_lib)
+add_executable(ff_mpc ${SOURCES})
+target_link_libraries(ff_mpc myacadoslib acados hpipm blasfeo m ${catkin_LIBRARIES})
+add_dependencies(ff_mpc acados_generated_lib)
 
 include_directories(
   tests
