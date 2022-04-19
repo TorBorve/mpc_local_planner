@@ -92,19 +92,8 @@ class MPC {
     /// @param[in] state current state of the car.
     void getTrackSection(size_t &start, size_t &stop, const State &state) const;
 
-    /// @brief publishes transform from map to car. This is used to verify that the position that
-    /// the mpc recives is correct
-    /// @param[in] state the state give to the mpc
-    void pubTf(const State &state) const;
-
     /// @brief discrete points representing desired trajectory
     std::vector<Point> track_;
-
-    /// @brief publisher for the desired trajectory
-    ros::Publisher trackPub_;
-
-    /// @brief publisher for the mpc trajectory solution
-    ros::Publisher mpcPathPub_;
 
     /// @brief publisher for the interpolated polynomial.
     ros::Publisher polynomPub_;

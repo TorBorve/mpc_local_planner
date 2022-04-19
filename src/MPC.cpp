@@ -14,15 +14,11 @@ namespace mpc {
 MPC::MPC(const std::vector<Point> &track, size_t N, double dt, Bound steeringAngle, double maxSteeringRotationSpeed,
          double wheelbase) : track_{track}, N_{N}, dt_{dt}, steeringAngle_{steeringAngle}, maxSteeringRotationSpeed_{maxSteeringRotationSpeed}, wheelbase_{wheelbase} {
     ros::NodeHandle nh;
-    trackPub_ = nh.advertise<nav_msgs::Path>("global_path", 1);
-    mpcPathPub_ = nh.advertise<nav_msgs::Path>("local_path", 1);
     polynomPub_ = nh.advertise<nav_msgs::Path>("interpolated_path", 1);
 }
 
 MPCReturn MPC::solve(const OptVariables &optVars) {
     const State &state = optVars.x;
-
-    pubTf(state);
 
     double rotation;
     Eigen::Vector4d coeffs;
@@ -50,7 +46,7 @@ MPCReturn MPC::solve(const OptVariables &optVars) {
         x[i].x.y += state.y;
     }
 
-    auto polyPath = getPathMsg(coeffs);
+    auto polyPath = getPathMsg(coeffs, "odom", "base_footprint");
     auto &points = polyPath.poses;
     for (unsigned int i = 0; i < points.size(); i++) {
         double dx = points[i].pose.position.x;
@@ -61,10 +57,7 @@ MPCReturn MPC::solve(const OptVariables &optVars) {
         points[i].pose.position.x += state.x;
         points[i].pose.position.y += state.y;
     }
-    polynomPub_.publish(polyPath);
-    trackPub_.publish(getPathMsg(track_));
-    mpcPathPub_.publish(getPathMsg(result));
-
+    polynomPub_.publish(polyPath);  // TODO: Ideally this would be in RosMPC.cpp
     return result;
 }
 
@@ -173,24 +166,5 @@ void MPC::getTrackSection(size_t &start, size_t &end, const State &state) const 
         end = start + 4;
     }
     assert(end < track_.size());
-}
-
-void MPC::pubTf(const State &state) const {
-    static tf2_ros::TransformBroadcaster br;
-
-    geometry_msgs::TransformStamped transformStamped;
-    transformStamped.header.stamp = ros::Time::now();
-    transformStamped.header.frame_id = "odom";
-    transformStamped.child_frame_id = "mpc_base_link";
-    transformStamped.transform.translation.x = state.x;
-    transformStamped.transform.translation.y = state.y;
-    transformStamped.transform.translation.z = 0.5;
-    tf2::Quaternion q;
-    q.setRPY(0, 0, state.psi);
-    transformStamped.transform.rotation.x = q.x();
-    transformStamped.transform.rotation.y = q.y();
-    transformStamped.transform.rotation.z = q.z();
-    transformStamped.transform.rotation.w = q.w();
-    br.sendTransform(transformStamped);
 }
 }  // namespace mpc
