@@ -31,9 +31,11 @@ RosMpc::RosMpc(ros::NodeHandle *nh) : mpc{getTestTrack(), (size_t)nh->param<int>
         pathSub_ = nh->subscribe(pathTopic, 1, &RosMpc::pathCallback, this);
     } else {
         ROS_WARN("path_topic parameter not specified. Using hardcode internal path.");
+        trackPub_ = nh->advertise<nav_msgs::Path>("/global_path", 1);
     }
     throttlePub_ = nh->advertise<std_msgs::Float64>(throttleTopic, 1);
     steeringPub_ = nh->advertise<std_msgs::Float64>(steeringTopic, 1);
+    mpcPathPub_ = nh->advertise<nav_msgs::Path>("/local_path", 1);
     twistSub_ = nh->subscribe(twistTopic, 1, &RosMpc::twistCallback, this);
     actualSteeringSub_ = nh->subscribe(actualSteeringTopic, 1, &RosMpc::actualSteeringCallback, this);
 }
@@ -73,6 +75,11 @@ MPCReturn RosMpc::solve() {
     constexpr double AUDIBOT_STEERING_RATIO = 17.3;
     msg.data = result.u0.delta * AUDIBOT_STEERING_RATIO;
     steeringPub_.publish(msg);
+
+    mpcPathPub_.publish(getPathMsg(result, mapFrame_, carFrame_));
+    if (!nh_->hasParam("path_topic")) {
+        trackPub_.publish(getPathMsg(mpc.getTrack(), mapFrame_, carFrame_));
+    }
 
     LOG_DEBUG("Time: %i [ms]", (int)result.computeTime);
     LOG_DEBUG("carVel: %.2f, steering: %.2f [deg], throttle: %.2f", state.vel, result.u0.delta * 180.0 / M_PI, result.u0.throttle);

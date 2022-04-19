@@ -54,6 +54,12 @@ class RosMpc {
     /// @brief publisher for throttle value
     ros::Publisher throttlePub_;
 
+    /// @brief publisher for the desired trajectory
+    ros::Publisher trackPub_;
+
+    /// @brief publisher for the mpc trajectory solution
+    ros::Publisher mpcPathPub_;
+
     /// @brief subscriber to the twist message send by the car.
     ros::Subscriber twistSub_;
 
