@@ -49,18 +49,24 @@ std::vector<Point> getTestTrack();
 
 /// @brief convert mpcHorizon in solutio to path message
 /// @param[in] solution the soluion from mpc. Containg optimal varibles over time.
+/// @param[in] mapFrame the frame where the positions are relative to. Often "map", "world" or "odom"
+/// @param[in] carFrame the frame of the points. Here the frame of the car.
 /// @return Path message from mpcHorizon
-nav_msgs::Path getPathMsg(const MPCReturn &solution);
+nav_msgs::Path getPathMsg(const MPCReturn &solution, const std::string &mapFrame, const std::string &carFrame);
 
 /// @brief convert third order polynomial to path message
 /// @param[in] coeffs coefficents of the polynomial
+/// @param[in] mapFrame the frame where the positions are relative to. Often "map", "world" or "odom"
+/// @param[in] carFrame the frame of the points. Here the frame of the car.
 /// @return path message with points that lay on the polynomial
-nav_msgs::Path getPathMsg(const Eigen::Vector4d &coeffs);
+nav_msgs::Path getPathMsg(const Eigen::Vector4d &coeffs, const std::string &mapFrame, const std::string &carFrame);
 
 /// @brief convert track to path message
 /// @param[in] track the track that should be converted
+/// @param[in] mapFrame the frame where the positions are relative to. Often "map", "world" or "odom"
+/// @param[in] carFrame the frame of the points. Here the frame of the car.
 /// @return the resulting path message
-nav_msgs::Path getPathMsg(const std::vector<Point> &track);
+nav_msgs::Path getPathMsg(const std::vector<Point> &track, const std::string &mapFrame, const std::string &carFrame);
 
 /// @brief convert odometry message to State
 /// @param[in] odom odometry message

@@ -84,13 +84,13 @@ std::vector<Point> getTestTrack() {
     return track;
 }
 
-nav_msgs::Path getPathMsg(const MPCReturn &solution) {
+nav_msgs::Path getPathMsg(const MPCReturn &solution, const std::string &mapFrame, const std::string &carFrame) {
     nav_msgs::Path path;
     std_msgs::Header header;
-    header.frame_id = "odom";
+    header.frame_id = mapFrame;
     header.stamp = ros::Time::now();
     path.header = header;
-    header.frame_id = "base_link";
+    header.frame_id = carFrame;
     path.poses.resize(solution.mpcHorizon.size());
     for (int i = 0; i < path.poses.size(); i++) {
         path.poses[i].pose = toMsg(solution.mpcHorizon[i].x);
@@ -99,15 +99,15 @@ nav_msgs::Path getPathMsg(const MPCReturn &solution) {
     return path;
 }
 
-nav_msgs::Path getPathMsg(const Eigen::Vector4d &coeffs) {
+nav_msgs::Path getPathMsg(const Eigen::Vector4d &coeffs, const std::string &mapFrame, const std::string &carFrame) {
     double start = -30, finish = 30;
     double step = 0.5;
     nav_msgs::Path path;
     std_msgs::Header header;
-    header.frame_id = "odom";
+    header.frame_id = mapFrame;
     header.stamp = ros::Time::now();
     path.header = header;
-    header.frame_id = "base_link";
+    header.frame_id = carFrame;
     for (double x = start; x < finish; x += step) {
         double y = coeffs[0] + coeffs[1] * x + coeffs[2] * x * x + coeffs[3] * x * x * x;
         geometry_msgs::PoseStamped pose;
@@ -119,13 +119,13 @@ nav_msgs::Path getPathMsg(const Eigen::Vector4d &coeffs) {
     return path;
 }
 
-nav_msgs::Path getPathMsg(const std::vector<Point> &track) {
+nav_msgs::Path getPathMsg(const std::vector<Point> &track, const std::string &mapFrame, const std::string &carFrame) {
     nav_msgs::Path path;
     std_msgs::Header header;
-    header.frame_id = "odom";
+    header.frame_id = mapFrame;
     header.stamp = ros::Time::now();
     path.header = header;
-    header.frame_id = "base_link";
+    header.frame_id = carFrame;
     for (const auto &p : track) {
         geometry_msgs::PoseStamped pose;
         pose.pose.position.x = p.x;
