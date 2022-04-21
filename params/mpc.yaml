@@ -9,9 +9,6 @@ twist_topic: "/twist"
 # The topic where the current steering angle of the car is published. The message type should be Float64
 actual_steering_topic: "/actual_steering_angle"
 
-# The topic wher the commands to the car is sent. This is the steering angle and throttle value.
-command_topic: "/car_cmd"
-
 # The topic where the desired steering angle is published.
 steering_topic: "/steering_cmd"
 
@@ -48,3 +45,6 @@ throttle_max: 0.5
 
 # Maximum allowed value for change throttle value pr second
 throttle_dot_max: 0.33
+
+# Ratio between angle on the wheels and the steering wheel. steering_ratio = "steering wheel angle" / "wheel angle"
+steering_ratio: 17.3

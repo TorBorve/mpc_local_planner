@@ -96,8 +96,8 @@ class RosMpc {
     /// @brief time between steps in the mpc calculations.
     double mpcDt_;
 
-    /// @brief distance between the front and rear wheels.
-    // double wheelbase_;
+    /// @brief Ratio between angle on the wheels and the steering wheel. steeringRatio = "steering wheel angle" / "wheel angle"
+    double steeringRatio_;
 };
 }  // namespace mpc
 

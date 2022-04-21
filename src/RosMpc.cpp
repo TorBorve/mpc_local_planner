@@ -25,6 +25,7 @@ RosMpc::RosMpc(ros::NodeHandle *nh) : mpc{getTestTrack(), (size_t)nh->param<int>
     carFrame_ = nh->param<std::string>("car_frame", "base_link");
     loopHz_ = nh->param<double>("loop_Hz", 30);
     mpcDt_ = nh->param<double>("mpc_dt", 0.2);
+    steeringRatio_ = nh->param<double>("steering_ratio", 1.0);
 
     if (nh_->hasParam("path_topic")) {
         std::string pathTopic = nh_->param<std::string>("path_topic", "/path");
@@ -72,8 +73,7 @@ MPCReturn RosMpc::solve() {
     msg.data = result.u0.throttle;
     throttlePub_.publish(msg);
     prevThrottle = result.u0.throttle;
-    constexpr double AUDIBOT_STEERING_RATIO = 17.3;
-    msg.data = result.u0.delta * AUDIBOT_STEERING_RATIO;
+    msg.data = result.u0.delta * steeringRatio_;
     steeringPub_.publish(msg);
 
     mpcPathPub_.publish(getPathMsg(result, mapFrame_, carFrame_));
@@ -132,7 +132,7 @@ void RosMpc::twistCallback(const geometry_msgs::TwistStamped::ConstPtr &msg) {
 }
 
 void RosMpc::actualSteeringCallback(const std_msgs::Float64::ConstPtr &msg) {
-    currentSteeringAngle_ = msg->data;
+    currentSteeringAngle_ = msg->data / steeringRatio_;
 }
 
 void RosMpc::pathCallback(const nav_msgs::Path::ConstPtr &msg) {
