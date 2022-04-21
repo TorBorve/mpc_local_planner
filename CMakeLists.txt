@@ -14,7 +14,6 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 add_compile_definitions(__PATH__="${PROJECT_SOURCE_DIR}")
-file(MAKE_DIRECTORY "${PROJECT_SOURCE_DIR}/logs")
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)

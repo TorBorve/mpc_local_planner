@@ -21,32 +21,6 @@ geometry_msgs::Pose toMsg(const State &state) {
     return pose;
 }
 
-void logSolution(const MPCReturn &solution, const State &curState, const std::string &filename) {
-    std::ofstream outFile(filename);
-    if (!outFile) {
-        std::cout << "could not write to file log.txt\n";
-        return;
-    }
-    outFile << "Log for mpc solution\n";
-    outFile << "Cost: " << solution.cost << std::endl;
-    outFile << "Current State:\n";
-    outFile << "x\ty\tpsi\tvel\n";
-    outFile << curState.x << '\t' << curState.y << '\t' << curState.psi << '\t' << curState.vel << '\n';
-    outFile << "State and input from horizon:\n";
-    outFile << "x\ty\tpsi\tvel\tcte\tepsi\ta\tdelta\n";
-    outFile << std::fixed << std::setprecision(5);
-    for (const auto &step : solution.mpcHorizon) {
-        outFile << step.x.x << '\t'
-                << step.x.y << '\t'
-                << step.x.psi << '\t'
-                << step.x.vel << '\t'
-                << step.x.cte << '\t'
-                << step.x.epsi << '\t'
-                << step.u.throttle << '\t'
-                << step.u.delta << std::endl;
-    }
-}
-
 // Fit a polynomial.
 // Adapted from
 // https://gist.github.com/ksjgh/4d5050d0e9afc5fdb5908734335138d0

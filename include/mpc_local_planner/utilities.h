@@ -24,12 +24,6 @@ namespace mpc {
 /// @brief convert State class to Pose message
 geometry_msgs::Pose toMsg(const State &state);
 
-/// @brief save solution to file
-/// @param[in] solution the solution that should be solved
-/// @param[in] curState the current state of the car
-/// @param[in] filename the filename inside the log folder.
-void logSolution(const MPCReturn &solution, const State &curState, const std::string &filename);
-
 /// @brief interpolation for points.
 /// @param[in] xvals the x values of the points
 /// @param[in] yvals the y values of the points
