@@ -45,3 +45,6 @@ throttle_max: 0.5
 
 # Maximum allowed value for change throttle value pr second
 throttle_dot_max: 0.33
+
+# Ratio between angle on the wheels and the steering wheel. steering_ratio = "steering wheel angle" / "wheel angle"
+steering_ratio: 17.3

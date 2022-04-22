@@ -49,7 +49,13 @@ The MPC requires several things to work. Mainly it is the library Acados and of 
    ```
 3. **Acados**
 
-   The easiest is to use the install script *install_acados.sh*. The script requires the path to where you want to install acados. It can be used as follows:
+   The easiest is to use the install script *install_acados.sh*. Firts we need to install som dependencies. Run the following:
+   
+   ```terminal
+   sudo apt install python3-virtualenv python3-pip
+   ```
+   
+   Then we can use the script. It requires the path to where you want to install acados. It can be used as follows:
 
    ```terminal
    bash install_acados.sh /path/to/install/location

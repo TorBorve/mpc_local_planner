@@ -28,9 +28,6 @@ namespace mpc
         {
             auto solution = MPC.solve(optVars);
 
-            std::string filePath = __PATH__;
-            filePath += "/logs/log.txt";
-            mpc::logSolution(solution, optVars.x, filePath);
             MPC.model(optVars, solution.u0, 1.0 / loopHz);
 
             std::cout << "Time: " << solution.computeTime << " [ms]\n";

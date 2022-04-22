@@ -1,9 +1,9 @@
-#include "mpc_local_planner/RosMpc.h"
-#include "mpc_local_planner/utilities.h"
 #include <ros/ros.h>
 
-int main(int argc, char **argv)
-{
+#include "mpc_local_planner/RosMpc.h"
+#include "mpc_local_planner/utilities.h"
+
+int main(int argc, char **argv) {
     ros::init(argc, argv, "MPC");
     ROS_INFO("MPC node intitialized");
 
@@ -13,11 +13,10 @@ int main(int argc, char **argv)
     mpc::RosMpc mpc(&nh);
     mpc.verifyInputs();
     ROS_INFO("Topics and transfroms are ok!");
-    ros::Duration(2).sleep(); // sleep for two sec
+    ros::Duration(2).sleep();  // sleep for two sec
 
     ros::Rate loopRate(rate);
-    while (ros::ok())
-    {
+    while (ros::ok()) {
         ros::spinOnce();
         auto start = std::chrono::high_resolution_clock::now();
         auto ret = mpc.solve();
