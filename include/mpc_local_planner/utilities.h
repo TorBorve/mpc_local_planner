@@ -82,6 +82,18 @@ double length(const geometry_msgs::Vector3 &vec);
 /// @return yaw from quaternion
 double getYaw(const geometry_msgs::Quaternion &quat);
 
+/// @brief get pitch from quaternion
+/// @param[in] quat Quaternion
+/// @return pitch from quaternion
+double getPitch(const geometry_msgs::Quaternion &quat);
+
+/// @brief get roll, pitch and yaw from quaternion
+/// @param[in] quat Quaternion
+/// @param[out] roll roll
+/// @param[out] pitch pitch
+/// @param[out] yaw yaw
+void getRPY(const geometry_msgs::Quaternion &quat, double &roll, double &pitch, double &yaw);
+
 /// @brief checks if param exist in nh. If not an error is printed and a exception is thrown
 /// @param[in] nh pointer to nodeHandle that should have access to the parameter.
 /// @param[in] param the parameter we want to check if exists.
