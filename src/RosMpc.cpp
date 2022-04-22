@@ -148,7 +148,6 @@ bool RosMpc::verifyParamsForMPC(ros::NodeHandle *nh) const {
     ok &= hasParamWarn(nh, "wheelbase");
     ok &= hasParamWarn(nh, "twist_topic");
     ok &= hasParamWarn(nh, "actual_steering_topic");
-    ok &= hasParamWarn(nh, "command_topic");
     ok &= hasParamWarn(nh, "map_frame");
     ok &= hasParamWarn(nh, "car_frame");
     ok &= hasParamWarn(nh, "loop_Hz");
