@@ -51,40 +51,39 @@ namespace mpc {
 class AcadosSolver {
    public:
     /// @brief consturctor used to allocated memory and initialize
-    /// @param[in] optVars current state and inputs
-    AcadosSolver(const OptVariables &optVars);
+    /// @param[in] state current state of the car.
+    AcadosSolver(const State &state);
 
     /// @brief destructor used to free allocated memory
     ~AcadosSolver();
 
     /// @brief reinitalize solver.
-    /// @param[in] optVars current state and inputs. Used in init.
-    void reInit(const OptVariables &optVars);
+    /// @param[in] state current state. Used in init.
+    void reInit(const State &state);
 
     /// @brief set constraints for the inital state
-    /// @param[in] optVars the current state and inputs
-    void setInitCondition(const OptVariables &optVars);
+    /// @param[in] state the current state
+    void setInitCondition(const State &state);
 
-    /// @brief set parameters used by solver. In this case it is the coefficients for the interpolated third degree polynomial
-    /// @param[in] coeffs the coeffs for polynomial defining track
-    void setParams(const Eigen::Vector4d &coeffs);
+    /// @brief set parameters used by solver. In this case it is the coefficients for the interpolated third degree polynomial and pitch of the car.
+    /// @param[in] params the parameters for the solver
+    void setParams(const Params &params);
 
-    /// @brief set the initalguess for states and inputs in solver. Here we set them to the current state and u = 0
-    /// @param[in] optVars the current positon and inputs.
-    void setInitGuess(const OptVariables &optVars);
+    /// @brief set the inital guess for states and inputs in solver. Here we set them to the current state and u = 0
+    /// @param[in] state the current state of the car
+    void setInitGuess(const State &state);
 
     /// @brief solve function for solving NMPC
-    /// @param[in] optVars current state and inputs.
-    /// @param[in] coeffs coefficients for polynomial defining track
+    /// @param[in] state current state.
+    /// @param[in] params parmeters for solver
     /// @return the optimal solution as MPCReturn type.
-    MPCReturn solve(const OptVariables &optVars, const Eigen::Vector4d &coeffs);
+    MPCReturn solve(const State &state, const Params &params);
 
    private:
-    /// @brief initalize class
-    /// @param[in] optVars current state and inputs
+    /// @brief initalize class. Allocates the needed memory.
     void init();
 
-    /// @brief free allocated memory in class
+    /// @brief free allocated memory in class.
     void freeAllocated();
 
     /// @brief solver capsule from acados

@@ -4,9 +4,9 @@
 
 namespace mpc {
 
-AcadosSolver::AcadosSolver(const OptVariables &optVars) {
+AcadosSolver::AcadosSolver(const State &state) {
     init();
-    setInitGuess(optVars);
+    setInitGuess(state);
     return;
 }
 
@@ -15,14 +15,14 @@ AcadosSolver::~AcadosSolver() {
     return;
 }
 
-void AcadosSolver::reInit(const OptVariables &optVars) {
+void AcadosSolver::reInit(const State &state) {
     freeAllocated();
     init();
-    setInitGuess(optVars);
+    setInitGuess(state);
     return;
 }
 
-void AcadosSolver::setInitCondition(const OptVariables &optVars) {
+void AcadosSolver::setInitCondition(const State &state) {
     // initial condition
     int idxbx0[NBX0];
     idxbx0[0] = 0;
@@ -32,47 +32,29 @@ void AcadosSolver::setInitCondition(const OptVariables &optVars) {
     idxbx0[4] = 4;
     idxbx0[5] = 5;
 
-    double lbx0[NBX0];
-    double ubx0[NBX0];
-    lbx0[0] = optVars.x.x;
-    ubx0[0] = optVars.x.x;
-    lbx0[1] = optVars.x.y;
-    ubx0[1] = optVars.x.y;
-    lbx0[2] = optVars.x.psi;
-    ubx0[2] = optVars.x.psi;
-    lbx0[3] = optVars.x.vel;
-    ubx0[3] = optVars.x.vel;
-    lbx0[4] = optVars.u.delta;
-    ubx0[4] = optVars.u.delta;
-    lbx0[5] = optVars.u.throttle;
-    ubx0[5] = optVars.u.throttle;
+    auto x0 = state.toArray();
+    assert(NBX0 == x0.size());
 
     ocp_nlp_constraints_model_set(config_, dims_, in_, 0, "idxbx", idxbx0);
-    ocp_nlp_constraints_model_set(config_, dims_, in_, 0, "lbx", lbx0);
-    ocp_nlp_constraints_model_set(config_, dims_, in_, 0, "ubx", ubx0);
+    ocp_nlp_constraints_model_set(config_, dims_, in_, 0, "lbx", &x0[0]);
+    ocp_nlp_constraints_model_set(config_, dims_, in_, 0, "ubx", &x0[0]);
 }
 
-void AcadosSolver::setParams(const Eigen::Vector4d &coeffs) {
-    double p[NP];
-    p[0] = coeffs[0];
-    p[1] = coeffs[1];
-    p[2] = coeffs[2];
-    p[3] = coeffs[3];
+void AcadosSolver::setParams(const Params &params) {
+    auto p = params.toArray();
+    assert(p.size() == NP);
 
     for (int ii = 0; ii <= dims_->N; ii++) {
-        bicycle_model_acados_update_params(capsule_, ii, p, NP);
+        bicycle_model_acados_update_params(capsule_, ii, &p[0], NP);
     }
 }
 
-MPCReturn AcadosSolver::solve(const OptVariables &optVars, const Eigen::Vector4d &coeffs) {
-    OptVariables optVarsCopy{optVars};
-    static double prevThrottle = 0.0;
-    optVarsCopy.u.throttle = prevThrottle;
-    int N = dims_->N;
+MPCReturn AcadosSolver::solve(const State &state, const Params &params) {
     auto start = std::chrono::high_resolution_clock::now();
+    int N = dims_->N;
 
-    setInitCondition(optVarsCopy);
-    setParams(coeffs);
+    setInitCondition(state);
+    setParams(params);
 
     // prepare evaluation
     int NTIMINGS = 1;
@@ -97,7 +79,7 @@ MPCReturn AcadosSolver::solve(const OptVariables &optVars, const Eigen::Vector4d
 
     if (status != ACADOS_SUCCESS) {
         ROS_ERROR("bicycle_model_acados_solve() failed with status %d.\n", status);
-        reInit(optVarsCopy);
+        reInit(state);
     }
 
     auto end = std::chrono::high_resolution_clock::now();
@@ -105,29 +87,22 @@ MPCReturn AcadosSolver::solve(const OptVariables &optVars, const Eigen::Vector4d
 
     MPCReturn ret;
     ret.mpcHorizon.resize(N);
-    ret.u0 = Input{xtraj[5 + NX], xtraj[4 + NX]};
-    prevThrottle = ret.u0.throttle;
     for (int i = 0; i < N; i++) {
-        State state{xtraj[0 + NX * i], xtraj[1 + NX * i], xtraj[2 + NX * i], xtraj[3 + NX * i], 0, 0};
-        Input input{xtraj[5 + NX * i], xtraj[4 + NX * i]};
+        State state(&xtraj[NX * i], NX);
+        Input input(&utraj[NU * i], NU);
         ret.mpcHorizon.at(i) = OptVariables{state, input};
     }
+    ret.u0 = ret.mpcHorizon.at(0).u;
     ret.cost = -1;
     ret.success = status == ACADOS_SUCCESS;
     ret.computeTime = duration.count();
     return ret;
 }
 
-void AcadosSolver::setInitGuess(const OptVariables &optVars) {
-    // initialization for state values
-    double x_init[NX];
-    x_init[0] = optVars.x.x;
-    x_init[1] = optVars.x.y;
-    x_init[2] = optVars.x.psi;
-    x_init[3] = optVars.x.vel;
-    x_init[4] = optVars.u.delta;
-    x_init[5] = optVars.u.throttle;
+void AcadosSolver::setInitGuess(const State &state) {
 
+    auto x_init = state.toArray();
+    assert(x_init.size() == NX);
     // initial value for control input
     double u0[NU];
     u0[0] = 0.0;
@@ -135,7 +110,7 @@ void AcadosSolver::setInitGuess(const OptVariables &optVars) {
 
     // initialize solution
     for (int i = 0; i <= dims_->N; i++) {
-        ocp_nlp_out_set(config_, dims_, out_, i, "x", x_init);
+        ocp_nlp_out_set(config_, dims_, out_, i, "x", &x_init[0]);
         ocp_nlp_out_set(config_, dims_, out_, i, "u", u0);
     }
 }
