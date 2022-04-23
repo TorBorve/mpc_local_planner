@@ -35,27 +35,28 @@ class MPC {
     }
 
     /// @brief solve function for mpc. Solves the nlp with state as given.
-    /// @param[in] optVars the state of the car. (position, velocity, steering angle, ...)
+    /// @param[in] state the state of the car.
+    /// @param[in] pitch the pitch angle of the car
     /// @return solution from mpc. See definition of MPCReturn.
-    MPCReturn solve(const OptVariables &optVars);
+    MPCReturn solve(const State &state, double pitch);
 
     /// @brief solve function for mpc. Uses states and coefficients of a third order polynomial
     ///        that is threated at desired trajectory.
-    /// @param[in] optVars the state of the car. (position, velocity, steering angle, ...)
-    /// @param[in] coeffs coefficients of third degree polynomial. Used as desired trajectory.
+    /// @param[in] state the state of the car. (position, velocity, steering angle, ...)
+    /// @param[in] params parameters for solver.
     /// @return solution from mpc. See definition of MPCReturn.
-    MPCReturn solve(const OptVariables &optVars, const Eigen::Vector4d &coeffs);
+    MPCReturn solve(const State &state, const Params &params);
 
-    /// @brief model of a car. Used to predict state evolution.
-    /// @param[in/out] optVars state thate should be updated
-    /// @param[in] u inputs on car (acceleration and steering angle)
-    void model(OptVariables &optVars, const Input &u);
+    // /// @brief model of a car. Used to predict state evolution.
+    // /// @param[in/out] optVars state thate should be updated
+    // /// @param[in] u inputs on car (acceleration and steering angle)
+    // void model(OptVariables &optVars, const Input &u);
 
-    /// @brief model of a car. Used to predict state evolution.
-    /// @param[in/out] optVars state thate should be updated
-    /// @param[in] u inputs on car (acceleration and steering angle)
-    /// @param[in] dt the time increment used in the model
-    void model(OptVariables &optVars, const Input &u, double dt);
+    // /// @brief model of a car. Used to predict state evolution.
+    // /// @param[in/out] optVars state thate should be updated
+    // /// @param[in] u inputs on car (acceleration and steering angle)
+    // /// @param[in] dt the time increment used in the model
+    // void model(OptVariables &optVars, const Input &u, double dt);
 
    private:
     /// @brief calculates coefficients of third order polynomial that fits the disired trajectory best.

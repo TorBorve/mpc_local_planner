@@ -17,18 +17,18 @@ MPC::MPC(const std::vector<Point> &track, size_t N, double dt, Bound steeringAng
     polynomPub_ = nh.advertise<nav_msgs::Path>("interpolated_path", 1);
 }
 
-MPCReturn MPC::solve(const OptVariables &optVars) {
-    const State &state = optVars.x;
+MPCReturn MPC::solve(const State &state, double pitch) {
 
     double rotation;
     Eigen::Vector4d coeffs;
     calcCoeffs(state, rotation, coeffs);
+    Params params{coeffs, pitch};
 
-    State transformedState{0, 0, rotation, state.vel, 0, 0};
-    calcState(transformedState, coeffs);
-    OptVariables transformedOptVar{transformedState, optVars.u};
+    State transformedState{0, 0, rotation, state.vel, state.delta, state.throttle};
+    // calcState(transformedState, coeffs);
+    // OptVariables transformedOptVar{transformedState, optVars.u};
 
-    auto result = solve(transformedOptVar, coeffs);
+    auto result = solve(transformedState, params);
 
     const double rotAngle = state.psi - rotation;
     const double sinRot = sin(rotAngle);
@@ -41,7 +41,7 @@ MPCReturn MPC::solve(const OptVariables &optVars) {
         x[i].x.x = dx * cosRot - dy * sinRot;
         x[i].x.y = dx * sinRot + dy * cosRot;
 
-        // // shift coordinates
+        // shift coordinates
         x[i].x.x += state.x;
         x[i].x.y += state.y;
     }
@@ -61,9 +61,9 @@ MPCReturn MPC::solve(const OptVariables &optVars) {
     return result;
 }
 
-MPCReturn MPC::solve(const OptVariables &optVars, const Eigen::Vector4d &coeffs) {
-    static AcadosSolver solver{optVars};
-    return solver.solve(optVars, coeffs);
+MPCReturn MPC::solve(const State &state, const Params &params) {
+    static AcadosSolver solver{state};
+    return solver.solve(state, params);
 }
 
 void MPC::calcCoeffs(const State &state, double &rotation, Eigen::Vector4d &coeffs) const {
@@ -84,9 +84,9 @@ void MPC::calcCoeffs(const State &state, double &rotation, Eigen::Vector4d &coef
 }
 
 void MPC::calcState(State &state, const Eigen::Vector4d &coeffs) const {
-    state.cte = state.y - polyEval(state.x, coeffs);
-    double dy = coeffs[1] + 2 * state.x * coeffs[2] + 3 * coeffs[3] * state.x * state.x;
-    state.epsi = state.psi - atan2(dy, 1);
+    // state.cte = state.y - polyEval(state.x, coeffs);
+    // double dy = coeffs[1] + 2 * state.x * coeffs[2] + 3 * coeffs[3] * state.x * state.x;
+    // state.epsi = state.psi - atan2(dy, 1);
     return;
 }
 
@@ -115,28 +115,28 @@ Eigen::Vector4d MPC::interpolate(const State &state, double rotation, size_t sta
     return coeffs;
 }
 
-void MPC::model(OptVariables &optVars, const Input &u) {
-    model(optVars, u, this->dt_);
-}
+// void MPC::model(OptVariables &optVars, const Input &u) {
+//     model(optVars, u, this->dt_);
+// }
 
-void MPC::model(OptVariables &optVars, const Input &u, double dt) {
-    ROS_WARN("model is out dated and needs to be updated...");
-    const double maxInc = maxSteeringRotationSpeed_ * dt_;
-    State &state = optVars.x;
-    double delta = u.delta;
-    if (delta < optVars.u.delta - maxInc) {
-        delta = optVars.u.delta - maxInc;
-        ROS_WARN("Unable to turn wheels fast enough");
-    } else if (delta > optVars.u.delta + maxInc) {
-        delta = optVars.u.delta + maxInc;
-        ROS_WARN("Unable to turn wheels fast enough");
-    }
-    optVars.u.delta = delta;
-    state.x += state.vel * cos(state.psi) * dt;
-    state.y += state.vel * sin(state.psi) * dt;
-    state.psi += state.vel * tan(delta) / wheelbase_ * dt;
-    state.vel += u.throttle * dt;
-}
+// void MPC::model(OptVariables &optVars, const Input &u, double dt) {
+//     // ROS_WARN("model is out dated and needs to be updated...");
+//     // const double maxInc = maxSteeringRotationSpeed_ * dt_;
+//     // State &state = optVars.x;
+//     // double delta = u.delta;
+//     // if (delta < optVars.u.delta - maxInc) {
+//     //     delta = optVars.u.delta - maxInc;
+//     //     ROS_WARN("Unable to turn wheels fast enough");
+//     // } else if (delta > optVars.u.delta + maxInc) {
+//     //     delta = optVars.u.delta + maxInc;
+//     //     ROS_WARN("Unable to turn wheels fast enough");
+//     // }
+//     // optVars.u.delta = delta;
+//     // state.x += state.vel * cos(state.psi) * dt;
+//     // state.y += state.vel * sin(state.psi) * dt;
+//     // state.psi += state.vel * tan(delta) / wheelbase_ * dt;
+//     // state.vel += u.throttle * dt;
+// }
 
 void MPC::getTrackSection(size_t &start, size_t &end, const State &state) const {
     double maxLen = 15;
