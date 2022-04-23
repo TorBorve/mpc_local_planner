@@ -37,18 +37,19 @@ def bicycleModel(params):
 
     xDot = vertcat(x1Dot, y1Dot, psiDot, vDot, deltaDotState, throttleDotState)
 
+    pitch = SX.sym("pitch")
 
     fExpl = vertcat(
             v*cos(psi),
             v*sin(psi),
             v/Lf*delta,
-            5.0*throttle - 0.087*v,
+            5.0*throttle - 0.087*v + sin(pitch)*9.81,
             deltaDotInput,
             throttleDotInput)
     fImpl = xDot - fExpl            
     model = AcadosModel()
 
-    p = vertcat(SX.sym("coeff_0"), SX.sym("coeff_1"), SX.sym("coeff_2"), SX.sym("coeff_3"))
+    p = vertcat(SX.sym("coeff_0"), SX.sym("coeff_1"), SX.sym("coeff_2"), SX.sym("coeff_3"), pitch)
 
     model.name = modelName
     model.f_expl_expr = fExpl
@@ -114,7 +115,7 @@ def ocpSolver():
     x0 = np.array([-10, 0, 0, 0, 0, 0])
     ocp.constraints.x0 = x0
 
-    param = np.array([0, -1, 0, 0.002])
+    param = np.array([0, -1, 0, 0.002, 0.0])
     ocp.parameter_values = param
 
     ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM" #"PARTIAL_CONDENSING_HPIPM" "FULL_CONDENSING_QPOASES" 
