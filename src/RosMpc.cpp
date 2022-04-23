@@ -7,11 +7,7 @@
 
 namespace mpc {
 
-RosMpc::RosMpc(ros::NodeHandle *nh) : mpc{getTestTrack(), (size_t)nh->param<int>("mpc_N", 10), nh->param<double>("mpc_dt", 0.2),
-                                          Bound{-nh->param<double>("max_steering_angle", 0.57), nh->param<double>("max_steering_angle", 0.57)},
-                                          nh->param<double>("max_steering_rotation_speed", 0.80), nh->param<double>("wheelbase", 3.0)},
-                                      tfListener_{tfBuffer_},
-                                      nh_{nh} {
+RosMpc::RosMpc(ros::NodeHandle *nh) : mpc{getTestTrack()}, tfListener_{tfBuffer_}, nh_{nh} {
     if (!verifyParamsForMPC(nh)) {
         ROS_WARN("One or more parameters for the mpc is not specified. Default values is therefore used.");
     }

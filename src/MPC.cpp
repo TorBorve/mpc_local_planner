@@ -11,8 +11,7 @@
 #include "mpc_local_planner/utilities.h"
 
 namespace mpc {
-MPC::MPC(const std::vector<Point> &track, size_t N, double dt, Bound steeringAngle, double maxSteeringRotationSpeed,
-         double wheelbase) : track_{track}, N_{N}, dt_{dt}, steeringAngle_{steeringAngle}, maxSteeringRotationSpeed_{maxSteeringRotationSpeed}, wheelbase_{wheelbase} {
+MPC::MPC(const std::vector<Point> &track) : track_{track} {
     ros::NodeHandle nh;
     polynomPub_ = nh.advertise<nav_msgs::Path>("interpolated_path", 1);
 }
@@ -114,29 +113,6 @@ Eigen::Vector4d MPC::interpolate(const State &state, double rotation, size_t sta
     }
     return coeffs;
 }
-
-// void MPC::model(OptVariables &optVars, const Input &u) {
-//     model(optVars, u, this->dt_);
-// }
-
-// void MPC::model(OptVariables &optVars, const Input &u, double dt) {
-//     // ROS_WARN("model is out dated and needs to be updated...");
-//     // const double maxInc = maxSteeringRotationSpeed_ * dt_;
-//     // State &state = optVars.x;
-//     // double delta = u.delta;
-//     // if (delta < optVars.u.delta - maxInc) {
-//     //     delta = optVars.u.delta - maxInc;
-//     //     ROS_WARN("Unable to turn wheels fast enough");
-//     // } else if (delta > optVars.u.delta + maxInc) {
-//     //     delta = optVars.u.delta + maxInc;
-//     //     ROS_WARN("Unable to turn wheels fast enough");
-//     // }
-//     // optVars.u.delta = delta;
-//     // state.x += state.vel * cos(state.psi) * dt;
-//     // state.y += state.vel * sin(state.psi) * dt;
-//     // state.psi += state.vel * tan(delta) / wheelbase_ * dt;
-//     // state.vel += u.throttle * dt;
-// }
 
 void MPC::getTrackSection(size_t &start, size_t &end, const State &state) const {
     double maxLen = 15;

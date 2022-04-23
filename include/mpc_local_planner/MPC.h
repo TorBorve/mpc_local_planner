@@ -15,12 +15,7 @@ class MPC {
    public:
     /// @brief constructor for MPC class
     /// @param[in] track vector with points that define desired trajectory
-    /// @param[in] N number of steps in simulation
-    /// @param[in] dt time increment for model
-    /// @param[in] steeringAngle bounds for max and min steering angle
-    /// @param[in] maxSteeringRotationsSpeed the maximum speed the wheels can turn at. Given in [rad/s].
-    /// @param[in] wheelbase the distance between the front and rear wheels.
-    MPC(const std::vector<Point> &track, size_t N, double dt, Bound steeringAngle, double maxSteeringRotationSpeed, double wheelbase);
+    MPC(const std::vector<Point> &track);
 
     /// @brief update track variable for desired trajectory
     /// @param[in] newTrack the new desired trajectory
@@ -46,17 +41,6 @@ class MPC {
     /// @param[in] params parameters for solver.
     /// @return solution from mpc. See definition of MPCReturn.
     MPCReturn solve(const State &state, const Params &params);
-
-    // /// @brief model of a car. Used to predict state evolution.
-    // /// @param[in/out] optVars state thate should be updated
-    // /// @param[in] u inputs on car (acceleration and steering angle)
-    // void model(OptVariables &optVars, const Input &u);
-
-    // /// @brief model of a car. Used to predict state evolution.
-    // /// @param[in/out] optVars state thate should be updated
-    // /// @param[in] u inputs on car (acceleration and steering angle)
-    // /// @param[in] dt the time increment used in the model
-    // void model(OptVariables &optVars, const Input &u, double dt);
 
    private:
     /// @brief calculates coefficients of third order polynomial that fits the disired trajectory best.
@@ -98,21 +82,6 @@ class MPC {
 
     /// @brief publisher for the interpolated polynomial.
     ros::Publisher polynomPub_;
-
-    /// @brief number of steps in mpc solver
-    size_t N_;
-
-    /// @brief time increment for model.
-    double dt_;
-
-    /// @brief distance between front and rear wheels
-    double wheelbase_;
-
-    /// @brief bounds for max and min steering angle
-    Bound steeringAngle_;
-
-    /// @brief maxSteeringRotationsSpeed the maximum speed the wheels can turn at. Given in [rad/s].
-    double maxSteeringRotationSpeed_;
 };
 
 }  // namespace mpc
