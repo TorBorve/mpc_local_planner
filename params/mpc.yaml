@@ -40,8 +40,11 @@ max_steering_rotation_speed: 0.80
 # Distance between front and rear wheels on the car.
 wheelbase: 2.65
 
+# Minimum value for throttle
+throttle_min: -1.0
+
 # Maximum value for throttle
-throttle_max: 0.5
+throttle_max: 1.0
 
 # Maximum allowed value for change throttle value pr second
 throttle_dot_max: 0.33

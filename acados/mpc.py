@@ -101,7 +101,7 @@ def ocpSolver():
 
     deltaMax = params["max_steering_angle"]
     deltaDotMax = params["max_steering_rotation_speed"]
-    throttleMin = 0.0
+    throttleMin = params["throttle_min"]
     throttleMax = params["throttle_max"]
     throttleDotMax = params["throttle_dot_max"]   
     ocp.constraints.constr_type = "BGH"
