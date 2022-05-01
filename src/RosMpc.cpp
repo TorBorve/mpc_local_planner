@@ -7,11 +7,7 @@
 
 namespace mpc {
 
-RosMpc::RosMpc(ros::NodeHandle *nh) : mpc{getTestTrack(), (size_t)nh->param<int>("mpc_N", 10), nh->param<double>("mpc_dt", 0.2),
-                                          Bound{-nh->param<double>("max_steering_angle", 0.57), nh->param<double>("max_steering_angle", 0.57)},
-                                          nh->param<double>("max_steering_rotation_speed", 0.80), nh->param<double>("wheelbase", 3.0)},
-                                      tfListener_{tfBuffer_},
-                                      nh_{nh} {
+RosMpc::RosMpc(ros::NodeHandle *nh) : mpc{getTestTrack()}, tfListener_{tfBuffer_}, nh_{nh} {
     if (!verifyParamsForMPC(nh)) {
         ROS_WARN("One or more parameters for the mpc is not specified. Default values is therefore used.");
     }
@@ -57,23 +53,18 @@ MPCReturn RosMpc::solve() {
         tfCar.transform.translation.y,
         getYaw(tfCar.transform.rotation),
         currentVel_,
-        0,
-        0};
-    Input input{
-        prevThrottle,
-        currentSteeringAngle_};
-    OptVariables optVars{state, input};
-    // mpc.model(optVars, input, 1.0 / loop_Hz_); // get predicted state after calculation is finished
+        currentSteeringAngle_,
+        prevThrottle};
 
     // solve mpc
-    const auto result = mpc.solve(optVars);
+    const auto result = mpc.solve(state, getPitch(tfCar.transform.rotation));
 
     // publish inputs
     std_msgs::Float64 msg;
-    msg.data = result.u0.throttle;
+    msg.data = result.mpcHorizon.at(1).x.throttle;
     throttlePub_.publish(msg);
-    prevThrottle = result.u0.throttle;
-    msg.data = result.u0.delta * steeringRatio_;
+    prevThrottle = msg.data;
+    msg.data = result.mpcHorizon.at(1).x.delta * steeringRatio_;
     steeringPub_.publish(msg);
 
     mpcPathPub_.publish(getPathMsg(result, mapFrame_, carFrame_));
@@ -82,8 +73,7 @@ MPCReturn RosMpc::solve() {
     }
 
     LOG_DEBUG("Time: %i [ms]", (int)result.computeTime);
-    LOG_DEBUG("carVel: %.2f, steering: %.2f [deg], throttle: %.2f", state.vel, result.u0.delta * 180.0 / M_PI, result.u0.throttle);
-    LOG_DEBUG("yaw error: %.2f", result.mpcHorizon.at(0).x.epsi * 180.0 / M_PI);
+    LOG_DEBUG("carVel: %.2f, steering: %.2f [deg], throttle: %.2f", state.vel, result.mpcHorizon.at(1).x.delta * 180.0 / M_PI, result.mpcHorizon.at(1).x.throttle);
     return result;
 }
 
