@@ -14,11 +14,11 @@
 namespace mpc {
 
 /// @brief MPC class for car
-class MPC {
+class PathTrackingSys {
    public:
     /// @brief constructor for MPC class
     /// @param[in] track vector with points that define desired trajectory
-    MPC(const std::vector<Point> &track);
+    PathTrackingSys(const std::vector<Point> &track);
 
     /// @brief update track variable for desired trajectory
     /// @param[in] newTrack the new desired trajectory
@@ -30,14 +30,6 @@ class MPC {
     /// @return track for the desired trajectory
     std::vector<Point> getTrack() const {
         return track_;
-    }
-
-    void setRefPose(const geometry_msgs::Pose &pose) {
-        refPose_ = pose;
-    }
-
-    geometry_msgs::Pose getRefPose() const {
-        return refPose_;
     }
 
     /// @brief solve function for mpc. Solves the nlp with state as given.
@@ -52,8 +44,6 @@ class MPC {
     /// @param[in] params parameters for solver.
     /// @return solution from mpc. See definition of MPCReturn.
     MPCReturn solve(const State &state, const Acados::PathTrackingParams &params);
-
-    MPCReturn solve(const State &state, const Acados::PointStabParams &params);
 
    private:
     /// @brief calculates coefficients of third order polynomial that fits the disired trajectory best.
@@ -92,8 +82,6 @@ class MPC {
 
     /// @brief discrete points representing desired trajectory
     std::vector<Point> track_;
-
-    geometry_msgs::Pose refPose_;
 
     /// @brief publisher for the interpolated polynomial.
     ros::Publisher polynomPub_;
