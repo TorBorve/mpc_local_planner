@@ -1,3 +1,0 @@
-import mpc
-
-mpc.ocpSolver()
