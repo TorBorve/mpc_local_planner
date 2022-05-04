@@ -6,7 +6,7 @@
 
 #include <fstream>
 
-#include "mpc_local_planner/AcadosSolver.h"
+#include "mpc_local_planner/AcadosPathTracking.h"
 #include "mpc_local_planner/bounds.h"
 #include "mpc_local_planner/utilities.h"
 
@@ -14,14 +14,24 @@ namespace mpc {
 MPC::MPC(const std::vector<Point> &track) : track_{track} {
     ros::NodeHandle nh;
     polynomPub_ = nh.advertise<nav_msgs::Path>("interpolated_path", 1);
+    refPose_.orientation.w = 1;
 }
 
 MPCReturn MPC::solve(const State &state, double pitch) {
 
+    if (false) {
+        Acados::PointStabParams params;
+        params.pitch = pitch;
+        params.pRef = Point{refPose_.position.x, refPose_.position.y};
+        params.psiRef = getYaw(refPose_.orientation);
+        return solve(state, params);
+
+    } else {
+
     double rotation;
     Eigen::Vector4d coeffs;
     calcCoeffs(state, rotation, coeffs);
-    Params params{coeffs, pitch};
+    Acados::PathTrackingParams params{coeffs, pitch};
 
     State transformedState{0, 0, rotation, state.vel, state.delta, state.throttle};
     // calcState(transformedState, coeffs);
@@ -58,10 +68,16 @@ MPCReturn MPC::solve(const State &state, double pitch) {
     }
     polynomPub_.publish(polyPath);  // TODO: Ideally this would be in RosMPC.cpp
     return result;
+    }
 }
 
-MPCReturn MPC::solve(const State &state, const Params &params) {
-    static AcadosSolver solver{state};
+MPCReturn MPC::solve(const State &state, const Acados::PathTrackingParams &params) {
+    static Acados::PathTracking solver{state};
+    return solver.solve(state, params);
+}
+
+MPCReturn MPC::solve(const State &state, const Acados::PointStabParams &params) {
+    static Acados::PointStab solver{state};
     return solver.solve(state, params);
 }
 
@@ -79,13 +95,6 @@ void MPC::calcCoeffs(const State &state, double &rotation, Eigen::Vector4d &coef
             rotation = rot;
         }
     }
-    return;
-}
-
-void MPC::calcState(State &state, const Eigen::Vector4d &coeffs) const {
-    // state.cte = state.y - polyEval(state.x, coeffs);
-    // double dy = coeffs[1] + 2 * state.x * coeffs[2] + 3 * coeffs[3] * state.x * state.x;
-    // state.epsi = state.psi - atan2(dy, 1);
     return;
 }
 

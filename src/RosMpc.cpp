@@ -35,6 +35,7 @@ RosMpc::RosMpc(ros::NodeHandle *nh) : mpc{getTestTrack()}, tfListener_{tfBuffer_
     mpcPathPub_ = nh->advertise<nav_msgs::Path>("/local_path", 1);
     twistSub_ = nh->subscribe(twistTopic, 1, &RosMpc::twistCallback, this);
     actualSteeringSub_ = nh->subscribe(actualSteeringTopic, 1, &RosMpc::actualSteeringCallback, this);
+    poseSub_ = nh->subscribe("/move_base_simple/goal", 1, &RosMpc::poseCallback, this);
 }
 
 MPCReturn RosMpc::solve() {
@@ -127,6 +128,10 @@ void RosMpc::actualSteeringCallback(const std_msgs::Float64::ConstPtr &msg) {
 
 void RosMpc::pathCallback(const nav_msgs::Path::ConstPtr &msg) {
     mpc.setTrack(toVector(*msg));
+}
+
+void RosMpc::poseCallback(const geometry_msgs::PoseStamped::ConstPtr &msg) {
+    mpc.setRefPose(msg->pose);
 }
 
 bool RosMpc::verifyParamsForMPC(ros::NodeHandle *nh) const {

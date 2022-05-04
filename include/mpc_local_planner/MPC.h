@@ -2,11 +2,14 @@
 #define MPC_MPC_H_
 
 #include <ros/ros.h>
+#include <geometry_msgs/Pose.h>
 
 #include <eigen3/Eigen/Core>
 
 #include "mpc_local_planner/bounds.h"
 #include "mpc_local_planner/types.h"
+#include "mpc_local_planner/AcadosPathTracking.h"
+#include "mpc_local_planner/AcadosPointStab.h"
 
 namespace mpc {
 
@@ -29,6 +32,14 @@ class MPC {
         return track_;
     }
 
+    void setRefPose(const geometry_msgs::Pose &pose) {
+        refPose_ = pose;
+    }
+
+    geometry_msgs::Pose getRefPose() const {
+        return refPose_;
+    }
+
     /// @brief solve function for mpc. Solves the nlp with state as given.
     /// @param[in] state the state of the car.
     /// @param[in] pitch the pitch angle of the car
@@ -40,7 +51,9 @@ class MPC {
     /// @param[in] state the state of the car. (position, velocity, steering angle, ...)
     /// @param[in] params parameters for solver.
     /// @return solution from mpc. See definition of MPCReturn.
-    MPCReturn solve(const State &state, const Params &params);
+    MPCReturn solve(const State &state, const Acados::PathTrackingParams &params);
+
+    MPCReturn solve(const State &state, const Acados::PointStabParams &params);
 
    private:
     /// @brief calculates coefficients of third order polynomial that fits the disired trajectory best.
@@ -79,6 +92,8 @@ class MPC {
 
     /// @brief discrete points representing desired trajectory
     std::vector<Point> track_;
+
+    geometry_msgs::Pose refPose_;
 
     /// @brief publisher for the interpolated polynomial.
     ros::Publisher polynomPub_;

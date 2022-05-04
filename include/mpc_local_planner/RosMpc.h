@@ -39,6 +39,8 @@ class RosMpc {
     /// @param[in] msg the new path message. The path we want to follow.
     void pathCallback(const nav_msgs::Path::ConstPtr &msg);
 
+    void poseCallback(const geometry_msgs::PoseStamped::ConstPtr &msg);
+
     /// @brief checks if the desired parameters is given to the MPC class.
     /// @param[in] nh pointer to Nodehandle with access to the parameters
     /// @return true if all parameters was defined. False otherwise.
@@ -68,6 +70,8 @@ class RosMpc {
 
     /// @brief subscriber to path topic. The path we want to follow.
     ros::Subscriber pathSub_;
+
+    ros::Subscriber poseSub_;
 
     /// @brief buffer for tf. Used to get the position of the car.
     tf2_ros::Buffer tfBuffer_;
