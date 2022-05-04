@@ -8,7 +8,7 @@
 #include <std_msgs/Float64.h>
 #include <tf2_ros/transform_listener.h>
 
-#include "mpc_local_planner/MPC.h"
+#include "mpc_local_planner/ControlSys.h"
 
 namespace mpc {
 
@@ -48,7 +48,7 @@ class RosMpc {
     bool verifyParamsForMPC(ros::NodeHandle *nh) const;
 
     /// @brief mpc class that solves the problem given our state and desired trajectory.
-    MPC mpc;
+    ControlSys controlSys_;
 
     /// @brief publisher for the steering angle.
     ros::Publisher steeringPub_;

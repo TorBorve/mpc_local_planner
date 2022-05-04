@@ -7,7 +7,7 @@
 
 namespace mpc {
 
-RosMpc::RosMpc(ros::NodeHandle *nh) : mpc{getTestTrack()}, tfListener_{tfBuffer_}, nh_{nh} {
+RosMpc::RosMpc(ros::NodeHandle *nh) : controlSys_{}, tfListener_{tfBuffer_}, nh_{nh} {
     if (!verifyParamsForMPC(nh)) {
         ROS_WARN("One or more parameters for the mpc is not specified. Default values is therefore used.");
     }
@@ -58,7 +58,11 @@ MPCReturn RosMpc::solve() {
         prevThrottle};
 
     // solve mpc
-    const auto result = mpc.solve(state, getPitch(tfCar.transform.rotation));
+    const auto result = controlSys_.solve(state, getPitch(tfCar.transform.rotation));
+
+    if (result.mpcHorizon.size() < 1) {
+        return result;
+    }
 
     // publish inputs
     std_msgs::Float64 msg;
@@ -70,7 +74,7 @@ MPCReturn RosMpc::solve() {
 
     mpcPathPub_.publish(getPathMsg(result, mapFrame_, carFrame_));
     if (!nh_->hasParam("path_topic")) {
-        trackPub_.publish(getPathMsg(mpc.getTrack(), mapFrame_, carFrame_));
+        trackPub_.publish(getPathMsg(controlSys_.getTrack(), mapFrame_, carFrame_));
     }
 
     LOG_DEBUG("Time: %i [ms]", (int)result.computeTime);
@@ -99,7 +103,7 @@ bool RosMpc::verifyInputs() {
         while (ros::ok()) {
             nav_msgs::Path::ConstPtr firstPath = ros::topic::waitForMessage<nav_msgs::Path>(pathTopic, waitTime);
             if (firstPath != nullptr) {
-                mpc.setTrack(toVector(*firstPath));
+                controlSys_.setTrack(toVector(*firstPath));
                 break;
             }
             ROS_WARN("Waiting for path message. Should be published at the topic: %s", pathTopic.c_str());
@@ -127,11 +131,11 @@ void RosMpc::actualSteeringCallback(const std_msgs::Float64::ConstPtr &msg) {
 }
 
 void RosMpc::pathCallback(const nav_msgs::Path::ConstPtr &msg) {
-    mpc.setTrack(toVector(*msg));
+    controlSys_.setTrack(toVector(*msg));
 }
 
 void RosMpc::poseCallback(const geometry_msgs::PoseStamped::ConstPtr &msg) {
-    mpc.setRefPose(msg->pose);
+    controlSys_.setRefPose(msg->pose);
 }
 
 bool RosMpc::verifyParamsForMPC(ros::NodeHandle *nh) const {

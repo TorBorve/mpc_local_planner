@@ -6,7 +6,7 @@
 #include <nav_msgs/Path.h>
 #include <ros/ros.h>
 
-#include "mpc_local_planner/MPC.h"
+#include "mpc_local_planner/PathTrackingSys.h"
 #include "mpc_local_planner/bounds.h"
 
 #ifdef NDEBUG                                // true if the build type is not debug

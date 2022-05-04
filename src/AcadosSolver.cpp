@@ -94,40 +94,5 @@ void Solver::setInitGuess(const State &state) {
         ocp_nlp_out_set(config_, dims_, out_, i, "u", &u0[0]);
     }
 }
-
-// void Solver::init() {
-//     capsule_ = bicycle_model_acados_create_capsule();
-//     int N = BICYCLE_MODEL_N;
-//     // allocate the array and fill it accordingly
-//     double *new_time_steps = nu_LL;
-//     int status = bicycle_model_acados_create_with_discretization(capsule_, N, new_time_steps);
-//     config_ = bicycle_model_acados_get_nlp_config(capsule_);
-//     dims_ = bicycle_model_acados_get_nlp_dims(capsule_);
-//     in_ = bicycle_model_acados_get_nlp_in(capsule_);
-//     out_ = bicycle_model_acados_get_nlp_out(capsule_);
-//     solver_ = bicycle_model_acados_get_nlp_solver(capsule_);
-//     opts_ = bicycle_model_acados_get_nlp_opts(capsule_);
-//     if (status) {
-//         std::stringstream error;
-//         error << "bicycle_model_acados_create() returned status: " << status << ". Exiting.";
-//         ROS_ERROR_STREAM(error.str());
-//         throw std::runtime_error{error.str()};
-//     }
-//     return;
-// }
-
-// void Solver::freeAllocated() {
-//     // free solver
-//     int status = bicycle_model_acados_free(capsule_);
-//     if (status) {
-//         ROS_ERROR("bicycle_model_acados_free() returned status %d. \n", status);
-//     }
-//     // free solver capsule
-//     status = bicycle_model_acados_free_capsule(capsule_);
-//     if (status) {
-//         ROS_ERROR("bicycle_model_acados_free_capsule() returned status %d. \n", status);
-//     }
-//     return;
-// }
 }  // namespace Acados
 }  // namespace mpc
