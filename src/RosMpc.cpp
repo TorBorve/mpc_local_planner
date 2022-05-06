@@ -2,6 +2,7 @@
 
 #include <geometry_msgs/Twist.h>
 #include <std_msgs/Float64.h>
+#include <tf2/LinearMath/Transform.h>
 
 #include "mpc_local_planner/utilities.h"
 
@@ -73,9 +74,9 @@ MPCReturn RosMpc::solve() {
     steeringPub_.publish(msg);
 
     mpcPathPub_.publish(getPathMsg(result, mapFrame_, carFrame_));
-    if (!nh_->hasParam("path_topic")) {
-        trackPub_.publish(getPathMsg(controlSys_.getTrack(), mapFrame_, carFrame_));
-    }
+    // if (!nh_->hasParam("path_topic")) {
+    trackPub_.publish(getPathMsg(controlSys_.getTrack(), mapFrame_, carFrame_));
+    // }
 
     LOG_DEBUG("Time: %i [ms]", (int)result.computeTime);
     LOG_DEBUG("carVel: %.2f, steering: %.2f [deg], throttle: %.2f", state.vel, result.mpcHorizon.at(1).x.delta * 180.0 / M_PI, result.mpcHorizon.at(1).x.throttle);
@@ -135,7 +136,43 @@ void RosMpc::pathCallback(const nav_msgs::Path::ConstPtr &msg) {
 }
 
 void RosMpc::poseCallback(const geometry_msgs::PoseStamped::ConstPtr &msg) {
-    controlSys_.setRefPose(msg->pose);
+    geometry_msgs::Pose pose = msg->pose;
+
+    if (msg->header.frame_id != mapFrame_) {
+        tf2::Transform tfGoal;
+        tfGoal.setOrigin(tf2::Vector3{pose.position.x, pose.position.y, pose.position.z});
+        tfGoal.setRotation(tf2::Quaternion{pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w});
+
+        geometry_msgs::TransformStamped tfStampedCar;
+        try {
+            // get position of vehicle
+            tfStampedCar = tfBuffer_.lookupTransform(mapFrame_, msg->header.frame_id, ros::Time(0));
+        } catch (tf2::TransformException &e) {
+            ROS_ERROR_STREAM("Could not get transform from " << mapFrame_ << " to " << msg->header.frame_id << ". Error thrown: " << e.what()
+                << "\nNeed transform for calculating positon of new parking pose for car");
+            return;
+        }
+        tf2::Transform tfCar;
+        auto& trans = tfStampedCar.transform.translation;
+        tfCar.setOrigin(tf2::Vector3{trans.x, trans.y, trans.z});
+        auto& q = tfStampedCar.transform.rotation;
+        tfCar.setRotation(tf2::Quaternion{q.x, q.y, q.z, q.w});
+
+        tfCar *= tfGoal;
+        
+        
+        auto rot = tfCar.getRotation();
+        pose.orientation.x = rot.getX();
+        pose.orientation.y = rot.getY();
+        pose.orientation.z = rot.getZ();
+        pose.orientation.w = rot.getW();
+
+        auto org = tfCar.getOrigin();
+        pose.position.x = org.getX();
+        pose.position.y = org.getY();
+        pose.position.z = org.getZ();
+    }
+    controlSys_.setRefPose(pose);
 }
 
 bool RosMpc::verifyParamsForMPC(ros::NodeHandle *nh) const {
