@@ -46,6 +46,7 @@ throttle_max: 0.5
 # Maximum allowed value for change throttle value pr second
 throttle_dot_max: 0.33
 
+<<<<<<< HEAD
 # Width of track.
 width_track: 0.12
 
@@ -78,3 +79,7 @@ gravity_constant: 9.81
 
 # Total reduction ratio
 total_reduction_ratio: 7
+=======
+# Ratio between angle on the wheels and the steering wheel. steering_ratio = "steering wheel angle" / "wheel angle"
+steering_ratio: 17.3
+>>>>>>> 3d5f5dd4859f23e094f99b9688e3e996dbc7954e
