@@ -48,3 +48,33 @@ throttle_dot_max: 0.33
 
 # Width of track.
 width_track: 0.12
+
+# Wheel radius
+radius: 0.225
+
+# Gear ratio
+gear_ratio: 0.05
+
+# Mass of car
+mass_car: 70
+
+# Voltage on batteries
+voltage: 48
+
+# Drag coefficient
+drag_coefficient: 0.45
+
+# Air resistance
+air_resistance: 1.2
+
+# Frontal area of the car
+frontal_area: 1
+
+# Rolling resistance
+rolling_resistance: 0.015
+
+# Gravity constant
+gravity_constant: 9.81
+
+# Total reduction ratio
+total_reduction_ratio: 7

@@ -3,43 +3,38 @@ from attr import NOTHING
 import numpy as np
 import energyBicycleModel 
 import scipy.linalg
+import yaml
 
 
 def ocpSolver():
+    # Open params file
+    with open("../params/mpc.yaml", "r") as paramFile:
+        params = yaml.safe_load(paramFile)
+
     # Create render arguments
     ocp = AcadosOcp()
     
     # export model
-    ocp.model = energyBicycleModel.energyBicycleModel2()
+    ocp.model = energyBicycleModel.energyBicycleModel(params)
 
     # Set dimensions
     nx = ocp.model.x.size()[0]
     nu = ocp.model.u.size()[0]
     ny = nx + nu
 
-    N = 40 # Number of steps
-    dt = 0.1 # Time steps
+    N = params["mpc_N"] # Number of steps
+    dt = params["mpc_dt"] # Time steps
     Tf = N*dt
 
     ocp.dims.N = N
 
-    # Define acados ODE
-    # model_ocp = AcadosModel()
-    # model_ocp.f_impl_expr = model.f_impl_expr
-    # model_ocp.f_expl_expr = model.f_expl_expr
-    # model_ocp.x = model.x
-    # model_ocp.u = model.u
-    # model_ocp.name = model.name
-    # ocp.model = model_ocp
 
-    # Define constraint
-
-    deltaMax = 0.57
-    deltaDotMax = 1
+    deltaMax = params["max_steering_angle"]
+    deltaDotMax = params["max_steering_rotation_speed"]
 
     throttleMin = 0
-    throttleMax = 0.5
-    throttleDotMax = 0.33
+    throttleMax = params["throttle_max"]
+    throttleDotMax = params["throttle_dot_max"]
 
     ocp.constraints.constr_type = "BGH"
     ocp.constraints.lbx = np.array([-deltaMax, throttleMin])
@@ -52,6 +47,9 @@ def ocpSolver():
     x0 = np.array([0, 0, 0, 0, 0, 0])
     ocp.constraints.x0 = x0
 
+    param = np.array([0, 0, 0, 0])
+    ocp.parameter_values = param
+
     # Vu = np.zeros((ny, nu))
     # Vu[6, 0] = 1
     # Vu[7, 1] = 1
@@ -63,8 +61,8 @@ def ocpSolver():
     # Cost
 
     ocp.cost.cost_type = "NONLINEAR_LS"
-    ocp.cost.yref = np.array([0, 0, 6, 0, 0, 0, 0, 0])
-    ocp.model.cost_y_expr = energyBicycleModel.costFnc2(ocp.model)
+    ocp.cost.yref = np.array([0, 0, 2, 0, 0, 0, 0, 0])
+    ocp.model.cost_y_expr = energyBicycleModel.costFnc(ocp.model)
     ocp.cost.W = 2*np.diag([500, 500, 100, 1, 10, 50, 1, 0])
 
 

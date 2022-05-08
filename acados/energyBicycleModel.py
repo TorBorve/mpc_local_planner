@@ -7,6 +7,7 @@ import numpy as np
 from casadi import *
 from acados_template import AcadosOcp, AcadosSimSolver, AcadosModel, AcadosOcpSolver
 from requests import delete
+import yaml 
 
 
 # def energyBicycleModel():
@@ -130,20 +131,22 @@ from requests import delete
 
 
 
-def energyBicycleModel2():
+def energyBicycleModel(params):
     
     modelName = "BicycleModel"
 
     # Constants
 
-    r = 0.1 # Wheel radius
-    l = 2 # Distance between front wheel and rear wheel
-    G = 0.05 # Gear ratio
-    m = 70 # Mass of car
-    V = 48 # Voltage
-    Cd = 0.45 # Drag coefficient
-    rho = 1.2 # Air resistance [kg/m³]
-    A = 1 # Frontal area [m²]
+    
+
+    r = params["radius"] # Wheel radius
+    l = params["wheelbase"] # Distance between front wheel and rear wheel
+    G = params["gear_ratio"] # Gear ratio
+    m = params["mass_car"]# Mass of car
+    V = params["voltage"] # Voltage
+    Cd = params["drag_coefficient"] # Drag coefficient
+    rho = params["air_resistance"]# Air resistance [kg/m³]
+    A = params["frontal_area"]# Frontal area [m²]
 
     # States
 
@@ -185,6 +188,8 @@ def energyBicycleModel2():
         throttle_dot
     )    
 
+    p = vertcat(SX.sym("coeff_0"), SX.sym("coeff_1"), SX.sym("coeff_2"), SX.sym("coeff_3"))
+
     f_impl = xDot - f_expl
     model = AcadosModel()
 
@@ -194,25 +199,28 @@ def energyBicycleModel2():
     model.xdot = xDot
     model.x = x
     model.u = u
+    model.p = p
 
     return model
 
-def costFnc2(model):
+def costFnc(model):
 
-    r = 0.2 # Radius of wheel [m]
-    m = 70 # Mass of vehicle [kg]
-    Cr = 0.015 # Rolling resistance
-    Cd = 0.45 # Drag coefficient
-    rho = 0.5 # Air resistance [kg/m³]
-    A = 1 # Frontal area [m²]
-    g = 9.81 # Gravity constant [m/s²]
-    G = 7 # Total reduction ratio
+    with open("../params/mpc.yaml", "r") as paramFile:
+        params = yaml.safe_load(paramFile)
+
+    r = params["radius"] # Radius of wheel [m]
+    m = params["mass_car"] # Mass of vehicle [kg]
+    Cr = params["rolling_resistance"] # Rolling resistance
+    Cd = params["drag_coefficient"] # Drag coefficient
+    rho = params["air_resistance"] # Air resistance [kg/m³]
+    A = params["frontal_area"] # Frontal area [m²]
+    g = params["gravity_constant"]# Gravity constant [m/s²]
+    G = params["total_reduction_ratio"]# Total reduction ratio
 
 
     x1 = model.x[0]
     y1 = model.x[1]
     psi = model.x[2]
-    #omega = model.x[3]
     v = model.x[3]
     delta = model.x[4]
     throttle = model.x[5]
@@ -221,16 +229,19 @@ def costFnc2(model):
     throttle_dot = model.u[1]
 
     a = model.f_expl_expr[3]
-    #a = 0
+
+    coeffs = model.p
 
 
     Tm = r/G * (m*a + m*g*Cr + 1/2*rho*Cd*A*(v)**2)
 
     energy = Tm * v/r
 
-    pathYaw =  0 #tan(3*0*x1*x1 + 0*1*x1 + 1) 
+    #pathYaw = atan(3*coeffs[3]*x1*x1 + 2*coeffs[2]*x1 + coeffs[1]) 
+    pathYaw = 0 
     epsi = psi - pathYaw
-    yPath =  0 #4*sin(x1/6) #5*sin(x1/4) #1*x1**3 + 3*x1**2 + 1*x1 + 0
+    yPath =  coeffs[3]*x1**3 + coeffs[2]*x1**2 + coeffs[1]*x1 + coeffs[0]
+    #yPath = 0
     cte = yPath - y1
 
     return vertcat(cte, epsi, v, delta, throttle, delta_dot, throttle_dot, energy)
