@@ -45,3 +45,6 @@ throttle_max: 0.5
 
 # Maximum allowed value for change throttle value pr second
 throttle_dot_max: 0.33
+
+# Width of track.
+width_track: 0.12

@@ -1,8 +1,13 @@
-import mpc
 from acados_template import AcadosOcp, AcadosSimSolver, AcadosModel, AcadosOcpSolver
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+from time2spatial import *
+from matplotlib import cm
+import BicycleModel
+import plotFnc
+import time
+import matplotlib.pyplot as plt
 
 def plot(shootingNodes, simX):
     x1 = simX[:, 0]
@@ -18,17 +23,18 @@ def plot(shootingNodes, simX):
     plt.show()
 
 
+
 def main():
-    ocp_solver = mpc.ocpSolver()
+    ocp_solver = BicycleModel.ocpSolver()
     ocp_integrator = AcadosSimSolver(ocp_solver.acados_ocp, 'acados_ocp_' + ocp_solver.acados_ocp.model.name + '.json')
-    Nsim = 200
+    Nsim = 180
     nx = ocp_solver.acados_ocp.model.x.size()[0]
     nu = ocp_solver.acados_ocp.model.u.size()[0]
     ny = nx + nu
     N = ocp_solver.acados_ocp.solver_options.qp_solver_cond_N
     Tf = ocp_solver.acados_ocp.solver_options.tf
 
-    simX = np.ndarray((Nsim + 1, nx))
+    simX = np.ndarray((Nsim + 1 , nx))
     simU = np.ndarray((Nsim, nu))
 
     x0 = np.array([-30, 0, 0, 0, 0, 0])
@@ -66,10 +72,13 @@ def main():
             raise Exception(f'integrator error: {integrator_status}')
         
         x_cur = ocp_integrator.get("x")
-        simX[i + 1, :] = x_cur
+        simX[i, :] = x_cur
     
     print(f'avg. time: {time_solve/Nsim*1000}[ms]')
-    plot(np.linspace(0, Tf/N*Nsim, Nsim + 1), simX)
+    t = np.linspace(0.0, Nsim * Tf / N, Nsim + 1)
+    plot(t,simX)
+    print("Average speed:{}m/s".format(np.average(simX[:, 3])))
     return
 
 main()
+
