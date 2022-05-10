@@ -15,7 +15,7 @@ struct PathTrackingParams : public Params{
     /// @brief constructor for params
     /// @param[in] polyCoeffs tho coefficient for the 3rd deg. polynomial used to represent the road.
     /// @param[in] pitch the pitch of the car. Indicates if the car is going downhill or uphill.
-    PathTrackingParams(const Eigen::Vector4d &polyCoeffs, double pitch) : polyCoeffs{polyCoeffs}, pitch{pitch} {}
+    PathTrackingParams(const Eigen::Vector4d &polyCoeffs, double pitch, double vRef) : polyCoeffs{polyCoeffs}, pitch{pitch}, vRef{vRef} {}
 
     /// @brief constructor using vector.
     /// @param[in] vec vector with params.
@@ -23,12 +23,13 @@ struct PathTrackingParams : public Params{
         assert(size == vec.size());
         polyCoeffs = Eigen::Vector4d{vec[0], vec[1], vec[2], vec[3]};
         pitch = vec[4];
+        vRef = vec[5];
     }
 
     /// @brief convert params to array.
     /// @return std::array<double, 5> containg the params
     std::vector<double> toVec() const override {
-        return std::vector<double>{polyCoeffs[0], polyCoeffs[1], polyCoeffs[2], polyCoeffs[3], pitch};
+        return std::vector<double>{polyCoeffs[0], polyCoeffs[1], polyCoeffs[2], polyCoeffs[3], pitch, vRef};
     }
 
     /// @brief the coefficients for the polynomoial defining the track.
@@ -37,7 +38,9 @@ struct PathTrackingParams : public Params{
     /// @brief pitch of the car.
     double pitch;
 
-    const size_t size = 5;
+    double vRef;
+
+    const size_t size = 6;
 
 };
 

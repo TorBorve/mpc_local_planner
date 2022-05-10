@@ -29,10 +29,10 @@ RosMpc::RosMpc(ros::NodeHandle *nh) : controlSys_{}, tfListener_{tfBuffer_}, nh_
         pathSub_ = nh->subscribe(pathTopic, 1, &RosMpc::pathCallback, this);
     } else {
         ROS_WARN("path_topic parameter not specified. Using hardcode internal path.");
-        trackPub_ = nh->advertise<nav_msgs::Path>("/global_path", 1);
     }
     throttlePub_ = nh->advertise<std_msgs::Float64>(throttleTopic, 1);
     steeringPub_ = nh->advertise<std_msgs::Float64>(steeringTopic, 1);
+    trackPub_ = nh->advertise<nav_msgs::Path>("/global_path", 1);
     mpcPathPub_ = nh->advertise<nav_msgs::Path>("/local_path", 1);
     twistSub_ = nh->subscribe(twistTopic, 1, &RosMpc::twistCallback, this);
     actualSteeringSub_ = nh->subscribe(actualSteeringTopic, 1, &RosMpc::actualSteeringCallback, this);
@@ -66,26 +66,27 @@ MPCReturn RosMpc::solve() {
     }
 
     // publish inputs
+    double dt = 1.0 / loopHz_;
     std_msgs::Float64 msg;
-    msg.data = result.mpcHorizon.at(1).x.throttle;
+    msg.data = result.mpcHorizon.at(0).x.throttle + result.mpcHorizon.at(0).u.throttleDot * dt;
     throttlePub_.publish(msg);
     prevThrottle = msg.data;
-    msg.data = result.mpcHorizon.at(1).x.delta * steeringRatio_;
+    msg.data = (result.mpcHorizon.at(0).x.delta + result.mpcHorizon.at(0).u.deltaDot * dt) * steeringRatio_;
     steeringPub_.publish(msg);
 
     mpcPathPub_.publish(getPathMsg(result, mapFrame_, carFrame_));
-    // if (!nh_->hasParam("path_topic")) {
     trackPub_.publish(getPathMsg(controlSys_.getTrack(), mapFrame_, carFrame_));
-    // }
 
-    LOG_DEBUG("Time: %i [ms]", (int)result.computeTime);
-    LOG_DEBUG("carVel: %.2f, steering: %.2f [deg], throttle: %.2f", state.vel, result.mpcHorizon.at(1).x.delta * 180.0 / M_PI, result.mpcHorizon.at(1).x.throttle);
+    // LOG_DEBUG_STREAM(state);
+    LOG_DEBUG_STREAM(std::fixed << std::setprecision(2) << result.mpcHorizon.at(1));
+
+    // LOG_DEBUG("Time: %i [ms]", (int)result.computeTime);
+    // LOG_DEBUG("carVel: %.2f, steering: %.2f [deg], throttle: %.2f", state.vel, result.mpcHorizon.at(1).x.delta * 180.0 / M_PI, result.mpcHorizon.at(1).x.throttle);
     return result;
 }
 
 bool RosMpc::verifyInputs() {
     ros::Duration waitTime{10.0};
-    ros::Duration{0.1}.sleep();
     // check if twist publisher is publishing
     std::string twistTopic = nh_->param<std::string>("twist_topic", "/twist");
     while (ros::ok() && !ros::topic::waitForMessage<geometry_msgs::TwistStamped>(twistTopic, waitTime)) {
@@ -145,22 +146,20 @@ void RosMpc::poseCallback(const geometry_msgs::PoseStamped::ConstPtr &msg) {
 
         geometry_msgs::TransformStamped tfStampedCar;
         try {
-            // get position of vehicle
             tfStampedCar = tfBuffer_.lookupTransform(mapFrame_, msg->header.frame_id, ros::Time(0));
         } catch (tf2::TransformException &e) {
             ROS_ERROR_STREAM("Could not get transform from " << mapFrame_ << " to " << msg->header.frame_id << ". Error thrown: " << e.what()
-                << "\nNeed transform for calculating positon of new parking pose for car");
+                                                             << "\nNeed transform for calculating positon of new parking pose for car");
             return;
         }
         tf2::Transform tfCar;
-        auto& trans = tfStampedCar.transform.translation;
+        auto &trans = tfStampedCar.transform.translation;
         tfCar.setOrigin(tf2::Vector3{trans.x, trans.y, trans.z});
-        auto& q = tfStampedCar.transform.rotation;
+        auto &q = tfStampedCar.transform.rotation;
         tfCar.setRotation(tf2::Quaternion{q.x, q.y, q.z, q.w});
 
         tfCar *= tfGoal;
-        
-        
+
         auto rot = tfCar.getRotation();
         pose.orientation.x = rot.getX();
         pose.orientation.y = rot.getY();

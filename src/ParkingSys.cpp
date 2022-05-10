@@ -19,7 +19,7 @@ MPCReturn ParkingSys::solve(const State &state, double pitch) {
             createPathToGoal(state);
             updatePath_ = false;
         }
-        return pathTrackingSys_.solve(state, pitch);
+        return pathTrackingSys_.solve(state, pitch, 1.0);
     }
 }
 

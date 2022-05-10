@@ -17,7 +17,7 @@ class ControlSys {
         if (mode_ == Mode::Parking) {
             return parkingSys_.solve(state, pitch);
         } else {
-            return pathTrackingSys_.solve(state, pitch);
+            return pathTrackingSys_.solve(state, pitch, 2.0);
         }
     }
 
@@ -30,6 +30,9 @@ class ControlSys {
     /// @brief get the current desired trajectory
     /// @return track for the desired trajectory
     std::vector<Point> getTrack() const {
+        if (mode_ == Mode::Parking) {
+            return parkingSys_.getTrack();
+        }
         return pathTrackingSys_.getTrack();
     }
 
