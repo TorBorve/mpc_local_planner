@@ -49,7 +49,7 @@ def bicycleModel(params):
     fImpl = xDot - fExpl            
     model = AcadosModel()
 
-    p = vertcat(SX.sym("coeff_0"), SX.sym("coeff_1"), SX.sym("coeff_2"), SX.sym("coeff_3"), pitch)
+    p = vertcat(SX.sym("coeff_0"), SX.sym("coeff_1"), SX.sym("coeff_2"), SX.sym("coeff_3"), pitch, SX.sym("v_ref"))
 
     model.name = modelName
     model.f_expl_expr = fExpl
@@ -58,6 +58,7 @@ def bicycleModel(params):
     model.x = x
     model.u = u
     model.p = p
+    # model.con_h_expr = vertcat(v)
 
     return model
 
@@ -76,7 +77,7 @@ def costFunc(model):
     epsi = psi - pathYaw
     yPath = coeffs[3]*x1**3 + coeffs[2]*x1**2 + coeffs[1]*x1 + coeffs[0]
     cte = yPath - y1
-    return vertcat(cte, epsi, v, delta, throttle, deltaDot, throttleDot)
+    return vertcat(cte, epsi, v - model.p[5], delta, throttle, deltaDot, throttleDot)
 
 def ocpSolver():
     with open("../../params/mpc.yaml", "r") as paramFile:
@@ -95,9 +96,9 @@ def ocpSolver():
     ny = nx + nu
 
     ocp.cost.cost_type = "NONLINEAR_LS"
-    ocp.cost.yref = np.array([0, 0, 6.0, 0, 0, 0, 0])
+    ocp.cost.yref = np.array([0, 0, 0.0, 0, 0, 0, 0])
     ocp.model.cost_y_expr = costFunc(ocp.model)
-    ocp.cost.W = 2*np.diag([500, 500, 100, 1, 10, 50, 1])
+    ocp.cost.W = 2*np.diag([500, 500, 1000, 1, 10, 50, 10])
 
     deltaMax = params["max_steering_angle"]
     deltaDotMax = params["max_steering_rotation_speed"]
@@ -112,10 +113,20 @@ def ocpSolver():
     ocp.constraints.ubu = np.array([deltaDotMax, throttleDotMax])
     ocp.constraints.idxbu = np.array([0, 1])
 
+    # ocp.cost.zl = 1000 * np.ones((1,))
+    # ocp.cost.Zl = 0 * np.ones((1,))
+    # ocp.cost.zu = 1000 * np.ones((1,))
+    # ocp.cost.Zu = 0 * np.ones((1,))
+    # ocp.constraints.lh = np.array([0.0])
+    # ocp.constraints.uh = np.array([6.0])
+
+    # ocp.constraints.idxsh = np.array([0])
+
+
     x0 = np.array([-10, 0, 0, 0, 0, 0])
     ocp.constraints.x0 = x0
 
-    param = np.array([0, -1, 0, 0.002, 0.0])
+    param = np.array([0, -1, 0, 0.002, 0.0, 4.0])
     ocp.parameter_values = param
 
     ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM" #"PARTIAL_CONDENSING_HPIPM" "FULL_CONDENSING_QPOASES" 
