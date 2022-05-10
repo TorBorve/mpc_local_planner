@@ -1,7 +1,7 @@
 import numpy as np
-import curvature
-import trackLength
-import BicycleModel
+import mpcRaceCar.curvature as curvature
+import mpcRaceCar.trackLength as trackLength
+import mpcRaceCar.BicycleModel as BicycleModel
 
 #[s, xref, yref, _, kappa] = BicycleModel.getTrack("LMS_Track.txt")
 

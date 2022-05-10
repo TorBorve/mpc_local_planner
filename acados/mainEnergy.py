@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import time
 from acados_template import AcadosOcp, AcadosSimSolver, AcadosModel, AcadosOcpSolver
 import energyBicycleModel
-import plotFnc
 
 def plot(shootingNodes, simX):
     x1 = simX[:, 0]

@@ -2,10 +2,10 @@ from acados_template import AcadosOcp, AcadosSimSolver, AcadosModel, AcadosOcpSo
 import numpy as np
 import matplotlib.pyplot as plt
 import time
-from time2spatial import *
+from mpcRaceCar.time2spatial import *
 from matplotlib import cm
-import BicycleModel
-import plotFnc
+import mpcRaceCar.BicycleModel as BicycleModel
+import mpcRaceCar.plotFnc as plotFnc
 import time
 import matplotlib.pyplot as plt
 

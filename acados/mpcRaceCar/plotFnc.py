@@ -2,7 +2,7 @@ from re import S
 from sqlite3 import paramstyle
 import numpy as np
 import matplotlib.pyplot as plt
-from time2spatial import *
+from mpcRaceCar.time2spatial import *
 from matplotlib import cm
 
 

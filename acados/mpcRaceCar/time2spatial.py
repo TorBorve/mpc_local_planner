@@ -34,7 +34,7 @@
 # author: Daniel Kloeser
 
 import numpy as np
-from BicycleModel import getTrack
+from mpcRaceCar.BicycleModel import getTrack
 
 
 def transformProj2Orig(si,ni,alpha,v,filename='LMS_Track.txt'):

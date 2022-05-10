@@ -50,14 +50,6 @@ def ocpSolver():
     param = np.array([0, 0, 0, 0])
     ocp.parameter_values = param
 
-    # Vu = np.zeros((ny, nu))
-    # Vu[6, 0] = 1
-    # Vu[7, 1] = 1
-    # ocp.cost.Vu = Vu
-
-
-
-
     # Cost
 
     ocp.cost.cost_type = "NONLINEAR_LS"

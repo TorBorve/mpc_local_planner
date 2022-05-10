@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import BicycleModel
+import mpcRaceCar.BicycleModel as BicycleModel
 
 [_, xref, yref, _, kapparef] = BicycleModel.getTrack("LMS_Track.txt")
 
