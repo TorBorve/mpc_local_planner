@@ -2,16 +2,13 @@
 
 #include <geometry_msgs/Twist.h>
 #include <std_msgs/Float64.h>
+#include <tf2/LinearMath/Transform.h>
 
 #include "mpc_local_planner/utilities.h"
 
 namespace mpc {
 
-RosMpc::RosMpc(ros::NodeHandle *nh) : mpc{getTestTrack(), (size_t)nh->param<int>("mpc_N", 10), nh->param<double>("mpc_dt", 0.2),
-                                          Bound{-nh->param<double>("max_steering_angle", 0.57), nh->param<double>("max_steering_angle", 0.57)},
-                                          nh->param<double>("max_steering_rotation_speed", 0.80), nh->param<double>("wheelbase", 3.0)},
-                                      tfListener_{tfBuffer_},
-                                      nh_{nh} {
+RosMpc::RosMpc(ros::NodeHandle *nh) : controlSys_{}, tfListener_{tfBuffer_}, nh_{nh} {
     if (!verifyParamsForMPC(nh)) {
         ROS_WARN("One or more parameters for the mpc is not specified. Default values is therefore used.");
     }
@@ -32,13 +29,14 @@ RosMpc::RosMpc(ros::NodeHandle *nh) : mpc{getTestTrack(), (size_t)nh->param<int>
         pathSub_ = nh->subscribe(pathTopic, 1, &RosMpc::pathCallback, this);
     } else {
         ROS_WARN("path_topic parameter not specified. Using hardcode internal path.");
-        trackPub_ = nh->advertise<nav_msgs::Path>("/global_path", 1);
     }
     throttlePub_ = nh->advertise<std_msgs::Float64>(throttleTopic, 1);
     steeringPub_ = nh->advertise<std_msgs::Float64>(steeringTopic, 1);
+    trackPub_ = nh->advertise<nav_msgs::Path>("/global_path", 1);
     mpcPathPub_ = nh->advertise<nav_msgs::Path>("/local_path", 1);
     twistSub_ = nh->subscribe(twistTopic, 1, &RosMpc::twistCallback, this);
     actualSteeringSub_ = nh->subscribe(actualSteeringTopic, 1, &RosMpc::actualSteeringCallback, this);
+    poseSub_ = nh->subscribe("/move_base_simple/goal", 1, &RosMpc::poseCallback, this);
 }
 
 MPCReturn RosMpc::solve() {
@@ -57,39 +55,38 @@ MPCReturn RosMpc::solve() {
         tfCar.transform.translation.y,
         getYaw(tfCar.transform.rotation),
         currentVel_,
-        0,
-        0};
-    Input input{
-        prevThrottle,
-        currentSteeringAngle_};
-    OptVariables optVars{state, input};
-    // mpc.model(optVars, input, 1.0 / loop_Hz_); // get predicted state after calculation is finished
+        currentSteeringAngle_,
+        prevThrottle};
 
     // solve mpc
-    const auto result = mpc.solve(optVars);
+    const auto result = controlSys_.solve(state, getPitch(tfCar.transform.rotation));
+
+    if (result.mpcHorizon.size() < 1) {
+        return result;
+    }
 
     // publish inputs
+    double dt = 1.0 / loopHz_;
     std_msgs::Float64 msg;
-    msg.data = result.u0.throttle;
+    msg.data = result.mpcHorizon.at(0).x.throttle + result.mpcHorizon.at(0).u.throttleDot * dt;
     throttlePub_.publish(msg);
-    prevThrottle = result.u0.throttle;
-    msg.data = result.u0.delta * steeringRatio_;
+    prevThrottle = msg.data;
+    msg.data = (result.mpcHorizon.at(0).x.delta + result.mpcHorizon.at(0).u.deltaDot * dt) * steeringRatio_;
     steeringPub_.publish(msg);
 
     mpcPathPub_.publish(getPathMsg(result, mapFrame_, carFrame_));
-    if (!nh_->hasParam("path_topic")) {
-        trackPub_.publish(getPathMsg(mpc.getTrack(), mapFrame_, carFrame_));
-    }
+    trackPub_.publish(getPathMsg(controlSys_.getTrack(), mapFrame_, carFrame_));
 
-    LOG_DEBUG("Time: %i [ms]", (int)result.computeTime);
-    LOG_DEBUG("carVel: %.2f, steering: %.2f [deg], throttle: %.2f", state.vel, result.u0.delta * 180.0 / M_PI, result.u0.throttle);
-    LOG_DEBUG("yaw error: %.2f", result.mpcHorizon.at(0).x.epsi * 180.0 / M_PI);
+    // LOG_DEBUG_STREAM(state);
+    LOG_DEBUG_STREAM(std::fixed << std::setprecision(2) << result.mpcHorizon.at(1));
+
+    // LOG_DEBUG("Time: %i [ms]", (int)result.computeTime);
+    // LOG_DEBUG("carVel: %.2f, steering: %.2f [deg], throttle: %.2f", state.vel, result.mpcHorizon.at(1).x.delta * 180.0 / M_PI, result.mpcHorizon.at(1).x.throttle);
     return result;
 }
 
 bool RosMpc::verifyInputs() {
     ros::Duration waitTime{10.0};
-    ros::Duration{0.1}.sleep();
     // check if twist publisher is publishing
     std::string twistTopic = nh_->param<std::string>("twist_topic", "/twist");
     while (ros::ok() && !ros::topic::waitForMessage<geometry_msgs::TwistStamped>(twistTopic, waitTime)) {
@@ -108,7 +105,7 @@ bool RosMpc::verifyInputs() {
         while (ros::ok()) {
             nav_msgs::Path::ConstPtr firstPath = ros::topic::waitForMessage<nav_msgs::Path>(pathTopic, waitTime);
             if (firstPath != nullptr) {
-                mpc.setTrack(toVector(*firstPath));
+                controlSys_.setTrack(toVector(*firstPath));
                 break;
             }
             ROS_WARN("Waiting for path message. Should be published at the topic: %s", pathTopic.c_str());
@@ -136,7 +133,45 @@ void RosMpc::actualSteeringCallback(const std_msgs::Float64::ConstPtr &msg) {
 }
 
 void RosMpc::pathCallback(const nav_msgs::Path::ConstPtr &msg) {
-    mpc.setTrack(toVector(*msg));
+    controlSys_.setTrack(toVector(*msg));
+}
+
+void RosMpc::poseCallback(const geometry_msgs::PoseStamped::ConstPtr &msg) {
+    geometry_msgs::Pose pose = msg->pose;
+
+    if (msg->header.frame_id != mapFrame_) {
+        tf2::Transform tfGoal;
+        tfGoal.setOrigin(tf2::Vector3{pose.position.x, pose.position.y, pose.position.z});
+        tfGoal.setRotation(tf2::Quaternion{pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w});
+
+        geometry_msgs::TransformStamped tfStampedCar;
+        try {
+            tfStampedCar = tfBuffer_.lookupTransform(mapFrame_, msg->header.frame_id, ros::Time(0));
+        } catch (tf2::TransformException &e) {
+            ROS_ERROR_STREAM("Could not get transform from " << mapFrame_ << " to " << msg->header.frame_id << ". Error thrown: " << e.what()
+                                                             << "\nNeed transform for calculating positon of new parking pose for car");
+            return;
+        }
+        tf2::Transform tfCar;
+        auto &trans = tfStampedCar.transform.translation;
+        tfCar.setOrigin(tf2::Vector3{trans.x, trans.y, trans.z});
+        auto &q = tfStampedCar.transform.rotation;
+        tfCar.setRotation(tf2::Quaternion{q.x, q.y, q.z, q.w});
+
+        tfCar *= tfGoal;
+
+        auto rot = tfCar.getRotation();
+        pose.orientation.x = rot.getX();
+        pose.orientation.y = rot.getY();
+        pose.orientation.z = rot.getZ();
+        pose.orientation.w = rot.getW();
+
+        auto org = tfCar.getOrigin();
+        pose.position.x = org.getX();
+        pose.position.y = org.getY();
+        pose.position.z = org.getZ();
+    }
+    controlSys_.setRefPose(pose);
 }
 
 bool RosMpc::verifyParamsForMPC(ros::NodeHandle *nh) const {
@@ -148,7 +183,6 @@ bool RosMpc::verifyParamsForMPC(ros::NodeHandle *nh) const {
     ok &= hasParamWarn(nh, "wheelbase");
     ok &= hasParamWarn(nh, "twist_topic");
     ok &= hasParamWarn(nh, "actual_steering_topic");
-    ok &= hasParamWarn(nh, "command_topic");
     ok &= hasParamWarn(nh, "map_frame");
     ok &= hasParamWarn(nh, "car_frame");
     ok &= hasParamWarn(nh, "loop_Hz");

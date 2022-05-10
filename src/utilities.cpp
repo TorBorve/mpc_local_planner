@@ -125,11 +125,21 @@ double length(const geometry_msgs::Vector3 &vec) {
 }
 
 double getYaw(const geometry_msgs::Quaternion &quat) {
+    double roll, pitch, yaw;
+    getRPY(quat, roll, pitch, yaw);
+    return yaw;
+}
+
+double getPitch(const geometry_msgs::Quaternion &quat) {
+    double roll, pitch, yaw;
+    getRPY(quat, roll, pitch, yaw);
+    return pitch;
+}
+
+void getRPY(const geometry_msgs::Quaternion &quat, double &roll, double &pitch, double &yaw) {
     tf2::Quaternion q{quat.x, quat.y, quat.z, quat.w};
     tf2::Matrix3x3 mat{q};
-    double roll, pitch, yaw;
     mat.getRPY(roll, pitch, yaw);
-    return yaw;
 }
 
 bool hasParamError(ros::NodeHandle *nh, const std::string &param) {
@@ -160,5 +170,19 @@ std::vector<Point> toVector(const nav_msgs::Path &path) {
 
 Point toPoint(const geometry_msgs::Point &p) {
     return Point{p.x, p.y};
+}
+
+nav_msgs::Path getPathMsg(const BezierCurve &curve, const std::string &mapFrame, const std::string &carFrame) {
+    return getPathMsg(getPath(curve), mapFrame, carFrame);
+}
+
+std::vector<Point> getPath(const BezierCurve &curve) {
+    constexpr size_t n = 100;
+    std::vector<Point> path;
+    for (double t = 0; t < 1; t += 1.0 / n) {
+        Point p = curve.calc(t);
+        path.push_back(p);
+    }
+    return path;
 }
 }  // namespace mpc

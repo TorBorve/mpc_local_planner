@@ -3,4 +3,5 @@ logs/
 acados_python/
 .vscode
 **/__pycache__
-acados/*.json
+acados/path_tracking/*.json
+acados/point_stab/*.json

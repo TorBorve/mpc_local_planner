@@ -3,6 +3,7 @@
 
 #include <eigen3/Eigen/Core>
 #include <vector>
+#include <iostream>
 
 namespace mpc {
 
@@ -16,20 +17,28 @@ struct State {
     /// @param[in] y the y position
     /// @param[in] psi the yaw angle of car
     /// @param[in] vel the current velocity
-    /// @param[in] cte cross track error. Distance from trajectory to car.
-    /// @param[in] epsi yaw error. Diffrence between car yaw and trajectory yaw.
-    State(double x, double y, double psi, double vel, double cte, double epsi) : x{x}, y{y}, psi{psi}, vel{vel}, cte{cte}, epsi{epsi} {
+    /// @param[in] delta the current steering angle.
+    /// @param[in] throttle the current throttle value.
+    State(double x, double y, double psi, double vel, double delta, double throttle) : x{x}, y{y}, psi{psi}, vel{vel}, delta{delta}, throttle{throttle} {
     }
 
     /// @brief constructor with array containig values
     /// @param[in] arr array containg state variables
-    State(const std::array<double, 6> &arr) : State{arr[0], arr[1], arr[2], arr[3], arr[4], arr[5]} {
+    State(const std::array<double, 6> &arr) : State{&arr[0], 6} {
+    }
+
+    /// @brief constructor using double pointer
+    /// @param[in] arr pointer to start of array.
+    /// @param[in] size size of array.
+    State(double const *arr, size_t size) {
+        assert(size == 6);
+        *this = State{arr[0], arr[1], arr[2], arr[3], arr[4], arr[5]};
     }
 
     /// @brief convert state to array containg state varibles
     /// @return array with state varibles
     std::array<double, 6> toArray() const {
-        return std::array<double, 6>{x, y, psi, vel, cte, epsi};
+        return std::array<double, 6>{x, y, psi, vel, delta, throttle};
     }
 
     /// @brief x position
@@ -44,29 +53,41 @@ struct State {
     /// @brief velocity
     double vel;
 
-    /// @brief cross track error. Distance from car to trajectory
-    double cte;
+    /// @brief steering angle.
+    double delta;
 
-    /// @brief yaw error. diffrence between car and trajectory yaw.
-    double epsi;
+    /// @brief throttle value
+    double throttle;
 };
 
-/// @brief Input struct fro car. Inputs is what command that are sendt to the car.
+/// @brief Input struct for car. Inputs is what command that are sendt to the car.
 struct Input {
     /// @brief default constructor
     Input() = default;
 
     /// @brief constructor with values.
-    /// @param[in] throttle throttle
-    /// @param[in] delta steering angle
-    Input(double throttle, double delta) : throttle{throttle}, delta{delta} {
+    /// @param[in] deltaDot derivative of the throttle
+    /// @param[in] throttleDot derivative of the steering angle
+    Input(double deltaDot, double throttleDot) : deltaDot{deltaDot}, throttleDot{throttleDot} {
     }
 
-    /// @brief throttle for car
-    double throttle;
+    Input(const std::array<double, 2> &arr) : Input{&arr[0], 2} {
+    }
 
-    /// @brief steering angle on wheels
-    double delta;
+    Input(double const *arr, size_t size) {
+        assert(size == 2);
+        *this = Input{arr[0], arr[1]};
+    }
+
+    std::array<double, 2> toArray() const {
+        return std::array<double, 2>{deltaDot, throttleDot};
+    }
+
+    /// @brief derivative of the steering angle
+    double deltaDot;
+
+    /// @brief derivative of the throttle value
+    double throttleDot;
 };
 
 /// @brief struct for optimal variables used in solver
@@ -144,6 +165,19 @@ struct Point {
     /// @brief the y value
     double y;
 };
+
+/// @brief stuct for params used in solver
+
+struct Params {
+    virtual std::vector<double> toVec() const = 0;
+};
+
 }  // namespace mpc
+
+std::ostream& operator<<(std::ostream &os, const mpc::State &state);
+
+std::ostream& operator<<(std::ostream &os, const mpc::Input &input);
+
+std::ostream& operator<<(std::ostream &os, const mpc::OptVariables &optVar);
 
 #endif

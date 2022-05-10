@@ -8,7 +8,7 @@
 #include <std_msgs/Float64.h>
 #include <tf2_ros/transform_listener.h>
 
-#include "mpc_local_planner/MPC.h"
+#include "mpc_local_planner/ControlSys.h"
 
 namespace mpc {
 
@@ -39,6 +39,8 @@ class RosMpc {
     /// @param[in] msg the new path message. The path we want to follow.
     void pathCallback(const nav_msgs::Path::ConstPtr &msg);
 
+    void poseCallback(const geometry_msgs::PoseStamped::ConstPtr &msg);
+
     /// @brief checks if the desired parameters is given to the MPC class.
     /// @param[in] nh pointer to Nodehandle with access to the parameters
     /// @return true if all parameters was defined. False otherwise.
@@ -46,7 +48,7 @@ class RosMpc {
     bool verifyParamsForMPC(ros::NodeHandle *nh) const;
 
     /// @brief mpc class that solves the problem given our state and desired trajectory.
-    MPC mpc;
+    ControlSys controlSys_;
 
     /// @brief publisher for the steering angle.
     ros::Publisher steeringPub_;
@@ -68,6 +70,8 @@ class RosMpc {
 
     /// @brief subscriber to path topic. The path we want to follow.
     ros::Subscriber pathSub_;
+
+    ros::Subscriber poseSub_;
 
     /// @brief buffer for tf. Used to get the position of the car.
     tf2_ros::Buffer tfBuffer_;

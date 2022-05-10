@@ -2,25 +2,23 @@
 #define MPC_MPC_H_
 
 #include <ros/ros.h>
+#include <geometry_msgs/Pose.h>
 
 #include <eigen3/Eigen/Core>
 
 #include "mpc_local_planner/bounds.h"
 #include "mpc_local_planner/types.h"
+#include "mpc_local_planner/AcadosPathTracking.h"
+#include "mpc_local_planner/AcadosPointStab.h"
 
 namespace mpc {
 
 /// @brief MPC class for car
-class MPC {
+class PathTrackingSys {
    public:
     /// @brief constructor for MPC class
     /// @param[in] track vector with points that define desired trajectory
-    /// @param[in] N number of steps in simulation
-    /// @param[in] dt time increment for model
-    /// @param[in] steeringAngle bounds for max and min steering angle
-    /// @param[in] maxSteeringRotationsSpeed the maximum speed the wheels can turn at. Given in [rad/s].
-    /// @param[in] wheelbase the distance between the front and rear wheels.
-    MPC(const std::vector<Point> &track, size_t N, double dt, Bound steeringAngle, double maxSteeringRotationSpeed, double wheelbase);
+    PathTrackingSys(const std::vector<Point> &track);
 
     /// @brief update track variable for desired trajectory
     /// @param[in] newTrack the new desired trajectory
@@ -35,27 +33,17 @@ class MPC {
     }
 
     /// @brief solve function for mpc. Solves the nlp with state as given.
-    /// @param[in] optVars the state of the car. (position, velocity, steering angle, ...)
+    /// @param[in] state the state of the car.
+    /// @param[in] pitch the pitch angle of the car
     /// @return solution from mpc. See definition of MPCReturn.
-    MPCReturn solve(const OptVariables &optVars);
+    MPCReturn solve(const State &state, double pitch, double vRef);
 
     /// @brief solve function for mpc. Uses states and coefficients of a third order polynomial
     ///        that is threated at desired trajectory.
-    /// @param[in] optVars the state of the car. (position, velocity, steering angle, ...)
-    /// @param[in] coeffs coefficients of third degree polynomial. Used as desired trajectory.
+    /// @param[in] state the state of the car. (position, velocity, steering angle, ...)
+    /// @param[in] params parameters for solver.
     /// @return solution from mpc. See definition of MPCReturn.
-    MPCReturn solve(const OptVariables &optVars, const Eigen::Vector4d &coeffs);
-
-    /// @brief model of a car. Used to predict state evolution.
-    /// @param[in/out] optVars state thate should be updated
-    /// @param[in] u inputs on car (acceleration and steering angle)
-    void model(OptVariables &optVars, const Input &u);
-
-    /// @brief model of a car. Used to predict state evolution.
-    /// @param[in/out] optVars state thate should be updated
-    /// @param[in] u inputs on car (acceleration and steering angle)
-    /// @param[in] dt the time increment used in the model
-    void model(OptVariables &optVars, const Input &u, double dt);
+    MPCReturn solve(const State &state, const Acados::PathTrackingParams &params);
 
    private:
     /// @brief calculates coefficients of third order polynomial that fits the disired trajectory best.
@@ -97,21 +85,6 @@ class MPC {
 
     /// @brief publisher for the interpolated polynomial.
     ros::Publisher polynomPub_;
-
-    /// @brief number of steps in mpc solver
-    size_t N_;
-
-    /// @brief time increment for model.
-    double dt_;
-
-    /// @brief distance between front and rear wheels
-    double wheelbase_;
-
-    /// @brief bounds for max and min steering angle
-    Bound steeringAngle_;
-
-    /// @brief maxSteeringRotationsSpeed the maximum speed the wheels can turn at. Given in [rad/s].
-    double maxSteeringRotationSpeed_;
 };
 
 }  // namespace mpc
