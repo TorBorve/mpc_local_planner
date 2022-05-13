@@ -1,5 +1,5 @@
 from cmath import pi
-from attr import NOTHING
+import statistics
 import energyMPC
 import numpy as np
 import matplotlib.pyplot as plt
@@ -47,6 +47,8 @@ def main():
         #     for j in range(N):
         #         ocp_solver.set(j, "p", np.zeros(4))
 
+        #AcadosOcpSolver.get_stats("statistics")
+        
         start = time.time()
         solver_status = ocp_solver.solve()
         t = time.time() - start
@@ -69,6 +71,8 @@ def main():
         
         x_cur = ocp_integrator.get("x")
         simX[i, :] = x_cur
+        
+
     
     print(f'avg. time: {time_solve/Nsim*1000}[ms]')
     print("Average speed:{}m/s".format(np.average(simX[:, 3])))
