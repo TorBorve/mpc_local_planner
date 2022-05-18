@@ -1,3 +1,4 @@
+from cmath import tan
 from configparser import Interpolation
 from casadi import SX, vertcat, sin, cos, atan
 from acados_template import AcadosOcp, AcadosSimSolver, AcadosModel, AcadosOcpSolver
@@ -51,7 +52,7 @@ def bicycleModel(params):
     fExpl = vertcat(
             v*cos(psi),
             v*sin(psi),
-            v/Lf*sin(delta),
+            v/Lf*delta,
             V * 3.2 * throttle * r / (v * G * m + 1) - (1/2*(rho*Cd*A*(v)**2) / m),
             deltaDotInput,
             throttleDotInput)
@@ -119,7 +120,7 @@ def ocpSolver():
     ny = nx + nu
 
     ocp.cost.cost_type = "NONLINEAR_LS"
-    ocp.cost.yref = np.array([0, 0, 3.0, 0, 0, 0, 0, 0])
+    ocp.cost.yref = np.array([0, 0, 2.0, 0, 0, 0, 0, 0])
     ocp.model.cost_y_expr = costFunc(ocp.model, params)
     ocp.cost.W = 2*np.diag([500, 1000, 100, 1, 10, 50, 10, 1])
 
