@@ -13,10 +13,10 @@
 
 namespace mpc {
 
-/// @brief MPC class for car
+/// @brief path tracking class for car
 class PathTrackingSys {
    public:
-    /// @brief constructor for MPC class
+    /// @brief constructor for path tracking class
     /// @param[in] track vector with points that define desired trajectory
     PathTrackingSys(const std::vector<Point> &track);
 
@@ -32,17 +32,17 @@ class PathTrackingSys {
         return track_;
     }
 
-    /// @brief solve function for mpc. Solves the nlp with state as given.
+    /// @brief solve function for path tracking. Solves the nlp with state as given.
     /// @param[in] state the state of the car.
     /// @param[in] pitch the pitch angle of the car
-    /// @return solution from mpc. See definition of MPCReturn.
+    /// @return solution from path tracking. See definition of MPCReturn.
     MPCReturn solve(const State &state, double pitch, double vRef);
 
-    /// @brief solve function for mpc. Uses states and coefficients of a third order polynomial
+    /// @brief solve function for path tracking. Uses states and coefficients of a third order polynomial
     ///        that is threated at desired trajectory.
     /// @param[in] state the state of the car. (position, velocity, steering angle, ...)
     /// @param[in] params parameters for solver.
-    /// @return solution from mpc. See definition of MPCReturn.
+    /// @return solution from path tracking. See definition of MPCReturn.
     MPCReturn solve(const State &state, const Acados::PathTrackingParams &params);
 
    private:

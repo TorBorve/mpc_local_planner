@@ -25,8 +25,8 @@ struct PointStabParams : public Params {
         pitch = vec[3];
     }
 
-    /// @brief convert params to array.
-    /// @return std::array<double, 5> containg the params
+    /// @brief convert params to vector.
+    /// @return vector containg the params
     std::vector<double> toVec() const override {
         return std::vector<double>{pRef.x, pRef.y, psiRef, pitch};
     }
@@ -42,17 +42,30 @@ struct PointStabParams : public Params {
     const size_t size = 4;
 };
 
+/// @brief solver for point stabilization
 class PointStab : public Solver {
    public:
+    /// @brief constructor taking in the state of the vehicle
     PointStab(const State &state);
+
+    /// @brief destructor
     ~PointStab();
+
+    /// @brief set parameters for the solver
+    /// @param[in] params params class for point stab.
     void setParams(const Params &params) override;
 
    private:
+    /// @brief solve function used. Need to set params and constraints before this.
     int acadosSolve() override;
+
+    /// @brief init function. Allocates memory for the pointers
     void init() override;
+
+    /// @brief deletes the allocated memory.
     void freeAllocated() override;
 
+    /// @brief capsule for point stab solver
     point_stab_solver_capsule *capsule_;
 };
 }  // namespace Acados

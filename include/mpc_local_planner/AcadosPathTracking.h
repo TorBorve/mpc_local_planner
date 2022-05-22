@@ -27,7 +27,7 @@ struct PathTrackingParams : public Params{
     }
 
     /// @brief convert params to array.
-    /// @return std::array<double, 5> containg the params
+    /// @return vector containg the params
     std::vector<double> toVec() const override {
         return std::vector<double>{polyCoeffs[0], polyCoeffs[1], polyCoeffs[2], polyCoeffs[3], pitch, vRef};
     }

@@ -174,10 +174,13 @@ struct Params {
 
 }  // namespace mpc
 
+/// @brief print operator for state
 std::ostream& operator<<(std::ostream &os, const mpc::State &state);
 
+/// @brief print operator for input
 std::ostream& operator<<(std::ostream &os, const mpc::Input &input);
 
+/// @brief print operator for optVar
 std::ostream& operator<<(std::ostream &os, const mpc::OptVariables &optVar);
 
 #endif
