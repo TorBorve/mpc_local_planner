@@ -39,11 +39,13 @@ def bicycleModel(params):
 
     pitch = SX.sym("pitch")
 
+    a = 5.0*throttle - 0.087*v + sin(pitch)*9.81
+
     fExpl = vertcat(
             v*cos(psi),
             v*sin(psi),
             v/Lf*delta,
-            5.0*throttle - 0.087*v + sin(pitch)*9.81,
+            a,
             deltaDotInput,
             throttleDotInput)
     fImpl = xDot - fExpl            
@@ -58,6 +60,7 @@ def bicycleModel(params):
     model.x = x
     model.u = u
     model.p = p
+    model.con_h_expr = vertcat(a)
 
     return model
 
@@ -96,8 +99,8 @@ def ocpSolver():
     ocp.cost.cost_type = "NONLINEAR_LS"
     ocp.model.cost_y_expr = costFunc(ocp.model)
     ocp.cost.yref = np.array([0, 0, 0, 0, 0, 0, 0, 0])
-    Q = 2*np.diag([500, 500, 1000, 50, 1, 10])
-    R = 2*np.diag([10, 10])
+    Q = 2*np.diag([5, 5, 10, 10, 0.01, 1])
+    R = 2*np.diag([0.1, 0.1])
     ocp.cost.W = scipy.linalg.block_diag(Q, R)
 #     ocp.cost.Vx = np.zeros((ny, nx))
 #     ocp.cost.Vx[:nx, :nx] = np.eye(nx)
@@ -116,8 +119,18 @@ def ocpSolver():
     ocp.constraints.ubx = np.array([deltaMax, throttleMax])
     ocp.constraints.idxbx = np.array([4, 5])
     ocp.constraints.lbu = np.array([-deltaDotMax, -throttleDotMax])
-    ocp.constraints.ubu = np.array([deltaDotMax, throttleDotMax])
+    ocp.constraints.ubu = np.array([deltaDotMax/4, throttleDotMax])
     ocp.constraints.idxbu = np.array([0, 1])
+
+    # Soft constraints
+    ocp.cost.zl = 100 * np.ones((1,))
+    ocp.cost.Zl = 0 * np.ones((1,))
+    ocp.cost.zu = 100 * np.ones((1,))
+    ocp.cost.Zu = 0 * np.ones((1,))
+    ocp.constraints.lh = np.array([-100])
+    ocp.constraints.uh = np.array([0.1])
+
+    ocp.constraints.idxsh = np.array([0])
 
     x0 = np.array([-10, 0, 0, 0, 0, 0])
     ocp.constraints.x0 = x0
