@@ -59,7 +59,7 @@ class ControlSys {
     PathTrackingSys pathTrackingSys_ = PathTrackingSys{getTestTrack()};
 
     /// @brief mode of the control system.
-    Mode mode_ = Mode::Parking;
+    Mode mode_ = Mode::PathTracking;
 };
 
 }  // namespace mpc

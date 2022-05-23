@@ -17,7 +17,7 @@ throttle_topic: "/throttle_cmd"
 
 # Where tha global path should be published. The path we want to follow. If this parameter is not provided
 # the mpc will use a internal hard coded path.
-# path_topic: "/path"
+path_topic: "/path"
 
 # The ""global"" frame. Typically map or odom.
 map_frame: "odom"
@@ -26,10 +26,10 @@ map_frame: "odom"
 car_frame: "base_footprint"
 
 # Number of steps in the mpc horizon
-mpc_N: 20
+mpc_N: 30
 
 # Time between the steps in the mpc horizon.
-mpc_dt: 0.15
+mpc_dt: 0.35
 
 # Maximum steering angle of the car (to the left and right). Given in [rad]
 max_steering_angle: 0.57
