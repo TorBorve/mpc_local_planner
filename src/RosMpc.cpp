@@ -68,10 +68,10 @@ MPCReturn RosMpc::solve() {
     // publish inputs
     double dt = 1.0 / loopHz_;
     std_msgs::Float64 msg;
-    msg.data = result.mpcHorizon.at(0).x.throttle + result.mpcHorizon.at(0).u.throttleDot * dt;
+    msg.data = result.mpcHorizon.at(1).x.throttle;
     throttlePub_.publish(msg);
     prevThrottle = msg.data;
-    msg.data = (result.mpcHorizon.at(0).x.delta + result.mpcHorizon.at(0).u.deltaDot * dt) * steeringRatio_;
+    msg.data = result.mpcHorizon.at(1).x.delta * steeringRatio_;
     steeringPub_.publish(msg);
 
     mpcPathPub_.publish(getPathMsg(result, mapFrame_, carFrame_));
@@ -133,7 +133,44 @@ void RosMpc::actualSteeringCallback(const std_msgs::Float64::ConstPtr &msg) {
 }
 
 void RosMpc::pathCallback(const nav_msgs::Path::ConstPtr &msg) {
-    controlSys_.setTrack(toVector(*msg));
+    nav_msgs::Path path = *msg;
+    if (msg->header.frame_id != mapFrame_) {
+        ROS_WARN_STREAM_THROTTLE(20, "Path has different frame than the MPC use. Therefore a transform will be done.");
+        geometry_msgs::TransformStamped tfStampedPathFrame;
+        try {
+            tfStampedPathFrame = tfBuffer_.lookupTransform(mapFrame_, path.header.frame_id, ros::Time(0));
+        } catch (tf2::TransformException &e) {
+            ROS_ERROR_STREAM("Could not get transform from " << mapFrame_ << " to " << path.header.frame_id << ". Error thrown: " << e.what()
+                                                             << "\nNeed transform for calculating pose of path used in MPC.");
+            return;
+        }
+
+        tf2::Transform tfPath;
+        auto &trans = tfStampedPathFrame.transform.translation;
+        tfPath.setOrigin(tf2::Vector3{trans.x, trans.y, trans.z});
+        auto &q = tfStampedPathFrame.transform.rotation;
+        tfPath.setRotation(tf2::Quaternion{q.x, q.y, q.z, q.w});
+
+        for (auto &stampedPose : path.poses) {
+            tf2::Transform tfOriginal;
+            auto &pose = stampedPose.pose;
+            tfOriginal.setOrigin(tf2::Vector3{pose.position.x, pose.position.y, pose.position.z});
+            tfOriginal.setRotation(tf2::Quaternion{pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w});
+
+            tf2::Transform tfNew = tfPath * tfOriginal;
+            auto rot = tfNew.getRotation();
+            pose.orientation.x = rot.getX();
+            pose.orientation.y = rot.getY();
+            pose.orientation.z = rot.getZ();
+            pose.orientation.w = rot.getW();
+
+            auto org = tfNew.getOrigin();
+            pose.position.x = org.getX();
+            pose.position.y = org.getY();
+            pose.position.z = org.getZ();
+        }
+    }
+    controlSys_.setTrack(toVector(path));
 }
 
 void RosMpc::poseCallback(const geometry_msgs::PoseStamped::ConstPtr &msg) {
