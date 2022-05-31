@@ -68,10 +68,10 @@ MPCReturn RosMpc::solve() {
     // publish inputs
     double dt = 1.0 / loopHz_;
     std_msgs::Float64 msg;
-    msg.data = result.mpcHorizon.at(0).x.throttle + result.mpcHorizon.at(0).u.throttleDot * dt;
+    msg.data = result.mpcHorizon.at(1).x.throttle;
     throttlePub_.publish(msg);
     prevThrottle = msg.data;
-    msg.data = (result.mpcHorizon.at(0).x.delta + result.mpcHorizon.at(0).u.deltaDot * dt) * steeringRatio_;
+    msg.data = (result.mpcHorizon.at(1).x.delta) * steeringRatio_;
     steeringPub_.publish(msg);
 
     mpcPathPub_.publish(getPathMsg(result, mapFrame_, carFrame_));

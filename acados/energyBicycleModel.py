@@ -12,16 +12,14 @@ import yaml
 
 def energyBicycleModel(params):
     
-    modelName = "BicycleModel"
+    modelName = "BicycleModel" # Name of model
 
     # Constants
 
-    
-
-    r = params["radius"] # Wheel radius
-    l = params["wheelbase"] # Distance between front wheel and rear wheel
+    r = params["radius"] # Wheel radius [m]
+    l = params["wheelbase"] # Distance between front wheel and rear wheel [m]
     G = params["gear_ratio"] # Gear ratio
-    m = params["mass_car"]# Mass of car
+    m = params["mass_car"]# Mass of car [kg]
     V = params["voltage"] # Voltage
     Cd = params["drag_coefficient"] # Drag coefficient
     rho = params["air_resistance"]# Air resistance [kg/m³]
@@ -33,18 +31,16 @@ def energyBicycleModel(params):
     y1 = SX.sym("y1") # Y-position
     psi = SX.sym("psi") # Angle of car
     v = SX.sym("v") # Velocity of car
-    #omega = SX.sym("omega") # Angular velocity
     delta = SX.sym("delta") # Steering angle
-    throttle = SX.sym("throttle")
+    throttle = SX.sym("throttle") # Throttle
 
 
-    x = vertcat(x1, y1, psi, v, delta, throttle)
+    x = vertcat(x1, y1, psi, v, delta, throttle) 
 
     # Input
     
-    #omega_dot = SX.sym("omega_dot") # Angular acceleration
     delta_dot = SX.sym("delta_dot") # Steering angle derivative
-    throttle_dot = SX.sym("throttle_dot")
+    throttle_dot = SX.sym("throttle_dot") # Throttle derivative
 
     u = vertcat(delta_dot, throttle_dot)
 
@@ -58,19 +54,21 @@ def energyBicycleModel(params):
     xDot = vertcat(x1Dot, y1Dot, psiDot, a, delta_dot_state, throttle_dot_state)
 
     f_expl = vertcat(
-        v * (cos(psi)), # * cos(psi) - sin(delta)/2 * sin(psi)),
-        v * (sin(psi)), # * sin(psi) + sin(delta)/2 * cos(psi)),
-        v * sin(delta)/l,
-        V * 3.2 * throttle * r / (v * G * m + 1) - (1/2*(rho*Cd*A*(v)**2) / m), #5*throttle - 0.03*v,
+        v * (cos(psi)), # x_dot
+        v * (sin(psi)), # y_dot
+        v * tan(delta)/l, # psi_dot
+        V * 3.2 * throttle * r / (v * G * m + 1) - (1/2*(rho*Cd*A*(v)**2) / m), # a
         delta_dot,
         throttle_dot
     )    
-
-    p = vertcat(SX.sym("coeff_0"), SX.sym("coeff_1"), SX.sym("coeff_2"), SX.sym("coeff_3"))
+    #Parameters used in describing third-order polynomial
+    p = vertcat(SX.sym("coeff_0"), SX.sym("coeff_1"), SX.sym("coeff_2"), 
+                SX.sym("coeff_3"))
 
     f_impl = xDot - f_expl
-    model = AcadosModel()
+    model = AcadosModel() # Class containing all information of the model
 
+    # Add the respective states, inputs and so on to the different model
     model.name = modelName
     model.f_expl_expr = f_expl
     model.f_impl_expr = f_impl
@@ -83,6 +81,7 @@ def energyBicycleModel(params):
 
 def costFnc(model):
 
+    # Opem yaml file with different constants
     with open("../params/mpc.yaml", "r") as paramFile:
         params = yaml.safe_load(paramFile)
 
@@ -95,7 +94,7 @@ def costFnc(model):
     g = params["gravity_constant"]# Gravity constant [m/s²]
     G = params["total_reduction_ratio"]# Total reduction ratio
 
-
+    # Define what is going to be in cost function
     x1 = model.x[0]
     y1 = model.x[1]
     psi = model.x[2]
@@ -111,15 +110,27 @@ def costFnc(model):
     coeffs = model.p
 
 
-    Tm = r/G * (m*a + m*g*Cr + 1/2*rho*Cd*A*(v)**2)
+    Tm = r/G * (m*a + m*g*Cr + 1/2*rho*Cd*A*(v)**2) # Torque
 
-    energy = Tm * v/r
+    energy = Tm * v/r # Energy equation
 
-    pathYaw = atan(3*coeffs[3]*x1*x1 + 2*coeffs[2]*x1 + coeffs[1]) 
-    #pathYaw = 0 
+    # Different paths to test
+
+    # Sinusfunction
+    yPath = 10*sin(x1/10) 
+    pathYaw = atan(cos(x1/10)) 
+
+    # Third-order polynomial
+    # yPath =  coeffs[3]*x1**3 + coeffs[2]*x1**2 + coeffs[1]*x1 + coeffs[0] 
+    # pathYaw = atan(3*coeffs[3]*x1*x1 + 2*coeffs[2]*x1 + coeffs[1])  
+
+    # Straight line
+    # yPath = 0 
+    # pathYaw = 0 
+
+    # Cross-track error and heading error
     epsi = psi - pathYaw
-    yPath =  coeffs[3]*x1**3 + coeffs[2]*x1**2 + coeffs[1]*x1 + coeffs[0]
-    #yPath = 0
     cte = yPath - y1
 
+    # What variables we want to minimize
     return vertcat(cte, epsi, v, delta, throttle, delta_dot, throttle_dot, energy)

@@ -17,7 +17,7 @@ class ControlSys {
         if (mode_ == Mode::Parking) {
             return parkingSys_.solve(state, pitch);
         } else {
-            return pathTrackingSys_.solve(state, pitch, 2.0);
+            return pathTrackingSys_.solve(state, pitch, 5.0);
         }
     }
 
