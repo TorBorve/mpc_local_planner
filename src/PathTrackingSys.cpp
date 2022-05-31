@@ -1,4 +1,4 @@
-#include "mpc_local_planner/MPC.h"
+#include "mpc_local_planner/PathTrackingSys.h"
 
 #include <ros/ros.h>
 #include <tf2/LinearMath/Quaternion.h>
@@ -6,27 +6,27 @@
 
 #include <fstream>
 
-#include "mpc_local_planner/AcadosSolver.h"
+#include "mpc_local_planner/AcadosPathTracking.h"
 #include "mpc_local_planner/bounds.h"
 #include "mpc_local_planner/utilities.h"
 
 namespace mpc {
-MPC::MPC(const std::vector<Point> &track) : track_{track} {
+
+PathTrackingSys::PathTrackingSys(const std::vector<Point> &track) : track_{track} {
     ros::NodeHandle nh;
     polynomPub_ = nh.advertise<nav_msgs::Path>("interpolated_path", 1);
 }
 
-MPCReturn MPC::solve(const State &state, double pitch) {
-
+MPCReturn PathTrackingSys::solve(const State &state, double pitch, double vRef) {
     double rotation;
     Eigen::Vector4d coeffs;
     calcCoeffs(state, rotation, coeffs);
-    Params params{coeffs, pitch};
+    Acados::PathTrackingParams params{coeffs, pitch, vRef};
 
     State transformedState{0, 0, rotation, state.vel, state.delta, state.throttle};
     // calcState(transformedState, coeffs);
     // OptVariables transformedOptVar{transformedState, optVars.u};
-
+    LOG_DEBUG_STREAM("rot: " << rotation << ", coeffs: " << coeffs[0] << ", " << coeffs[1] << ", " << coeffs[2] << ", " << coeffs[3]);
     auto result = solve(transformedState, params);
 
     const double rotAngle = state.psi - rotation;
@@ -60,12 +60,12 @@ MPCReturn MPC::solve(const State &state, double pitch) {
     return result;
 }
 
-MPCReturn MPC::solve(const State &state, const Params &params) {
-    static AcadosSolver solver{state};
+MPCReturn PathTrackingSys::solve(const State &state, const Acados::PathTrackingParams &params) {
+    static Acados::PathTracking solver{state};
     return solver.solve(state, params);
 }
 
-void MPC::calcCoeffs(const State &state, double &rotation, Eigen::Vector4d &coeffs) const {
+void PathTrackingSys::calcCoeffs(const State &state, double &rotation, Eigen::Vector4d &coeffs) const {
     size_t start, end;
     getTrackSection(start, end, state);
 
@@ -82,14 +82,7 @@ void MPC::calcCoeffs(const State &state, double &rotation, Eigen::Vector4d &coef
     return;
 }
 
-void MPC::calcState(State &state, const Eigen::Vector4d &coeffs) const {
-    // state.cte = state.y - polyEval(state.x, coeffs);
-    // double dy = coeffs[1] + 2 * state.x * coeffs[2] + 3 * coeffs[3] * state.x * state.x;
-    // state.epsi = state.psi - atan2(dy, 1);
-    return;
-}
-
-Eigen::Vector4d MPC::interpolate(const State &state, double rotation, size_t start, size_t end, double &cost) const {
+Eigen::Vector4d PathTrackingSys::interpolate(const State &state, double rotation, size_t start, size_t end, double &cost) const {
     Eigen::VectorXd xVals(end - start);
     Eigen::VectorXd yVals(end - start);
     double angle = rotation - state.psi;
@@ -114,7 +107,7 @@ Eigen::Vector4d MPC::interpolate(const State &state, double rotation, size_t sta
     return coeffs;
 }
 
-void MPC::getTrackSection(size_t &start, size_t &end, const State &state) const {
+void PathTrackingSys::getTrackSection(size_t &start, size_t &end, const State &state) const {
     double maxLen = 15;
     double minDistSqrd = distSqrd(state.x - track_[0].x, state.y - track_[0].y);
     size_t minIndex = 0;
@@ -143,4 +136,4 @@ void MPC::getTrackSection(size_t &start, size_t &end, const State &state) const 
     }
     assert(end < track_.size());
 }
-}  // namespace mpc
+}  // namespace

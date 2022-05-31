@@ -6,7 +6,7 @@
 #include <nav_msgs/Path.h>
 #include <ros/ros.h>
 
-#include "mpc_local_planner/MPC.h"
+#include "mpc_local_planner/PathTrackingSys.h"
 #include "mpc_local_planner/bounds.h"
 
 #ifdef NDEBUG                                // true if the build type is not debug
@@ -116,6 +116,70 @@ std::vector<Point> toVector(const nav_msgs::Path &path);
 /// @param[in] p the point message.
 /// @return mpc::Point object with the x and y values of p.
 Point toPoint(const geometry_msgs::Point &p);
+
+/// @brief class for representing and calculating bezier curves
+class BezierCurve {
+   public:
+    /// @brief constructor for bezier curves
+    /// @param[in] p1 the start point
+    /// @param[in] angle1 the angle of the tangent at p1
+    /// @param[in] p2 the end point
+    /// @param[in] angle2 the angle of the tangent at p2
+    BezierCurve(const Point &p1, double angle1, const Point &p2, double angle2) {
+        double dist = sqrt(distSqrd(p1.x - p2.x, p1.y - p2.y));
+        constexpr double frac = 1 / 2.0;
+        Point p1Tangent{p1.x + frac * cos(angle1) * dist, p1.y + frac *sin(angle1) * dist};
+        Point p2Tangent{p2.x - frac * cos(angle2) * dist, p2.y - frac * sin(angle2) * dist};
+        *this = BezierCurve{p1, p1Tangent, p2Tangent, p2};
+    }
+
+    /// @brief constructor with list of points defining a bezier curve 
+    BezierCurve(std::initializer_list<Point> list) : points{list} {}
+
+    /// @brief calculate a point on the bezier curve
+    /// @param[in] points the points defining a bezier curve
+    /// @param[in] t how far along the curve we want to get the point. t = [0, 1]
+    /// @return the point at that t value
+    static Point calc(const std::vector<Point> &points, double t) {
+        std::vector<Point> pCopy = points;
+        for (int n = points.size(); n > 0; n--) {
+            for (int i = 0; i < n - 1; i++) {
+                pCopy[i] = lerp(pCopy[i], pCopy[i + 1], t);
+            }
+        }
+        return pCopy[0];
+    }
+
+    /// @brief calculate a point on the curve
+    /// @param[in] t how far along the curve we want to get the point. t = [0, 1]
+    Point calc(double t) const {
+        return calc(points, t);
+    }
+
+    /// @brief linear interpolate. Get a line between to point and return the point at t
+    /// @param[in] p1 the start point
+    /// @param[in] p2 the end point
+    /// @param[in] t ow far along the curve we want to get the point. t = [0, 1]
+    static Point lerp(const Point &p1, const Point &p2, double t) {
+        double dx = (p2.x - p1.x) * t;
+        double dy = (p2.y - p1.y) * t;
+        return Point{p1.x + dx, p1.y + dy};
+    }
+
+    /// @brief the points defining the bezier curve
+    std::vector<Point> points;
+};
+
+/// @brief get path message from a bezier curve
+/// @param[in] mapFrame global frame of path message
+/// @param[in] carFrame the frame of the car
+/// @return path message
+nav_msgs::Path getPathMsg(const BezierCurve &curve, const std::string &mapFrame, const std::string &carFrame);
+
+/// @brief convert bezier curve to vector with points
+/// @param[in] curve the bezier curve
+/// @return vector with points on the bezier curve
+std::vector<Point> getPath(const BezierCurve &curve);
 }  // namespace mpc
 
 #endif

@@ -2,20 +2,23 @@
 #define MPC_MPC_H_
 
 #include <ros/ros.h>
+#include <geometry_msgs/Pose.h>
 
 #include <eigen3/Eigen/Core>
 
 #include "mpc_local_planner/bounds.h"
 #include "mpc_local_planner/types.h"
+#include "mpc_local_planner/AcadosPathTracking.h"
+#include "mpc_local_planner/AcadosPointStab.h"
 
 namespace mpc {
 
-/// @brief MPC class for car
-class MPC {
+/// @brief path tracking class for car
+class PathTrackingSys {
    public:
-    /// @brief constructor for MPC class
+    /// @brief constructor for path tracking class
     /// @param[in] track vector with points that define desired trajectory
-    MPC(const std::vector<Point> &track);
+    PathTrackingSys(const std::vector<Point> &track);
 
     /// @brief update track variable for desired trajectory
     /// @param[in] newTrack the new desired trajectory
@@ -29,18 +32,18 @@ class MPC {
         return track_;
     }
 
-    /// @brief solve function for mpc. Solves the nlp with state as given.
+    /// @brief solve function for path tracking. Solves the nlp with state as given.
     /// @param[in] state the state of the car.
     /// @param[in] pitch the pitch angle of the car
-    /// @return solution from mpc. See definition of MPCReturn.
-    MPCReturn solve(const State &state, double pitch);
+    /// @return solution from path tracking. See definition of MPCReturn.
+    MPCReturn solve(const State &state, double pitch, double vRef);
 
-    /// @brief solve function for mpc. Uses states and coefficients of a third order polynomial
+    /// @brief solve function for path tracking. Uses states and coefficients of a third order polynomial
     ///        that is threated at desired trajectory.
     /// @param[in] state the state of the car. (position, velocity, steering angle, ...)
     /// @param[in] params parameters for solver.
-    /// @return solution from mpc. See definition of MPCReturn.
-    MPCReturn solve(const State &state, const Params &params);
+    /// @return solution from path tracking. See definition of MPCReturn.
+    MPCReturn solve(const State &state, const Acados::PathTrackingParams &params);
 
    private:
     /// @brief calculates coefficients of third order polynomial that fits the disired trajectory best.

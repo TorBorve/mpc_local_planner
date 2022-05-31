@@ -3,4 +3,4 @@ logs/
 acados_python/
 .vscode
 **/__pycache__
-acados/*.json
+acados/**/*.json

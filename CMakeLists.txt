@@ -6,7 +6,7 @@ set(ACADOS_LIB $ENV{ACADOS_SOURCE_DIR})
 add_compile_options(-std=c++14)
 
 # Uncomment if you want debugging
-# set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Debug)
 
 # Default build type
 if(NOT CMAKE_BUILD_TYPE)
@@ -41,7 +41,8 @@ include_directories(
   ${ACADOS_LIB}/include/blasfeo/include
   ${ACADOS_LIB}/include/hpipm/include
   ${ACADOS_LIB}/include
-  ${PROJECT_SOURCE_DIR}/acados/c_generated_code
+  ${PROJECT_SOURCE_DIR}/acados/path_tracking/c_generated_code
+  ${PROJECT_SOURCE_DIR}/acados/point_stab/c_generated_code
   /usr/local/include
 )
 
@@ -51,27 +52,45 @@ link_directories(
 )
 
 add_custom_command(
-  OUTPUT ${PROJECT_SOURCE_DIR}/acados/c_generated_code/main_bicycle_model.c
-  COMMAND ${ACADOS_LIB}/build/env/bin/python3 genCode.py 
-  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/acados
-  DEPENDS acados/genCode.py acados/mpc.py params/mpc.yaml
+  OUTPUT ${PROJECT_SOURCE_DIR}/acados/path_tracking/c_generated_code/main_path_tracking.c
+  COMMAND ${ACADOS_LIB}/build/env/bin/python3 mpcPathTracking.py
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/acados/path_tracking
+  DEPENDS acados/path_tracking/mpcPathTracking.py params/mpc.yaml
 )
 
 add_custom_target(
-  acados_generated_lib
+  path_tracking_lib
   COMMAND $(MAKE) shared_lib
-  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/acados/c_generated_code/
-  DEPENDS ${PROJECT_SOURCE_DIR}/acados/c_generated_code/main_bicycle_model.c
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/acados/path_tracking/c_generated_code/
+  DEPENDS ${PROJECT_SOURCE_DIR}/acados/path_tracking/c_generated_code/main_path_tracking.c
 )
 
-add_library( myacadoslib SHARED IMPORTED )
-set_target_properties( myacadoslib PROPERTIES IMPORTED_LOCATION ${PROJECT_SOURCE_DIR}/acados/c_generated_code/libacados_ocp_solver_bicycle_model.so )
+add_library( path_tracking_mpc SHARED IMPORTED )
+set_target_properties( path_tracking_mpc PROPERTIES IMPORTED_LOCATION ${PROJECT_SOURCE_DIR}/acados/path_tracking/c_generated_code/libacados_ocp_solver_path_tracking.so )
+
+########
+add_custom_command(
+  OUTPUT ${PROJECT_SOURCE_DIR}/acados/point_stab/c_generated_code/main_point_stab.c
+  COMMAND ${ACADOS_LIB}/build/env/bin/python3 mpcPointStab.py
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/acados/point_stab
+  DEPENDS acados/point_stab/mpcPointStab.py params/mpc.yaml
+)
+
+add_custom_target(
+  point_stab_lib
+  COMMAND $(MAKE) shared_lib
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/acados/point_stab/c_generated_code/
+  DEPENDS ${PROJECT_SOURCE_DIR}/acados/point_stab/c_generated_code/main_point_stab.c
+)
+
+add_library( point_stab_mpc SHARED IMPORTED )
+set_target_properties( point_stab_mpc PROPERTIES IMPORTED_LOCATION ${PROJECT_SOURCE_DIR}/acados/point_stab/c_generated_code/libacados_ocp_solver_point_stab.so )
 
 FILE(GLOB SOURCES "src/*.cpp")
 
 add_executable(ff_mpc ${SOURCES})
-target_link_libraries(ff_mpc myacadoslib acados hpipm blasfeo m ${catkin_LIBRARIES})
-add_dependencies(ff_mpc acados_generated_lib)
+target_link_libraries(ff_mpc path_tracking_mpc point_stab_mpc acados hpipm blasfeo m ${catkin_LIBRARIES})
+add_dependencies(ff_mpc path_tracking_lib point_stab_lib)
 
 include_directories(
   tests

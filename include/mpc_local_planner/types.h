@@ -3,6 +3,7 @@
 
 #include <eigen3/Eigen/Core>
 #include <vector>
+#include <iostream>
 
 namespace mpc {
 
@@ -166,31 +167,20 @@ struct Point {
 };
 
 /// @brief stuct for params used in solver
+
 struct Params {
-    Params() = default;
-
-    /// @brief constructor for params
-    /// @param[in] polyCoeffs tho coefficient for the 3rd deg. polynomial used to represent the road.
-    /// @param[in] pitch the pitch of the car. Indicates if the car is going downhill or uphill.
-    Params(const Eigen::Vector4d &polyCoeffs, double pitch) : polyCoeffs{polyCoeffs}, pitch{pitch} {}
-
-    /// @brief constructor using array.
-    /// @param[in] arr array to params.
-    Params(const std::array<double, 5> &arr) : polyCoeffs{arr[0], arr[1], arr[2], arr[3]}, pitch{arr[4]} {
-    }
-
-    /// @brief convert params to array.
-    /// @return std::array<double, 5> containg the params
-    std::array<double, 5> toArray() const {
-        return std::array<double, 5>{polyCoeffs[0], polyCoeffs[1], polyCoeffs[2], polyCoeffs[3], pitch};
-    }
-
-    /// @brief the coefficients for the polynomoial defining the track.
-    Eigen::Vector4d polyCoeffs;
-
-    /// @brief pitch of the car.
-    double pitch;
+    virtual std::vector<double> toVec() const = 0;
 };
+
 }  // namespace mpc
+
+/// @brief print operator for state
+std::ostream& operator<<(std::ostream &os, const mpc::State &state);
+
+/// @brief print operator for input
+std::ostream& operator<<(std::ostream &os, const mpc::Input &input);
+
+/// @brief print operator for optVar
+std::ostream& operator<<(std::ostream &os, const mpc::OptVariables &optVar);
 
 #endif
