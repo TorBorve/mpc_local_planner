@@ -80,7 +80,7 @@ def costFunc(model):
     return vertcat(x1 - xRef, y1 - yRef, psi - psiRef, v, delta, throttle, deltaDot, throttleDot)
 
 def ocpSolver():
-    with open("../../params/mpc.yaml", "r") as paramFile:
+    with open("../../params/auto_gen.yaml", "r") as paramFile:
             params = yaml.safe_load(paramFile)
 
     ocp = AcadosOcp()

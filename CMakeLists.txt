@@ -1,12 +1,15 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(mpc_local_planner)
 
+# Enable option for specifying params file used in mpc.
+option(MPC_PARAMS "mpc_params" OFF)
+
 set(ACADOS_LIB $ENV{ACADOS_SOURCE_DIR})
 
 add_compile_options(-std=c++14)
 
 # Uncomment if you want debugging
-set(CMAKE_BUILD_TYPE Debug)
+# set(CMAKE_BUILD_TYPE Debug)
 
 # Default build type
 if(NOT CMAKE_BUILD_TYPE)
@@ -14,6 +17,19 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 add_compile_definitions(__PATH__="${PROJECT_SOURCE_DIR}")
+
+# Check if MPC_PARAMS file is specified
+if (NOT MPC_PARAMS)
+  message(FATAL_ERROR "MPC_PARAMS option not set. Needed for determining what parameters the mpc should be compiled with. You can set it using cmake args. Example: catkin build --cmake-args -DMPC_PARMS=my_yaml_file.yaml")
+endif()
+
+# check that params file exists
+if (NOT EXISTS ${PROJECT_SOURCE_DIR}/params/${MPC_PARAMS})
+  message(FATAL_ERROR "The mpc params file does not exist. Specify a yaml file that exists. Path: ${PROJECT_SOURCE_DIR}/params/${MPC_PARAMS}")
+endif()
+
+# Copy params file to new file
+configure_file(${PROJECT_SOURCE_DIR}/params/${MPC_PARAMS} ${PROJECT_SOURCE_DIR}/params/auto_gen.yaml COPYONLY)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -55,7 +71,7 @@ add_custom_command(
   OUTPUT ${PROJECT_SOURCE_DIR}/acados/path_tracking/c_generated_code/main_path_tracking.c
   COMMAND ${ACADOS_LIB}/build/env/bin/python3 mpcPathTracking.py
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/acados/path_tracking
-  DEPENDS acados/path_tracking/mpcPathTracking.py params/mpc.yaml
+  DEPENDS acados/path_tracking/mpcPathTracking.py params/auto_gen.yaml
 )
 
 add_custom_target(
@@ -73,7 +89,7 @@ add_custom_command(
   OUTPUT ${PROJECT_SOURCE_DIR}/acados/point_stab/c_generated_code/main_point_stab.c
   COMMAND ${ACADOS_LIB}/build/env/bin/python3 mpcPointStab.py
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/acados/point_stab
-  DEPENDS acados/point_stab/mpcPointStab.py params/mpc.yaml
+  DEPENDS acados/point_stab/mpcPointStab.py params/auto_gen.yaml
 )
 
 add_custom_target(

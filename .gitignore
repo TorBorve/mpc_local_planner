@@ -4,3 +4,4 @@ acados_python/
 .vscode
 **/__pycache__
 acados/**/*.json
+params/auto_gen.yaml

@@ -4,7 +4,6 @@ from acados_template import AcadosOcp, AcadosSimSolver, AcadosModel, AcadosOcpSo
 import numpy as np
 import scipy.linalg
 import yaml
-
 def bicycleModel(params):
     modelName = "path_tracking"
     
@@ -102,7 +101,7 @@ def costFunc(model, params):
     return vertcat(cte, epsi, v - model.p[5], delta, throttle, deltaDot, throttleDot, energy)
 
 def ocpSolver():
-    with open("../../params/mpc.yaml", "r") as paramFile:
+    with open("../../params/auto_gen.yaml", "r") as paramFile:
             params = yaml.safe_load(paramFile)
 
     ocp = AcadosOcp()
