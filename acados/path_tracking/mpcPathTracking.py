@@ -15,7 +15,7 @@ def bicycleModel(params):
     m = params["mass_car"]# Mass of car
     V = params["voltage"] # Voltage
     Cd = params["drag_coefficient"] # Drag coefficient
-    rho = params["air_density"]# Air density [kg/m³]
+    rho = 1.2 # Air density [kg/m³]
     A = params["frontal_area"]# Frontal area [m²]
 
     #states
@@ -77,9 +77,9 @@ def costFunc(model, params):
     m = params["mass_car"] # Mass of vehicle [kg]
     Cr = params["rolling_resistance"] # Rolling resistance
     Cd = params["drag_coefficient"] # Drag coefficient
-    rho = params["air_density"] # Air density [kg/m³]
+    rho = 1.2 # Air density [kg/m³]
     A = params["frontal_area"] # Frontal area [m²]
-    g = params["gravity_constant"]# Gravity constant [m/s²]
+    g = 9.81
 
     x1 = model.x[0]
     y1 = model.x[1]
