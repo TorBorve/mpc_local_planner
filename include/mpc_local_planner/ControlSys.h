@@ -11,7 +11,8 @@ class ControlSys {
    public:
    /// @brief modes the control system can be in.
     enum class Mode { PathTracking,
-                      Parking };
+                      Parking,
+                      INVALID };
     ControlSys() = default;
 
     /// @brief solve function
@@ -36,10 +37,20 @@ class ControlSys {
     std::vector<Point> getTrack() const {
         if (mode_ == Mode::Parking) {
             return parkingSys_.getTrack();
-        }
+        } else if (mode_ == Mode::PathTracking) {
         return pathTrackingSys_.getTrack();
+        } else {
+            throw std::runtime_error{"Mode of control system not set. use the function setMode to update mode"};
+        }
     }
 
+    void setMode(const Mode& mode) {
+        mode_ = mode;
+    }
+
+    Mode getMode() const {
+        return mode_;
+    }
     /// @brief set the reference pose for parking system.
     /// @param[in] pose the pose we want to get to.
     void setRefPose(const geometry_msgs::Pose &pose) {
@@ -59,7 +70,7 @@ class ControlSys {
     PathTrackingSys pathTrackingSys_ = PathTrackingSys{getTestTrack()};
 
     /// @brief mode of the control system.
-    Mode mode_ = Mode::PathTracking;
+    Mode mode_ = Mode::INVALID;
 };
 
 }  // namespace mpc

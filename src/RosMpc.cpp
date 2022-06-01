@@ -12,22 +12,35 @@ RosMpc::RosMpc(ros::NodeHandle *nh) : controlSys_{}, tfListener_{tfBuffer_}, nh_
     if (!verifyParamsForMPC(nh)) {
         ROS_WARN("One or more parameters for the mpc is not specified. Default values is therefore used.");
     }
-
+    std::string modeStr = nh_->param<std::string>("mode", "not specified");
     std::string twistTopic = nh_->param<std::string>("twist_topic", "twist");
     std::string actualSteeringTopic = nh_->param<std::string>("actual_steering_topic", "actual_steering_angle");
     std::string commandTopic = nh_->param<std::string>("command_topic", "car_cmd");
     std::string steeringTopic = nh_->param<std::string>("steering_topic", "steering_cmd");
     std::string throttleTopic = nh_->param<std::string>("throttle_topic", "throttle_cmd");
+    std::string parkingTopic = nh_->param<std::string>("parking_topic", "move_base_simple/goal");
     mapFrame_ = nh->param<std::string>("map_frame", "map");
     carFrame_ = nh->param<std::string>("car_frame", "base_link");
     loopHz_ = nh->param<double>("loop_Hz", 30);
     mpcDt_ = nh->param<double>("mpc_dt", 0.2);
     steeringRatio_ = nh->param<double>("steering_ratio", 1.0);
 
-    if (nh_->hasParam("path_topic")) {
+    if (modeStr != "parking" && modeStr != "path_tracking") {
+        std::stringstream ss;
+        ss << "Invalid mode for mpc. mode = " << modeStr << ". Should be parking or path_tracking";
+        ROS_ERROR_STREAM(ss.str());
+        throw std::runtime_error{ss.str()};
+    }
+    ROS_INFO_STREAM("Initialized with mode: " << modeStr);
+    mode_ = ControlSys::Mode::PathTracking;
+    if (modeStr == "parking") {
+        mode_ = ControlSys::Mode::Parking;
+    }
+    controlSys_.setMode(mode_);
+    if (nh_->hasParam("path_topic") && mode_ == ControlSys::Mode::PathTracking) {
         std::string pathTopic = nh_->param<std::string>("path_topic", "/path");
         pathSub_ = nh->subscribe(pathTopic, 1, &RosMpc::pathCallback, this);
-    } else {
+    } else if (!nh_->hasParam("path_topic") && mode_ == ControlSys::Mode::PathTracking) {
         ROS_WARN("path_topic parameter not specified. Using hardcode internal path.");
     }
     throttlePub_ = nh->advertise<std_msgs::Float64>(throttleTopic, 1);
@@ -36,7 +49,9 @@ RosMpc::RosMpc(ros::NodeHandle *nh) : controlSys_{}, tfListener_{tfBuffer_}, nh_
     mpcPathPub_ = nh->advertise<nav_msgs::Path>("/local_path", 1);
     twistSub_ = nh->subscribe(twistTopic, 1, &RosMpc::twistCallback, this);
     actualSteeringSub_ = nh->subscribe(actualSteeringTopic, 1, &RosMpc::actualSteeringCallback, this);
-    poseSub_ = nh->subscribe("/move_base_simple/goal", 1, &RosMpc::poseCallback, this);
+    if (mode_ == ControlSys::Mode::Parking) {
+        poseSub_ = nh->subscribe(parkingTopic, 1, &RosMpc::poseCallback, this);
+    }
 }
 
 MPCReturn RosMpc::solve() {
@@ -100,7 +115,7 @@ bool RosMpc::verifyInputs() {
     }
 
     // if path topic parameter is provided. Get the intial path message.
-    if (nh_->hasParam("path_topic")) {
+    if (nh_->hasParam("path_topic") && mode_ == ControlSys::Mode::PathTracking) {
         std::string pathTopic = nh_->param<std::string>("path_topic", "/path");
         while (ros::ok()) {
             nav_msgs::Path::ConstPtr firstPath = ros::topic::waitForMessage<nav_msgs::Path>(pathTopic, waitTime);
@@ -109,6 +124,18 @@ bool RosMpc::verifyInputs() {
                 break;
             }
             ROS_WARN("Waiting for path message. Should be published at the topic: %s", pathTopic.c_str());
+        }
+    }
+
+    if (mode_ == ControlSys::Mode::Parking) {
+        std::string parkingTopic = nh_->param<std::string>("parking_topic", "move_base_simple/goal");
+        while (ros::ok()) {
+            geometry_msgs::PoseStamped::ConstPtr firstPose = ros::topic::waitForMessage<geometry_msgs::PoseStamped>(parkingTopic, waitTime);
+            if (firstPose != nullptr) {
+                controlSys_.setRefPose(firstPose->pose);
+                break;
+            }
+            ROS_WARN("Waiting for pose message for parking spot. Should be published at the topic: %s", parkingTopic.c_str());
         }
     }
 

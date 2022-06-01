@@ -102,6 +102,8 @@ class RosMpc {
 
     /// @brief Ratio between angle on the wheels and the steering wheel. steeringRatio = "steering wheel angle" / "wheel angle"
     double steeringRatio_;
+
+    ControlSys::Mode mode_;
 };
 }  // namespace mpc
 
