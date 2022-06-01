@@ -67,11 +67,18 @@ The MPC requires several things to work. Mainly it is the library Acados and of 
 
 4. **MPC**
 
-   Now we are ready to build the mpc. This is done by using catkin build or catkin_make in your catkin workspace. Example:
+   Now we are ready to build the mpc. The you can set different paramets in the MPC. Many of these are required for generating the c code from acados. Therefore you need to specify which parameters to use when you build the mpc. This is done by passing cmake arguments from catkin. Set the argument DMPC_PARAMS to the file name in the params/ folder. Example using the file *sim.yaml*:
+
    ```terminal
-   catkin build
+   catkin build --cmake-args -DMPC_PARAMS=sim.yaml
    ```
-   
+
+   You can also build only the mpc by adding mpc_local_planner to the command: '
+
+   ```terminal
+   catkin build mpc_local_planner --cmake-args -DMPC_PARAMS=sim.yaml
+   ```
+
 ## :rocket: **Usage** <a name="usage"></a>
  
 ### **Parameters** <a name="parameters"></a>
