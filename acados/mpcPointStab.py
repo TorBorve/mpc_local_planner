@@ -1,22 +1,14 @@
 from configparser import Interpolation
-from casadi import SX, vertcat, sin, cos, atan, tan
+from casadi import SX, vertcat, sin, cos, atan
 from acados_template import AcadosOcp, AcadosSimSolver, AcadosModel, AcadosOcpSolver
 import numpy as np
 import scipy.linalg
 import yaml
-def bicycleModel(params):
-    modelName = "path_tracking"
-    
-    Lf = params["wheelbase"] #distance between front and rear axle
-    r = params["radius"] # Wheel radius
-    l = params["wheelbase"] # Distance between front wheel and rear wheel
-    G = params["gear_ratio"] # Gear ratio
-    m = params["mass_car"]# Mass of car
-    V = params["voltage"] # Voltage
-    Cd = params["drag_coefficient"] # Drag coefficient
-    rho = 1.2 # Air density [kg/m³]
-    A = params["frontal_area"]# Frontal area [m²]
 
+def bicycleModel(params):
+    modelName = "point_stab"
+    #distance between front and rear axle
+    Lf = params["wheelbase"]
     #states
     x1 = SX.sym("x1") # x position
     y1 = SX.sym("y1") # y position
@@ -47,17 +39,19 @@ def bicycleModel(params):
 
     pitch = SX.sym("pitch")
 
+    a = 5.0*throttle - 0.087*v + sin(pitch)*9.81
+
     fExpl = vertcat(
             v*cos(psi),
             v*sin(psi),
-            v/Lf*tan(delta),
-            V * 3.2 * throttle * r / (v * G * m + 1) - (1/2*(rho*Cd*A*(v)**2) / m) + sin(pitch)*9.81,
+            v/Lf*delta,
+            a,
             deltaDotInput,
             throttleDotInput)
     fImpl = xDot - fExpl            
     model = AcadosModel()
 
-    p = vertcat(SX.sym("coeff_0"), SX.sym("coeff_1"), SX.sym("coeff_2"), SX.sym("coeff_3"), pitch, SX.sym("v_ref"))
+    p = vertcat(SX.sym("x_ref"), SX.sym("y_ref"), SX.sym("psi_ref"), pitch)
 
     model.name = modelName
     model.f_expl_expr = fExpl
@@ -66,20 +60,11 @@ def bicycleModel(params):
     model.x = x
     model.u = u
     model.p = p
-    # model.con_h_expr = vertcat(v)
+    model.con_h_expr = vertcat(a)
 
     return model
 
-def costFunc(model, params):
-
-    r = params["radius"] # Radius of wheel [m]
-    m = params["mass_car"] # Mass of vehicle [kg]
-    Cr = params["rolling_resistance"] # Rolling resistance
-    Cd = params["drag_coefficient"] # Drag coefficient
-    rho = 1.2 # Air density [kg/m³]
-    A = params["frontal_area"] # Frontal area [m²]
-    g = 9.81
-
+def costFunc(model):
     x1 = model.x[0]
     y1 = model.x[1]
     psi = model.x[2]
@@ -88,24 +73,19 @@ def costFunc(model, params):
     throttle = model.x[5]
     deltaDot = model.u[0]
     throttleDot = model.u[1]
-    a = model.f_expl_expr[3]
-    coeffs = model.p
-
-    Tm = r * (m*a + m*g*Cr + 1/2*rho*Cd*A*(v)**2)
-    energy = Tm * v/r
+    xRef = model.p[0]
+    yRef = model.p[1]
+    psiRef = model.p[2]
     
-    pathYaw = atan(3*coeffs[3]*x1*x1 + 2*coeffs[2]*x1 + coeffs[1])
-    epsi = psi - pathYaw
-    yPath = coeffs[3]*x1**3 + coeffs[2]*x1**2 + coeffs[1]*x1 + coeffs[0]
-    cte = yPath - y1
-    return vertcat(cte, epsi, v - model.p[5], delta, throttle, deltaDot, throttleDot, energy)
+    return vertcat(x1 - xRef, y1 - yRef, psi - psiRef, v, delta, throttle, deltaDot, throttleDot)
 
 def ocpSolver():
-    with open("../../params/auto_gen.yaml", "r") as paramFile:
+    with open("../../build/auto_gen.yaml", "r") as paramFile:
             params = yaml.safe_load(paramFile)
 
     ocp = AcadosOcp()
     ocp.model = bicycleModel(params)
+    p = ocp.model.p
     
     N = params["mpc_N"]
     dt = params["mpc_dt"]
@@ -117,10 +97,17 @@ def ocpSolver():
     ny = nx + nu
 
     ocp.cost.cost_type = "NONLINEAR_LS"
+    ocp.model.cost_y_expr = costFunc(ocp.model)
     ocp.cost.yref = np.array([0, 0, 0, 0, 0, 0, 0, 0])
-    ocp.model.cost_y_expr = costFunc(ocp.model, params)
-    # ocp.cost.W = np.diag([5, 35, 10, 0, 0, 0, 0, 0.00001]) # Energy Mode
-    ocp.cost.W = np.diag([500, 500, 1000, 1, 10, 50, 10, 0]) # Not Energy Mode
+    Q = 2*np.diag([5, 5, 10, 10, 0.01, 1])
+    R = 2*np.diag([0.1, 0.1])
+    ocp.cost.W = scipy.linalg.block_diag(Q, R)
+#     ocp.cost.Vx = np.zeros((ny, nx))
+#     ocp.cost.Vx[:nx, :nx] = np.eye(nx)
+#     ocp.cost.Vu = np.zeros((ny, nu))
+#     ocp.cost.Vu[6, 0] = 1
+#     ocp.cost.Vu[7, 1] = 1
+
 
     deltaMax = params["max_steering_angle"]
     deltaDotMax = params["max_steering_rotation_speed"]
@@ -132,29 +119,29 @@ def ocpSolver():
     ocp.constraints.ubx = np.array([deltaMax, throttleMax])
     ocp.constraints.idxbx = np.array([4, 5])
     ocp.constraints.lbu = np.array([-deltaDotMax, -throttleDotMax])
-    ocp.constraints.ubu = np.array([deltaDotMax, throttleDotMax])
+    ocp.constraints.ubu = np.array([deltaDotMax/4, throttleDotMax])
     ocp.constraints.idxbu = np.array([0, 1])
 
-    # ocp.cost.zl = 1000 * np.ones((1,))
-    # ocp.cost.Zl = 0 * np.ones((1,))
-    # ocp.cost.zu = 1000 * np.ones((1,))
-    # ocp.cost.Zu = 0 * np.ones((1,))
-    # ocp.constraints.lh = np.array([0.0])
-    # ocp.constraints.uh = np.array([6.0])
+    # Soft constraints
+    ocp.cost.zl = 100 * np.ones((1,))
+    ocp.cost.Zl = 0 * np.ones((1,))
+    ocp.cost.zu = 100 * np.ones((1,))
+    ocp.cost.Zu = 0 * np.ones((1,))
+    ocp.constraints.lh = np.array([-100])
+    ocp.constraints.uh = np.array([0.1])
 
-    # ocp.constraints.idxsh = np.array([0])
-
+    ocp.constraints.idxsh = np.array([0])
 
     x0 = np.array([-10, 0, 0, 0, 0, 0])
     ocp.constraints.x0 = x0
 
-    param = np.array([0, -1, 0, 0.002, 0.0, 4.0])
+    param = np.array([0, 0, 0, 0])
     ocp.parameter_values = param
 
     ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM" #"PARTIAL_CONDENSING_HPIPM" "FULL_CONDENSING_QPOASES" 
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
     ocp.solver_options.integrator_type = "ERK"
-    ocp.solver_options.nlp_solver_type = "SQP"
+    ocp.solver_options.nlp_solver_type = "SQP_RTI"
     ocp.solver_options.qp_solver_cond_N = N
     ocp.solver_options.tf = Tf
     # ocp.solver_options.qp_solver_iter_max = 1000
