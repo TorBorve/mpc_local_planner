@@ -9,19 +9,22 @@ namespace mpc {
 
 class ControlSys {
    public:
-   /// @brief modes the control system can be in.
+    /// @brief modes the control system can be in.
     enum class Mode { PathTracking,
-                      Parking };
+                      Parking,
+                      INVALID };
     ControlSys() = default;
 
     /// @brief solve function
     /// @param[in] state the state of the car
-    /// @param[in] pith the pitch of the car. Indicates if the are is driving up/down hill.
+    /// @param[in] pitch the pitch of the car. Indicates if the are is driving up/down hill.
     MPCReturn solve(const State &state, double pitch) {
         if (mode_ == Mode::Parking) {
             return parkingSys_.solve(state, pitch);
-        } else {
+        } else if (mode_ == Mode::PathTracking) {
             return pathTrackingSys_.solve(state, pitch, 2.0);
+        } else {
+            throw std::runtime_error{"Mode of control system not set. use the function setMode to update mode"};
         }
     }
 
@@ -36,10 +39,20 @@ class ControlSys {
     std::vector<Point> getTrack() const {
         if (mode_ == Mode::Parking) {
             return parkingSys_.getTrack();
+        } else if (mode_ == Mode::PathTracking) {
+            return pathTrackingSys_.getTrack();
+        } else {
+            return std::vector<Point>{};
         }
-        return pathTrackingSys_.getTrack();
     }
 
+    void setMode(const Mode &mode) {
+        mode_ = mode;
+    }
+
+    Mode getMode() const {
+        return mode_;
+    }
     /// @brief set the reference pose for parking system.
     /// @param[in] pose the pose we want to get to.
     void setRefPose(const geometry_msgs::Pose &pose) {
@@ -56,10 +69,10 @@ class ControlSys {
     ParkingSys parkingSys_;
 
     /// @brief the path tracking system class
-    PathTrackingSys pathTrackingSys_ = PathTrackingSys{getTestTrack()};
+    PathTrackingSys pathTrackingSys_ = PathTrackingSys{util::getTestTrack()};  // TODO remove use of getTestTrack
 
     /// @brief mode of the control system.
-    Mode mode_ = Mode::PathTracking;
+    Mode mode_ = Mode::INVALID;
 };
 
 }  // namespace mpc

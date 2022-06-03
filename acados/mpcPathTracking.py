@@ -1,4 +1,3 @@
-from configparser import Interpolation
 from casadi import SX, vertcat, sin, cos, atan, tan
 from acados_template import AcadosOcp, AcadosSimSolver, AcadosModel, AcadosOcpSolver
 import numpy as np
@@ -51,7 +50,7 @@ def bicycleModel(params):
             v*cos(psi),
             v*sin(psi),
             v/Lf*tan(delta),
-            V * 3.2 * throttle * r / (v * G * m + 1) - (1/2*(rho*Cd*A*(v)**2) / m) + sin(pitch)*9.81,
+            5.0*throttle - 0.087*v + sin(pitch)*9.81, #V * 3.2 * throttle * r / (v * G * m + 1) - (1/2*(rho*Cd*A*(v)**2) / m) + sin(pitch)*9.81,
             deltaDotInput,
             throttleDotInput)
     fImpl = xDot - fExpl            
@@ -98,7 +97,7 @@ def costFunc(model, params):
     epsi = psi - pathYaw
     yPath = coeffs[3]*x1**3 + coeffs[2]*x1**2 + coeffs[1]*x1 + coeffs[0]
     cte = yPath - y1
-    return vertcat(cte, epsi, v - model.p[5], delta, throttle, deltaDot, throttleDot, energy)
+    return vertcat(cte, epsi, v - model.p[5], delta, throttle, deltaDot, throttleDot)
 
 def ocpSolver():
     with open("../../build/auto_gen.yaml", "r") as paramFile:
@@ -117,10 +116,10 @@ def ocpSolver():
     ny = nx + nu
 
     ocp.cost.cost_type = "NONLINEAR_LS"
-    ocp.cost.yref = np.array([0, 0, 0, 0, 0, 0, 0, 0])
+    ocp.cost.yref = np.array([0, 0, 0, 0, 0, 0, 0])
     ocp.model.cost_y_expr = costFunc(ocp.model, params)
     # ocp.cost.W = np.diag([5, 35, 10, 0, 0, 0, 0, 0.00001]) # Energy Mode
-    ocp.cost.W = np.diag([500, 500, 1000, 1, 10, 50, 10, 0]) # Not Energy Mode
+    ocp.cost.W = np.diag([5, 5, 10, 0.01, 0.1, 0.5, 0.1]) # Not Energy Mode
 
     deltaMax = params["max_steering_angle"]
     deltaDotMax = params["max_steering_rotation_speed"]
@@ -154,11 +153,9 @@ def ocpSolver():
     ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM" #"PARTIAL_CONDENSING_HPIPM" "FULL_CONDENSING_QPOASES" 
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
     ocp.solver_options.integrator_type = "ERK"
-    ocp.solver_options.nlp_solver_type = "SQP"
+    ocp.solver_options.nlp_solver_type = params["nlp_solver_type"]
     ocp.solver_options.qp_solver_cond_N = N
     ocp.solver_options.tf = Tf
-    # ocp.solver_options.qp_solver_iter_max = 1000
-    # ocp.solver_options.nlp_solver_max_iter = 2000
 
     ocp_solver = AcadosOcpSolver(ocp, 'acados_ocp_' + ocp.model.name + '.json')
     return ocp_solver

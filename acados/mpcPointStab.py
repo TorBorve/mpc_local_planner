@@ -1,4 +1,3 @@
-from configparser import Interpolation
 from casadi import SX, vertcat, sin, cos, atan
 from acados_template import AcadosOcp, AcadosSimSolver, AcadosModel, AcadosOcpSolver
 import numpy as np
@@ -141,11 +140,9 @@ def ocpSolver():
     ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM" #"PARTIAL_CONDENSING_HPIPM" "FULL_CONDENSING_QPOASES" 
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
     ocp.solver_options.integrator_type = "ERK"
-    ocp.solver_options.nlp_solver_type = "SQP_RTI"
+    ocp.solver_options.nlp_solver_type = params["nlp_solver_type"]
     ocp.solver_options.qp_solver_cond_N = N
     ocp.solver_options.tf = Tf
-    # ocp.solver_options.qp_solver_iter_max = 1000
-    # ocp.solver_options.nlp_solver_max_iter = 2000
 
     ocp_solver = AcadosOcpSolver(ocp, 'acados_ocp_' + ocp.model.name + '.json')
     return ocp_solver

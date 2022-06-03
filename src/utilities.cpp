@@ -8,6 +8,7 @@
 #include <iomanip>
 
 namespace mpc {
+namespace util {
 geometry_msgs::Pose toMsg(const State &state) {
     geometry_msgs::Pose pose;
     pose.position.x = state.x;
@@ -179,10 +180,11 @@ nav_msgs::Path getPathMsg(const BezierCurve &curve, const std::string &mapFrame,
 std::vector<Point> getPath(const BezierCurve &curve) {
     constexpr size_t n = 100;
     std::vector<Point> path;
-    for (double t = 0; t < 1; t += 1.0 / n) {
+    for (double t = 0; t <= 1; t += 1.0 / n) {
         Point p = curve.calc(t);
         path.push_back(p);
     }
     return path;
 }
+}  // namespace util
 }  // namespace mpc

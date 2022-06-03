@@ -1,6 +1,6 @@
-#include <ros/ros.h>
-
 #include "mpc_local_planner/AcadosPathTracking.h"
+
+#include <ros/ros.h>
 
 namespace mpc {
 namespace Acados {
