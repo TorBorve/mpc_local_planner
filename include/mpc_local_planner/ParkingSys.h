@@ -49,7 +49,7 @@ class ParkingSys {
     Acados::PointStab pointStabSolver_ = Acados::PointStab{State{0, 0, 0, 0, 0, 0}};
 
     /// @brief path tracking system used to get close to the parking spot
-    PathTrackingSys pathTrackingSys_ = PathTrackingSys{getTestTrack()};
+    PathTrackingSys pathTrackingSys_ = PathTrackingSys{util::getTestTrack()};
 
     /// @brief the goal position. Where we want to park.
     geometry_msgs::Pose goal_;
@@ -57,12 +57,16 @@ class ParkingSys {
     /// @brief if the system has been initialized
     bool init_ = false;
 
+    /// @brief the state where the start position of the car should be
     State startState_;
 
     /// @brief atomic bool for indicating if we need to update the path.
     std::atomic<bool> updatePath_{false};
+
+    /// @brief atomic bool for indicating if we need to update the start position of the path.
     std::atomic<bool> updateStart_{false};
 
+    /// @brief mutex for ensuring no problems with data races and so on when seting updatePath_ and updateStart_
     std::mutex m;
 };
 }  // namespace mpc

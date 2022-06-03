@@ -31,14 +31,16 @@ struct PointStabParams : public Params {
         return std::vector<double>{pRef.x, pRef.y, psiRef, pitch};
     }
 
-    /// @brief the coefficients for the polynomoial defining the track.
+    /// @brief the reference point where we want the car to drive to.
     Point pRef;
 
+    /// @brief the reference yaw of the car at the location we want to go to.
     double psiRef;
 
     /// @brief pitch of the car.
     double pitch;
 
+    /// @brief the total number of params.
     const size_t size = 4;
 };
 

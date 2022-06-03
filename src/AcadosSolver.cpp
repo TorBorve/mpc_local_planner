@@ -38,8 +38,6 @@ MPCReturn Solver::solve(const State &state, const Params &params) {
 
     std::vector<double> xtraj(nx_ * (N + 1));
     std::vector<double> utraj(nx_ * (N));
-    // double xtraj[NX * (N + 1)];
-    // double utraj[nu_ * N];
 
     // solve ocp in loop
     int rti_phase = 0;
@@ -83,7 +81,6 @@ void Solver::setInitGuess(const State &state) {
     assert(x_init.size() == nx_);
     // initial value for control input
     std::vector<double> u0(nu_);
-    // double u0[nu_];
     for (int i = 0; i < nu_; i++) {
         u0[0] = 0;
     }

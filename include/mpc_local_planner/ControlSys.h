@@ -9,7 +9,7 @@ namespace mpc {
 
 class ControlSys {
    public:
-   /// @brief modes the control system can be in.
+    /// @brief modes the control system can be in.
     enum class Mode { PathTracking,
                       Parking,
                       INVALID };
@@ -17,12 +17,14 @@ class ControlSys {
 
     /// @brief solve function
     /// @param[in] state the state of the car
-    /// @param[in] pith the pitch of the car. Indicates if the are is driving up/down hill.
+    /// @param[in] pitch the pitch of the car. Indicates if the are is driving up/down hill.
     MPCReturn solve(const State &state, double pitch) {
         if (mode_ == Mode::Parking) {
             return parkingSys_.solve(state, pitch);
-        } else {
+        } else if (mode_ == Mode::PathTracking) {
             return pathTrackingSys_.solve(state, pitch, 2.0);
+        } else {
+            throw std::runtime_error{"Mode of control system not set. use the function setMode to update mode"};
         }
     }
 
@@ -38,13 +40,13 @@ class ControlSys {
         if (mode_ == Mode::Parking) {
             return parkingSys_.getTrack();
         } else if (mode_ == Mode::PathTracking) {
-        return pathTrackingSys_.getTrack();
+            return pathTrackingSys_.getTrack();
         } else {
-            throw std::runtime_error{"Mode of control system not set. use the function setMode to update mode"};
+            return std::vector<Point>{};
         }
     }
 
-    void setMode(const Mode& mode) {
+    void setMode(const Mode &mode) {
         mode_ = mode;
     }
 
@@ -67,7 +69,7 @@ class ControlSys {
     ParkingSys parkingSys_;
 
     /// @brief the path tracking system class
-    PathTrackingSys pathTrackingSys_ = PathTrackingSys{getTestTrack()};
+    PathTrackingSys pathTrackingSys_ = PathTrackingSys{util::getTestTrack()};  // TODO remove use of getTestTrack
 
     /// @brief mode of the control system.
     Mode mode_ = Mode::INVALID;
