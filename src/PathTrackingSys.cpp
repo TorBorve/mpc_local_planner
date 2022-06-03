@@ -45,7 +45,7 @@ MPCReturn PathTrackingSys::solve(const State &state, double pitch, double vRef) 
         x[i].x.y += state.y;
     }
 
-    auto polyPath = getPathMsg(coeffs, "odom", "base_footprint");
+    auto polyPath = util::getPathMsg(coeffs, "odom", "base_footprint");
     auto &points = polyPath.poses;
     for (unsigned int i = 0; i < points.size(); i++) {
         double dx = points[i].pose.position.x;
@@ -97,22 +97,22 @@ Eigen::Vector4d PathTrackingSys::interpolate(const State &state, double rotation
         yVals[i - start] = dx * sin(angle) + dy * cos(angle);
     }
 
-    auto coeffs = polyfit(xVals, yVals, 3);
+    auto coeffs = util::polyfit(xVals, yVals, 3);
     assert(coeffs.size() == 4);
 
     cost = 0;
     for (unsigned int i = 0; i < yVals.size(); i++) {
-        cost += distSqrd(yVals[i] - polyEval(xVals[i], coeffs), 0);
+        cost += util::distSqrd(yVals[i] - polyEval(xVals[i], coeffs), 0);
     }
     return coeffs;
 }
 
 void PathTrackingSys::getTrackSection(size_t &start, size_t &end, const State &state) const {
     double maxLen = 15;
-    double minDistSqrd = distSqrd(state.x - track_[0].x, state.y - track_[0].y);
+    double minDistSqrd = util::distSqrd(state.x - track_[0].x, state.y - track_[0].y);
     size_t minIndex = 0;
     for (unsigned int i = 1; i < track_.size(); i++) {
-        double curDistSqrd = distSqrd(state.x - track_[i].x, state.y - track_[i].y);
+        double curDistSqrd = util::distSqrd(state.x - track_[i].x, state.y - track_[i].y);
         if (curDistSqrd < minDistSqrd) {
             minDistSqrd = curDistSqrd;
             minIndex = i;
@@ -123,7 +123,7 @@ void PathTrackingSys::getTrackSection(size_t &start, size_t &end, const State &s
     size_t frontIndex = minIndex;
     while (len < maxLen && frontIndex < track_.size() - 1) {
         frontIndex++;
-        len += sqrt(distSqrd(track_[frontIndex].x - track_[frontIndex - 1].x, track_[frontIndex].y - track_[frontIndex - 1].y));
+        len += sqrt(util::distSqrd(track_[frontIndex].x - track_[frontIndex - 1].x, track_[frontIndex].y - track_[frontIndex - 1].y));
     }
     start = minIndex;
     end = frontIndex;

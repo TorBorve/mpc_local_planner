@@ -68,13 +68,13 @@ MPCReturn RosMpc::solve() {
     State state{
         tfCar.transform.translation.x,
         tfCar.transform.translation.y,
-        getYaw(tfCar.transform.rotation),
+        util::getYaw(tfCar.transform.rotation),
         currentVel_,
         currentSteeringAngle_,
         prevThrottle};
 
     // solve mpc
-    const auto result = controlSys_.solve(state, getPitch(tfCar.transform.rotation));
+    const auto result = controlSys_.solve(state, util::getPitch(tfCar.transform.rotation));
 
     if (result.mpcHorizon.size() < 1) {
         return result;
@@ -89,8 +89,8 @@ MPCReturn RosMpc::solve() {
     msg.data = result.mpcHorizon.at(1).x.delta * steeringRatio_;
     steeringPub_.publish(msg);
 
-    mpcPathPub_.publish(getPathMsg(result, mapFrame_, carFrame_));
-    trackPub_.publish(getPathMsg(controlSys_.getTrack(), mapFrame_, carFrame_));
+    mpcPathPub_.publish(util::getPathMsg(result, mapFrame_, carFrame_));
+    trackPub_.publish(util::getPathMsg(controlSys_.getTrack(), mapFrame_, carFrame_));
 
     // LOG_DEBUG_STREAM(state);
     LOG_DEBUG_STREAM(std::fixed << std::setprecision(2) << result.mpcHorizon.at(1));
@@ -120,7 +120,7 @@ bool RosMpc::verifyInputs() {
         while (ros::ok()) {
             nav_msgs::Path::ConstPtr firstPath = ros::topic::waitForMessage<nav_msgs::Path>(pathTopic, waitTime);
             if (firstPath != nullptr) {
-                controlSys_.setTrack(toVector(*firstPath));
+                controlSys_.setTrack(util::toVector(*firstPath));
                 break;
             }
             ROS_WARN("Waiting for path message. Should be published at the topic: %s", pathTopic.c_str());
@@ -152,7 +152,7 @@ bool RosMpc::verifyInputs() {
 }
 
 void RosMpc::twistCallback(const geometry_msgs::TwistStamped::ConstPtr &msg) {
-    currentVel_ = length(msg->twist.linear);
+    currentVel_ = util::length(msg->twist.linear);
 }
 
 void RosMpc::actualSteeringCallback(const std_msgs::Float64::ConstPtr &msg) {
@@ -197,7 +197,7 @@ void RosMpc::pathCallback(const nav_msgs::Path::ConstPtr &msg) {
             pose.position.z = org.getZ();
         }
     }
-    controlSys_.setTrack(toVector(path));
+    controlSys_.setTrack(util::toVector(path));
 }
 
 void RosMpc::poseCallback(const geometry_msgs::PoseStamped::ConstPtr &msg) {
@@ -240,16 +240,16 @@ void RosMpc::poseCallback(const geometry_msgs::PoseStamped::ConstPtr &msg) {
 
 bool RosMpc::verifyParamsForMPC(ros::NodeHandle *nh) const {
     bool ok = true;
-    ok &= hasParamError(nh, "mpc_N");
-    ok &= hasParamError(nh, "mpc_dt");
-    ok &= hasParamWarn(nh, "max_steering_angle");
-    ok &= hasParamWarn(nh, "max_steering_rotation_speed");
-    ok &= hasParamWarn(nh, "wheelbase");
-    ok &= hasParamWarn(nh, "twist_topic");
-    ok &= hasParamWarn(nh, "actual_steering_topic");
-    ok &= hasParamWarn(nh, "map_frame");
-    ok &= hasParamWarn(nh, "car_frame");
-    ok &= hasParamWarn(nh, "loop_Hz");
+    ok &= util::hasParamError(nh, "mpc_N");
+    ok &= util::hasParamError(nh, "mpc_dt");
+    ok &= util::hasParamWarn(nh, "max_steering_angle");
+    ok &= util::hasParamWarn(nh, "max_steering_rotation_speed");
+    ok &= util::hasParamWarn(nh, "wheelbase");
+    ok &= util::hasParamWarn(nh, "twist_topic");
+    ok &= util::hasParamWarn(nh, "actual_steering_topic");
+    ok &= util::hasParamWarn(nh, "map_frame");
+    ok &= util::hasParamWarn(nh, "car_frame");
+    ok &= util::hasParamWarn(nh, "loop_Hz");
     return ok;
 }
 }  // namespace mpc
