@@ -19,7 +19,7 @@ steering_topic: "/steering_cmd"
 throttle_topic: "/throttle_cmd"
 
 # The topic where the pose of the parking spot is published
-parking_topic: "/move_base_simple/goal"
+parking_topic: "/goal"
 
 # Where tha global path should be published. The path we want to follow. If this parameter is not provided
 # the mpc will use a internal hard coded path.
@@ -33,6 +33,9 @@ car_frame: "base_footprint"
 
 # Number of steps in the mpc horizon
 mpc_N: 30
+
+# Solver type used by acados
+nlp_solver_type: "SQP_RTI" #SQP or SQP_RTI
 
 # Time between the steps in the mpc horizon.
 mpc_dt: 0.35
