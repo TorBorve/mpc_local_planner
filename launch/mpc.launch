@@ -5,7 +5,7 @@
     <!-- launch mpc file -->
     <node pkg="mpc_local_planner" type="ff_mpc" name="mpc" output="screen" >
         <!-- load parameters for the mpc -->
-        <rosparam command="load" file="$(find mpc_local_planner)/params/mpc.yaml" />
+        <rosparam command="load" file="$(find mpc_local_planner)/build/auto_gen.yaml" />
     </node>
 
     <!-- launch rviz for visualization -->

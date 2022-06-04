@@ -1,4 +1,3 @@
-from configparser import Interpolation
 from casadi import SX, vertcat, sin, cos, atan
 from acados_template import AcadosOcp, AcadosSimSolver, AcadosModel, AcadosOcpSolver
 import numpy as np
@@ -6,7 +5,7 @@ import scipy.linalg
 import yaml
 
 def bicycleModel(params):
-    modelName = "bicycle_model"
+    modelName = "point_stab"
     #distance between front and rear axle
     Lf = params["wheelbase"]
     #states
@@ -37,18 +36,21 @@ def bicycleModel(params):
 
     xDot = vertcat(x1Dot, y1Dot, psiDot, vDot, deltaDotState, throttleDotState)
 
+    pitch = SX.sym("pitch")
+
+    a = 5.0*throttle - 0.087*v + sin(pitch)*9.81
 
     fExpl = vertcat(
             v*cos(psi),
             v*sin(psi),
             v/Lf*delta,
-            5.0*throttle - 0.087*v,
+            a,
             deltaDotInput,
             throttleDotInput)
     fImpl = xDot - fExpl            
     model = AcadosModel()
 
-    p = vertcat(SX.sym("coeff_0"), SX.sym("coeff_1"), SX.sym("coeff_2"), SX.sym("coeff_3"))
+    p = vertcat(SX.sym("x_ref"), SX.sym("y_ref"), SX.sym("psi_ref"), pitch)
 
     model.name = modelName
     model.f_expl_expr = fExpl
@@ -57,6 +59,7 @@ def bicycleModel(params):
     model.x = x
     model.u = u
     model.p = p
+    model.con_h_expr = vertcat(a)
 
     return model
 
@@ -69,20 +72,19 @@ def costFunc(model):
     throttle = model.x[5]
     deltaDot = model.u[0]
     throttleDot = model.u[1]
-    coeffs = model.p
+    xRef = model.p[0]
+    yRef = model.p[1]
+    psiRef = model.p[2]
     
-    pathYaw = atan(3*coeffs[3]*x1*x1 + 2*coeffs[2]*x1 + coeffs[1])
-    epsi = psi - pathYaw
-    yPath = coeffs[3]*x1**3 + coeffs[2]*x1**2 + coeffs[1]*x1 + coeffs[0]
-    cte = yPath - y1
-    return vertcat(cte, epsi, v, delta, throttle, deltaDot, throttleDot)
+    return vertcat(x1 - xRef, y1 - yRef, psi - psiRef, v, delta, throttle, deltaDot, throttleDot)
 
 def ocpSolver():
-    with open("../params/mpc.yaml", "r") as paramFile:
+    with open("../../build/auto_gen.yaml", "r") as paramFile:
             params = yaml.safe_load(paramFile)
 
     ocp = AcadosOcp()
     ocp.model = bicycleModel(params)
+    p = ocp.model.p
     
     N = params["mpc_N"]
     dt = params["mpc_dt"]
@@ -94,13 +96,21 @@ def ocpSolver():
     ny = nx + nu
 
     ocp.cost.cost_type = "NONLINEAR_LS"
-    ocp.cost.yref = np.array([0, 0, 6.0, 0, 0, 0, 0])
     ocp.model.cost_y_expr = costFunc(ocp.model)
-    ocp.cost.W = 2*np.diag([500, 500, 100, 1, 10, 50, 1])
+    ocp.cost.yref = np.array([0, 0, 0, 0, 0, 0, 0, 0])
+    Q = 2*np.diag([5, 5, 10, 10, 0.01, 1])
+    R = 2*np.diag([0.1, 0.1])
+    ocp.cost.W = scipy.linalg.block_diag(Q, R)
+#     ocp.cost.Vx = np.zeros((ny, nx))
+#     ocp.cost.Vx[:nx, :nx] = np.eye(nx)
+#     ocp.cost.Vu = np.zeros((ny, nu))
+#     ocp.cost.Vu[6, 0] = 1
+#     ocp.cost.Vu[7, 1] = 1
+
 
     deltaMax = params["max_steering_angle"]
     deltaDotMax = params["max_steering_rotation_speed"]
-    throttleMin = 0.0
+    throttleMin = params["throttle_min"]
     throttleMax = params["throttle_max"]
     throttleDotMax = params["throttle_dot_max"]   
     ocp.constraints.constr_type = "BGH"
@@ -108,23 +118,33 @@ def ocpSolver():
     ocp.constraints.ubx = np.array([deltaMax, throttleMax])
     ocp.constraints.idxbx = np.array([4, 5])
     ocp.constraints.lbu = np.array([-deltaDotMax, -throttleDotMax])
-    ocp.constraints.ubu = np.array([deltaDotMax, throttleDotMax])
+    ocp.constraints.ubu = np.array([deltaDotMax/4, throttleDotMax])
     ocp.constraints.idxbu = np.array([0, 1])
+
+    # Soft constraints
+    ocp.cost.zl = 100 * np.ones((1,))
+    ocp.cost.Zl = 0 * np.ones((1,))
+    ocp.cost.zu = 100 * np.ones((1,))
+    ocp.cost.Zu = 0 * np.ones((1,))
+    ocp.constraints.lh = np.array([-100])
+    ocp.constraints.uh = np.array([0.1])
+
+    ocp.constraints.idxsh = np.array([0])
 
     x0 = np.array([-10, 0, 0, 0, 0, 0])
     ocp.constraints.x0 = x0
 
-    param = np.array([0, -1, 0, 0.002])
+    param = np.array([0, 0, 0, 0])
     ocp.parameter_values = param
 
     ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM" #"PARTIAL_CONDENSING_HPIPM" "FULL_CONDENSING_QPOASES" 
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
     ocp.solver_options.integrator_type = "ERK"
-    ocp.solver_options.nlp_solver_type = "SQP"
+    ocp.solver_options.nlp_solver_type = params["nlp_solver_type"]
     ocp.solver_options.qp_solver_cond_N = N
     ocp.solver_options.tf = Tf
-    # ocp.solver_options.qp_solver_iter_max = 1000
-    # ocp.solver_options.nlp_solver_max_iter = 2000
 
     ocp_solver = AcadosOcpSolver(ocp, 'acados_ocp_' + ocp.model.name + '.json')
     return ocp_solver
+
+ocpSolver()
