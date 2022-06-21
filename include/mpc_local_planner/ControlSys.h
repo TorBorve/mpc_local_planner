@@ -13,16 +13,16 @@ class ControlSys {
     enum class Mode { PathTracking,
                       Parking,
                       INVALID };
-    ControlSys() = default;
+    ControlSys(double pathTrackingVel, double parkingVel) : pathTrackingVel_{pathTrackingVel}, parkingSys_{parkingVel} {}
 
     /// @brief solve function
     /// @param[in] state the state of the car
-    /// @param[in] pitch the pitch of the car. Indicates if the are is driving up/down hill.
+    /// @param[in] pitch the pitch of the car. Indicates if the car is driving up/down hill.
     MPCReturn solve(const State &state, double pitch) {
         if (mode_ == Mode::Parking) {
             return parkingSys_.solve(state, pitch);
         } else if (mode_ == Mode::PathTracking) {
-            return pathTrackingSys_.solve(state, pitch, 2.0);
+            return pathTrackingSys_.solve(state, pitch, pathTrackingVel_);
         } else {
             throw std::runtime_error{"Mode of control system not set. use the function setMode to update mode"};
         }
@@ -73,6 +73,8 @@ class ControlSys {
 
     /// @brief mode of the control system.
     Mode mode_ = Mode::INVALID;
+
+    double pathTrackingVel_;
 };
 
 }  // namespace mpc

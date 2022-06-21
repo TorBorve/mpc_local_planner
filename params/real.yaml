@@ -40,6 +40,12 @@ nlp_solver_type: "SQP_RTI" #SQP or SQP_RTI
 # Time between the steps in the mpc horizon.
 mpc_dt: 0.35
 
+# The reference velocity when the car is following a path
+path_tracking_vel: 2.0
+
+# The reference velocity when the car is in parking mode
+parking_vel: 1.0
+
 # Minimum value for throttle
 throttle_min: 0
 

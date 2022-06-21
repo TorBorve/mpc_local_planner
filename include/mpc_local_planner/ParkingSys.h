@@ -13,11 +13,11 @@ namespace mpc {
 
 class ParkingSys {
    public:
-    ParkingSys() = default;
+    ParkingSys(double refVel) : refVel_{refVel} {}
 
     /// @brief constructor for parking system.
     /// @param[in] goal where we want to park
-    ParkingSys(const geometry_msgs::Pose &goal) : goal_{goal}, init_{true} {
+    ParkingSys(const geometry_msgs::Pose &goal, double refVel) : refVel_{refVel}, goal_{goal}, init_{true} {
     }
 
     /// @brief solve function
@@ -68,5 +68,7 @@ class ParkingSys {
 
     /// @brief mutex for ensuring no problems with data races and so on when seting updatePath_ and updateStart_
     std::mutex m;
+
+    double refVel_;
 };
 }  // namespace mpc

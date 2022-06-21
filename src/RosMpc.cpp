@@ -7,8 +7,9 @@
 #include "mpc_local_planner/utilities.h"
 
 namespace mpc {
-
-RosMpc::RosMpc(ros::NodeHandle *nh) : controlSys_{}, tfListener_{tfBuffer_}, nh_{nh} {
+RosMpc::RosMpc(ros::NodeHandle *nh) : controlSys_{nh->param<double>("path_tracking_vel", 0.0), nh->param<double>("parking_vel", 0.0)},
+                                      tfListener_{tfBuffer_},
+                                      nh_{nh} {
     if (!verifyParamsForMPC(nh)) {
         ROS_WARN("One or more parameters for the mpc is not specified. Default values is therefore used.");
     }
@@ -242,6 +243,8 @@ bool RosMpc::verifyParamsForMPC(ros::NodeHandle *nh) const {
     bool ok = true;
     ok &= util::hasParamError(nh, "mpc_N");
     ok &= util::hasParamError(nh, "mpc_dt");
+    ok &= util::hasParamError(nh, "path_tracking_vel");
+    ok &= util::hasParamError(nh, "parking_vel");
     ok &= util::hasParamWarn(nh, "max_steering_angle");
     ok &= util::hasParamWarn(nh, "max_steering_rotation_speed");
     ok &= util::hasParamWarn(nh, "wheelbase");

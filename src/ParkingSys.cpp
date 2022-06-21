@@ -17,7 +17,7 @@ MPCReturn ParkingSys::solve(const State &state, double pitch) {
         return pointStabSolver_.solve(state, params);
 
     } else {
-        m.lock();
+        std::lock_guard<std::mutex> lock(m);
         if (updateStart_) {
             startState_ = state;
             updateStart_ = false;
@@ -26,8 +26,7 @@ MPCReturn ParkingSys::solve(const State &state, double pitch) {
             createPathToGoal();
             updatePath_ = false;
         }
-        m.unlock();
-        return pathTrackingSys_.solve(state, pitch, 1.0);
+        return pathTrackingSys_.solve(state, pitch, refVel_);
     }
 }
 
