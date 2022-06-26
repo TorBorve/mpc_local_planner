@@ -3,6 +3,7 @@
 #include <geometry_msgs/Twist.h>
 #include <std_msgs/Float64.h>
 #include <tf2/LinearMath/Transform.h>
+#include <std_msgs/Bool.h>
 
 #include "mpc_local_planner/utilities.h"
 
@@ -20,6 +21,7 @@ RosMpc::RosMpc(ros::NodeHandle *nh) : controlSys_{nh->param<double>("path_tracki
     std::string steeringTopic = nh_->param<std::string>("steering_topic", "steering_cmd");
     std::string throttleTopic = nh_->param<std::string>("throttle_topic", "throttle_cmd");
     std::string parkingTopic = nh_->param<std::string>("parking_topic", "move_base_simple/goal");
+    std::string stopTopic = nh_->param<std::string>("stop_topic", "stop");
     mapFrame_ = nh->param<std::string>("map_frame", "map");
     carFrame_ = nh->param<std::string>("car_frame", "base_link");
     loopHz_ = nh->param<double>("loop_Hz", 30);
@@ -44,6 +46,7 @@ RosMpc::RosMpc(ros::NodeHandle *nh) : controlSys_{nh->param<double>("path_tracki
     } else if (!nh_->hasParam("path_topic") && mode_ == ControlSys::Mode::PathTracking) {
         ROS_WARN("path_topic parameter not specified. Using hardcode internal path.");
     }
+    stopPub_ = nh->advertise<std_msgs::Bool>(stopTopic, 1);
     throttlePub_ = nh->advertise<std_msgs::Float64>(throttleTopic, 1);
     steeringPub_ = nh->advertise<std_msgs::Float64>(steeringTopic, 1);
     trackPub_ = nh->advertise<nav_msgs::Path>("/global_path", 1);
@@ -86,6 +89,15 @@ MPCReturn RosMpc::solve() {
     std_msgs::Float64 msg;
     msg.data = result.mpcHorizon.at(1).x.throttle;
     throttlePub_.publish(msg);
+    if (msg.data = -123) {
+        std_msgs::Bool stop;
+        stop.data = true;
+        stopPub_.publish(stop);
+    } else {
+        std_msgs::Bool stop;
+        stop.data = false;
+        stopPub_.publish(stop);
+    }
     prevThrottle = msg.data;
     msg.data = result.mpcHorizon.at(1).x.delta * steeringRatio_;
     steeringPub_.publish(msg);

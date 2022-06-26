@@ -14,7 +14,10 @@ MPCReturn ParkingSys::solve(const State &state, double pitch) {
         params.pitch = pitch;
         params.pRef = Point{goal_.position.x, goal_.position.y};
         params.psiRef = util::getYaw(goal_.orientation);
-        return pointStabSolver_.solve(state, params);
+        auto res = pointStabSolver_.solve(state, params);
+        if (distSqrdToGoal < 1) {
+            res.mpcHorizon.at(1).x.throttle = -123;
+        }
 
     } else {
         std::lock_guard<std::mutex> lock(m);

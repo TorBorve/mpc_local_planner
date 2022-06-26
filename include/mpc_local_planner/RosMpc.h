@@ -62,6 +62,8 @@ class RosMpc {
     /// @brief publisher for the mpc trajectory solution
     ros::Publisher mpcPathPub_;
 
+    ros::Publisher stopPub_;
+
     /// @brief subscriber to the twist message send by the car.
     ros::Subscriber twistSub_;
 
