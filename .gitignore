@@ -2,3 +2,4 @@ acados_python/
 .vscode
 **/__pycache__
 build/
+**/c_generated_code/
