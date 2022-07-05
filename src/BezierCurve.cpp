@@ -4,9 +4,8 @@
 
 namespace mpc {
 
-BezierCurve::BezierCurve(const Point &p1, double angle1, const Point &p2, double angle2) {
+BezierCurve::BezierCurve(const Point &p1, double angle1, const Point &p2, double angle2, double frac) {
     double dist = sqrt(util::distSqrd(p1.x - p2.x, p1.y - p2.y));
-    constexpr double frac = 1 / 2.0;
     Point p1Tangent{p1.x + frac * cos(angle1) * dist, p1.y + frac * sin(angle1) * dist};
     Point p2Tangent{p2.x - frac * cos(angle2) * dist, p2.y - frac * sin(angle2) * dist};
     *this = BezierCurve{p1, p1Tangent, p2Tangent, p2};
