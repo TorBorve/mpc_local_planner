@@ -15,8 +15,8 @@ MPCReturn ParkingSys::solve(const State &state, double pitch) {
         params.pRef = Point{goal_.position.x, goal_.position.y};
         params.psiRef = util::getYaw(goal_.orientation);
         auto res = pointStabSolver_.solve(state, params);
-        if (distSqrdToGoal < 1 && mode_ == Mode::Parking) {
-            res.mpcHorizon.at(1).x.throttle = -123;
+        if (distSqrdToGoal < 2*2 && mode_ == Mode::Parking) {
+            res.stopSignal = true;
         }
         return res;
     } else {

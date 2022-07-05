@@ -92,7 +92,7 @@ MPCReturn RosMpc::solve() {
     std_msgs::Float64 msg;
     msg.data = result.mpcHorizon.at(1).x.throttle;
     throttlePub_.publish(msg);
-    if (msg.data == -123) {
+    if (result.stopSignal) {
         std_msgs::Bool stop;
         stop.data = true;
         stopPub_.publish(stop);
