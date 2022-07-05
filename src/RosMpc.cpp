@@ -1,9 +1,9 @@
 #include "mpc_local_planner/RosMpc.h"
 
 #include <geometry_msgs/Twist.h>
+#include <std_msgs/Bool.h>
 #include <std_msgs/Float64.h>
 #include <tf2/LinearMath/Transform.h>
-#include <std_msgs/Bool.h>
 
 #include "mpc_local_planner/utilities.h"
 
@@ -28,22 +28,25 @@ RosMpc::RosMpc(ros::NodeHandle *nh) : controlSys_{nh->param<double>("path_tracki
     mpcDt_ = nh->param<double>("mpc_dt", 0.2);
     steeringRatio_ = nh->param<double>("steering_ratio", 1.0);
 
-    if (modeStr != "parking" && modeStr != "path_tracking") {
+    mode_ = Mode::Invalid;
+    if (modeStr == "parking") {
+        mode_ = Mode::Parking;
+    } else if (modeStr == "slalom") {
+        mode_ = Mode::Slalom;
+    } else if (modeStr == "path_tracking") {
+        mode_ = Mode::PathTracking;
+    } else {
         std::stringstream ss;
-        ss << "Invalid mode for mpc. mode = " << modeStr << ". Should be parking or path_tracking";
+        ss << "Invalid mode for mpc: " << modeStr << ". Valid modes are parking, slalom and path_tracking";
         ROS_ERROR_STREAM(ss.str());
         throw std::runtime_error{ss.str()};
     }
     ROS_INFO_STREAM("Initialized with mode: " << modeStr);
-    mode_ = ControlSys::Mode::PathTracking;
-    if (modeStr == "parking") {
-        mode_ = ControlSys::Mode::Parking;
-    }
     controlSys_.setMode(mode_);
-    if (nh_->hasParam("path_topic") && mode_ == ControlSys::Mode::PathTracking) {
+    if (nh_->hasParam("path_topic") && mode_ == Mode::PathTracking) {
         std::string pathTopic = nh_->param<std::string>("path_topic", "/path");
         pathSub_ = nh->subscribe(pathTopic, 1, &RosMpc::pathCallback, this);
-    } else if (!nh_->hasParam("path_topic") && mode_ == ControlSys::Mode::PathTracking) {
+    } else if (!nh_->hasParam("path_topic") && mode_ == Mode::PathTracking) {
         ROS_WARN("path_topic parameter not specified. Using hardcode internal path.");
     }
     stopPub_ = nh->advertise<std_msgs::Bool>(stopTopic, 1);
@@ -53,7 +56,7 @@ RosMpc::RosMpc(ros::NodeHandle *nh) : controlSys_{nh->param<double>("path_tracki
     mpcPathPub_ = nh->advertise<nav_msgs::Path>("/local_path", 1);
     twistSub_ = nh->subscribe(twistTopic, 1, &RosMpc::twistCallback, this);
     actualSteeringSub_ = nh->subscribe(actualSteeringTopic, 1, &RosMpc::actualSteeringCallback, this);
-    if (mode_ == ControlSys::Mode::Parking) {
+    if (mode_ == Mode::Parking) {
         poseSub_ = nh->subscribe(parkingTopic, 1, &RosMpc::poseCallback, this);
     }
 }
@@ -89,7 +92,7 @@ MPCReturn RosMpc::solve() {
     std_msgs::Float64 msg;
     msg.data = result.mpcHorizon.at(1).x.throttle;
     throttlePub_.publish(msg);
-    if (msg.data = -123) {
+    if (msg.data == -123) {
         std_msgs::Bool stop;
         stop.data = true;
         stopPub_.publish(stop);
@@ -128,7 +131,7 @@ bool RosMpc::verifyInputs() {
     }
 
     // if path topic parameter is provided. Get the intial path message.
-    if (nh_->hasParam("path_topic") && mode_ == ControlSys::Mode::PathTracking) {
+    if (nh_->hasParam("path_topic") && mode_ == Mode::PathTracking) {
         std::string pathTopic = nh_->param<std::string>("path_topic", "/path");
         while (ros::ok()) {
             nav_msgs::Path::ConstPtr firstPath = ros::topic::waitForMessage<nav_msgs::Path>(pathTopic, waitTime);
@@ -140,7 +143,7 @@ bool RosMpc::verifyInputs() {
         }
     }
 
-    if (mode_ == ControlSys::Mode::Parking) {
+    if (mode_ == Mode::Parking) {
         std::string parkingTopic = nh_->param<std::string>("parking_topic", "move_base_simple/goal");
         while (ros::ok()) {
             geometry_msgs::PoseStamped::ConstPtr firstPose = ros::topic::waitForMessage<geometry_msgs::PoseStamped>(parkingTopic, waitTime);

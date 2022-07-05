@@ -106,7 +106,7 @@ class RosMpc {
     double steeringRatio_;
 
     /// @brief the mode of the control system. This can be parking or path tracking.
-    ControlSys::Mode mode_;
+    Mode mode_;
 };
 }  // namespace mpc
 
