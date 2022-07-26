@@ -26,7 +26,8 @@ MPCReturn PathTrackingSys::solve(const State &state, double pitch, double vRef) 
     State transformedState{0, 0, rotation, state.vel, state.delta, state.throttle};
     // calcState(transformedState, coeffs);
     // OptVariables transformedOptVar{transformedState, optVars.u};
-    LOG_DEBUG_STREAM("rot: " << rotation << ", coeffs: " << coeffs[0] << ", " << coeffs[1] << ", " << coeffs[2] << ", " << coeffs[3]);
+    LOG_DEBUG_STREAM("rot: " << rotation << ", coeffs: " << coeffs[0] << ", " << coeffs[1] << ", "
+                             << coeffs[2] << ", " << coeffs[3]);
     auto result = solve(transformedState, params);
 
     const double rotAngle = state.psi - rotation;
@@ -65,7 +66,8 @@ MPCReturn PathTrackingSys::solve(const State &state, const Acados::PathTrackingP
     return solver.solve(state, params);
 }
 
-void PathTrackingSys::calcCoeffs(const State &state, double &rotation, Eigen::Vector4d &coeffs) const {
+void PathTrackingSys::calcCoeffs(const State &state, double &rotation,
+                                 Eigen::Vector4d &coeffs) const {
     size_t start, end;
     getTrackSection(start, end, state);
 
@@ -82,7 +84,8 @@ void PathTrackingSys::calcCoeffs(const State &state, double &rotation, Eigen::Ve
     return;
 }
 
-Eigen::Vector4d PathTrackingSys::interpolate(const State &state, double rotation, size_t start, size_t end, double &cost) const {
+Eigen::Vector4d PathTrackingSys::interpolate(const State &state, double rotation, size_t start,
+                                             size_t end, double &cost) const {
     Eigen::VectorXd xVals(end - start);
     Eigen::VectorXd yVals(end - start);
     double angle = rotation - state.psi;
@@ -123,7 +126,8 @@ void PathTrackingSys::getTrackSection(size_t &start, size_t &end, const State &s
     size_t frontIndex = minIndex;
     while (len < maxLen && frontIndex < track_.size() - 1) {
         frontIndex++;
-        len += sqrt(util::distSqrd(track_[frontIndex].x - track_[frontIndex - 1].x, track_[frontIndex].y - track_[frontIndex - 1].y));
+        len += sqrt(util::distSqrd(track_[frontIndex].x - track_[frontIndex - 1].x,
+                                   track_[frontIndex].y - track_[frontIndex - 1].y));
     }
     start = minIndex;
     end = frontIndex;
@@ -136,4 +140,4 @@ void PathTrackingSys::getTrackSection(size_t &start, size_t &end, const State &s
     }
     assert(end < track_.size());
 }
-}  // namespace
+}  // namespace mpc

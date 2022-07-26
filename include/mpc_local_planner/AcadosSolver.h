@@ -32,11 +32,13 @@ class Solver {
     /// @param[in] state the current state
     void setInitCondition(const State &state);
 
-    /// @brief set parameters used by solver. In this case it is the coefficients for the interpolated third degree polynomial and pitch of the car.
+    /// @brief set parameters used by solver. In this case it is the coefficients for the
+    /// interpolated third degree polynomial and pitch of the car.
     /// @param[in] params the parameters for the solver
     virtual void setParams(const Params &params) = 0;
 
-    /// @brief set the inital guess for states and inputs in solver. Here we set them to the current state and u = 0
+    /// @brief set the inital guess for states and inputs in solver. Here we set them to the current
+    /// state and u = 0
     /// @param[in] state the current state of the car
     void setInitGuess(const State &state);
 

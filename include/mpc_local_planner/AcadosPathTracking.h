@@ -12,9 +12,11 @@ struct PathTrackingParams : public Params {
     PathTrackingParams() = default;
 
     /// @brief constructor for params
-    /// @param[in] polyCoeffs tho coefficient for the 3rd deg. polynomial used to represent the road.
+    /// @param[in] polyCoeffs tho coefficient for the 3rd deg. polynomial used to represent the
+    /// road.
     /// @param[in] pitch the pitch of the car. Indicates if the car is going downhill or uphill.
-    PathTrackingParams(const Eigen::Vector4d &polyCoeffs, double pitch, double vRef) : polyCoeffs{polyCoeffs}, pitch{pitch}, vRef{vRef} {}
+    PathTrackingParams(const Eigen::Vector4d &polyCoeffs, double pitch, double vRef)
+        : polyCoeffs{polyCoeffs}, pitch{pitch}, vRef{vRef} {}
 
     /// @brief constructor using vector.
     /// @param[in] vec vector with params.
@@ -28,7 +30,8 @@ struct PathTrackingParams : public Params {
     /// @brief convert params to array.
     /// @return vector containg the params
     std::vector<double> toVec() const override {
-        return std::vector<double>{polyCoeffs[0], polyCoeffs[1], polyCoeffs[2], polyCoeffs[3], pitch, vRef};
+        return std::vector<double>{polyCoeffs[0], polyCoeffs[1], polyCoeffs[2],
+                                   polyCoeffs[3], pitch,         vRef};
     }
 
     /// @brief the coefficients for the polynomoial defining the track.
@@ -54,7 +57,8 @@ class PathTracking : public Solver {
     /// @brief destructor for PathTracking solver.
     ~PathTracking();
 
-    /// @brief set parameters used by solver. In this case it is the coefficients for the interpolated third degree polynomial and pitch of the car.
+    /// @brief set parameters used by solver. In this case it is the coefficients for the
+    /// interpolated third degree polynomial and pitch of the car.
     /// @param[in] params the parameters for the solver
     void setParams(const Params &params) override;
 

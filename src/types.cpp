@@ -1,7 +1,8 @@
 #include "mpc_local_planner/types.h"
 
 std::ostream &operator<<(std::ostream &os, const mpc::State &state) {
-    os << "x: " << state.x << ", y: " << state.y << ", psi: " << state.psi << ", vel: " << state.vel << ", delta: " << state.delta << ", throttle: " << state.throttle;
+    os << "x: " << state.x << ", y: " << state.y << ", psi: " << state.psi << ", vel: " << state.vel
+       << ", delta: " << state.delta << ", throttle: " << state.throttle;
     return os;
 }
 

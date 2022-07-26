@@ -17,8 +17,8 @@ class ParkingSys {
 
     /// @brief constructor for parking system.
     /// @param[in] goal where we want to park
-    ParkingSys(const geometry_msgs::Pose &goal, double refVel) : refVel_{refVel}, goal_{goal}, init_{true} {
-    }
+    ParkingSys(const geometry_msgs::Pose &goal, double refVel)
+        : refVel_{refVel}, goal_{goal}, init_{true} {}
 
     /// @brief solve function
     /// @param[in] state the state of the car
@@ -31,24 +31,22 @@ class ParkingSys {
 
     /// @brief get the current desired trajectory
     /// @return track for the desired trajectory
-    std::vector<Point> getTrack() const {
-        return pathTrackingSys_.getTrack();
-    }
+    std::vector<Point> getTrack() const { return pathTrackingSys_.getTrack(); }
 
     /// @brief get the reference pose. This is where we want to park.
-    geometry_msgs::Pose getRefPose() const {
-        return goal_;
-    }
+    geometry_msgs::Pose getRefPose() const { return goal_; }
 
+    /// @brief set the mode of the parking system. Either parking or Slalom
+    /// @param[in] mode the new mode wanted.
     void setMode(Mode mode) {
         if (mode == Mode::Parking || mode == Mode::Slalom) {
             mode_ = mode;
         }
     }
 
-    Mode getMode() const {
-        return mode_;
-    }
+    /// @brief get the mode of the parking system.
+    /// @return the current mode.
+    Mode getMode() const { return mode_; }
 
    private:
     /// @brief calculate a smooth path from your position to the parking spot.
@@ -76,11 +74,14 @@ class ParkingSys {
     /// @brief atomic bool for indicating if we need to update the start position of the path.
     std::atomic<bool> updateStart_{false};
 
-    /// @brief mutex for ensuring no problems with data races and so on when seting updatePath_ and updateStart_
+    /// @brief mutex for ensuring no problems with data races and so on when seting updatePath_ and
+    /// updateStart_
     std::mutex m;
 
+    /// @brief the desired velocity when driving to the goal.
     double refVel_;
 
+    /// @brief mode of the parkin system. Either slalom or parking
     Mode mode_ = Mode::Invalid;
 };
 }  // namespace mpc
