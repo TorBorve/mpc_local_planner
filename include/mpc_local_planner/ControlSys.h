@@ -9,17 +9,13 @@ namespace mpc {
 
 class ControlSys {
    public:
-    /// @brief modes the control system can be in.
-    enum class Mode { PathTracking,
-                      Parking,
-                      INVALID };
-    ControlSys(double pathTrackingVel, double parkingVel) : pathTrackingVel_{pathTrackingVel}, parkingSys_{parkingVel} {}
+       ControlSys(double pathTrackingVel, double parkingVel) : pathTrackingVel_{pathTrackingVel}, parkingSys_{parkingVel} {}
 
     /// @brief solve function
     /// @param[in] state the state of the car
     /// @param[in] pitch the pitch of the car. Indicates if the car is driving up/down hill.
     MPCReturn solve(const State &state, double pitch) {
-        if (mode_ == Mode::Parking) {
+        if (mode_ == Mode::Parking || mode_ == Mode::Slalom) {
             return parkingSys_.solve(state, pitch);
         } else if (mode_ == Mode::PathTracking) {
             return pathTrackingSys_.solve(state, pitch, pathTrackingVel_);
@@ -48,6 +44,7 @@ class ControlSys {
 
     void setMode(const Mode &mode) {
         mode_ = mode;
+        parkingSys_.setMode(mode);
     }
 
     Mode getMode() const {
@@ -72,7 +69,7 @@ class ControlSys {
     PathTrackingSys pathTrackingSys_ = PathTrackingSys{util::getTestTrack()};  // TODO remove use of getTestTrack
 
     /// @brief mode of the control system.
-    Mode mode_ = Mode::INVALID;
+    Mode mode_ = Mode::Invalid;
 
     double pathTrackingVel_;
 };

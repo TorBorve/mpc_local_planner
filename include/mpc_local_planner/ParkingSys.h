@@ -1,12 +1,12 @@
 #pragma once
 
-#include <atomic>
-
 #include <geometry_msgs/Pose.h>
 
+#include <atomic>
+
 #include "mpc_local_planner/AcadosPointStab.h"
-#include "mpc_local_planner/types.h"
 #include "mpc_local_planner/PathTrackingSys.h"
+#include "mpc_local_planner/types.h"
 #include "mpc_local_planner/utilities.h"
 
 namespace mpc {
@@ -40,6 +40,16 @@ class ParkingSys {
         return goal_;
     }
 
+    void setMode(Mode mode) {
+        if (mode == Mode::Parking || mode == Mode::Slalom) {
+            mode_ = mode;
+        }
+    }
+
+    Mode getMode() const {
+        return mode_;
+    }
+
    private:
     /// @brief calculate a smooth path from your position to the parking spot.
     /// @param[in] state the state of the car.
@@ -70,5 +80,7 @@ class ParkingSys {
     std::mutex m;
 
     double refVel_;
+
+    Mode mode_ = Mode::Invalid;
 };
 }  // namespace mpc

@@ -120,7 +120,7 @@ struct MPCReturn {
     /// @param[in] cost the cost of the mpc horizon.
     /// @param[in] success boolean for indicating if the solver managed to solve the problem.
     MPCReturn(const Input &u0, const std::vector<OptVariables> &mpcHorizon,
-              double computeTime, double cost, bool success) : u0{u0}, mpcHorizon{mpcHorizon}, computeTime{computeTime}, cost{cost}, success{success} {
+              double computeTime, double cost, bool success, bool stop) : u0{u0}, mpcHorizon{mpcHorizon}, computeTime{computeTime}, cost{cost}, success{success}, stopSignal{stop} {
     }
 
     /// @brief constructor with variables
@@ -129,7 +129,7 @@ struct MPCReturn {
     /// @param[in] cost the cost of the mpc horizon.
     /// @param[in] success boolean for indicating if the solver managed to solve the problem.
     MPCReturn(const std::vector<OptVariables> &mpcHorizon,
-              double computeTime, double cost, bool success) : MPCReturn{mpcHorizon.at(0).u, mpcHorizon, computeTime, cost, success} {
+              double computeTime, double cost, bool success, bool stop) : MPCReturn{mpcHorizon.at(0).u, mpcHorizon, computeTime, cost, success, stop} {
     }
 
     /// @brief the first input. u0 = mpcHorizon[0].u;
@@ -146,6 +146,8 @@ struct MPCReturn {
 
     /// @brief boolean for indication if the solver manged to solve the problem
     bool success;
+
+    bool stopSignal = false;
 };
 
 /// @brief struct for point (x, y)
@@ -171,6 +173,12 @@ struct Point {
 struct Params {
     virtual std::vector<double> toVec() const = 0;
 };
+
+/// @brief modes the control system can be in.
+enum class Mode { PathTracking,
+                  Parking,
+                  Slalom,
+                  Invalid };
 
 }  // namespace mpc
 

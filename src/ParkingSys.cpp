@@ -5,7 +5,7 @@
 namespace mpc {
 
 MPCReturn ParkingSys::solve(const State &state, double pitch) {
-    if (!init_) {
+    if (!init_ || mode_ == Mode::Invalid) {
         return MPCReturn{};
     }
     double distSqrdToGoal = util::distSqrd(state.x - goal_.position.x, state.y - goal_.position.y);
@@ -14,8 +14,11 @@ MPCReturn ParkingSys::solve(const State &state, double pitch) {
         params.pitch = pitch;
         params.pRef = Point{goal_.position.x, goal_.position.y};
         params.psiRef = util::getYaw(goal_.orientation);
-        return pointStabSolver_.solve(state, params);
-
+        auto res = pointStabSolver_.solve(state, params);
+        if (distSqrdToGoal < 2*2 && mode_ == Mode::Parking) {
+            res.stopSignal = true;
+        }
+        return res;
     } else {
         std::lock_guard<std::mutex> lock(m);
         if (updateStart_) {
@@ -33,7 +36,13 @@ MPCReturn ParkingSys::solve(const State &state, double pitch) {
 void ParkingSys::createPathToGoal() {
     Point car{startState_.x, startState_.y};
     Point goal{goal_.position.x, goal_.position.y};
-    BezierCurve bCurve{car, startState_.psi, goal, util::getYaw(goal_.orientation)};
+    double frac = 0;
+    if (mode_ == Mode::Parking) {
+        frac = 0.5;
+    } else if (mode_ == Mode::Slalom) {
+        frac = 0.25;
+    }
+    BezierCurve bCurve{car, startState_.psi, goal, util::getYaw(goal_.orientation), frac};
     pathTrackingSys_.setTrack(util::getPath(bCurve));
 }
 

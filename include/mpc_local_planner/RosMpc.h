@@ -62,6 +62,8 @@ class RosMpc {
     /// @brief publisher for the mpc trajectory solution
     ros::Publisher mpcPathPub_;
 
+    ros::Publisher stopPub_;
+
     /// @brief subscriber to the twist message send by the car.
     ros::Subscriber twistSub_;
 
@@ -104,7 +106,7 @@ class RosMpc {
     double steeringRatio_;
 
     /// @brief the mode of the control system. This can be parking or path tracking.
-    ControlSys::Mode mode_;
+    Mode mode_;
 };
 }  // namespace mpc
 
