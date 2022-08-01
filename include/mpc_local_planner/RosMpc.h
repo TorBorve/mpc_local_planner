@@ -43,12 +43,6 @@ class RosMpc {
     /// @param[in] msg the new reference pose the car should move to.
     void poseCallback(const geometry_msgs::PoseStamped::ConstPtr &msg);
 
-    /// @brief checks if the desired parameters is given to the MPC class.
-    /// @param[in] nh pointer to Nodehandle with access to the parameters
-    /// @return true if all parameters was defined. False otherwise.
-    /// @throw runtime exception if one or more critical parmeters is not defined.
-    bool verifyParamsForMPC(ros::NodeHandle *nh) const;
-
     /// @brief mpc class that solves the problem given our state and desired trajectory.
     ControlSys controlSys_;
 

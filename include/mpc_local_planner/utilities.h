@@ -111,18 +111,32 @@ double getPitch(const geometry_msgs::Quaternion &quat);
 /// @param[out] yaw yaw
 void getRPY(const geometry_msgs::Quaternion &quat, double &roll, double &pitch, double &yaw);
 
-/// @brief checks if param exist in nh. If not an error is printed and a exception is thrown
-/// @param[in] nh pointer to nodeHandle that should have access to the parameter.
-/// @param[in] param the parameter we want to check if exists.
-/// @return true if the parameter existed
-/// @throw runtime error it the parameter didn't exist
-bool hasParamError(ros::NodeHandle *nh, const std::string &param);
+/// @brief get parameter from nh and throw error if the parameter does not exist
+/// @param[in] nh the nodhandle containing the parameters
+/// @param[in] param the parameter you want to get
+/// @return the parameter as the template type
+template<typename T>
+T getParamError(const ros::NodeHandle &nh, const std::string &param) {
+    if (!nh.hasParam(param)) {
+        std::string err = "Could not find parameter: " + param + ". This should be specified when launchig.";
+        ROS_ERROR_STREAM(err);
+        throw std::runtime_error{err};
+    }
+    T val;
+    return nh.param<T>(param, val);
+}
 
-/// @brief checks if the parameter exist in nh. If not an warning is printed.
-/// @param[in] nh pointer to nodeHandle that should have access to the parameter.
-/// @param[in] param the parameter we want to check if exists.
-/// @return true if the parameter existed
-bool hasParamWarn(ros::NodeHandle *nh, const std::string &param);
+/// @brief get parameter from nh and print warning if the parameter does not exist
+/// @param[in] nh the nodhandle containing the parameters
+/// @param[in] param the parameter you want to get
+/// @return the parameter as the template type
+template<typename T>
+T getParamWarn(const ros::NodeHandle &nh, const std::string &param, const T& default_value) {
+    if (!nh.hasParam(param)) {
+        ROS_WARN_STREAM("Could not find parameter: " << param << ". This should be specified when launchig. Using default value: " << default_value);
+    }
+    return nh.param<T>(param, default_value);
+}
 
 /// @brief converts path message to vector of points.
 /// @param[in] path the path message we want to convert.
