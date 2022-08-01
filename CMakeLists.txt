@@ -117,10 +117,3 @@ FILE(GLOB SOURCES "src/*.cpp")
 add_executable(ff_mpc ${SOURCES})
 target_link_libraries(ff_mpc path_tracking_mpc point_stab_mpc acados hpipm blasfeo m ${catkin_LIBRARIES})
 add_dependencies(ff_mpc path_tracking_lib point_stab_lib)
-
-# include_directories(
-#   tests
-# )
-# add_executable(testMpc tests/main.cpp src/bounds.cpp src/utilities.cpp src/MPC.cpp src/solverCppAD.cpp src/AcadosSolver.cpp)
-# target_link_libraries(testMpc ipopt myacadoslib acados hpipm blasfeo m ${catkin_LIBRARIES})
-# add_dependencies(testMpc acados_generated_lib) 
