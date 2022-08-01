@@ -20,7 +20,6 @@ MPCReturn ParkingSys::solve(const State &state, double pitch) {
         }
         return res;
     } else {
-        std::lock_guard<std::mutex> lock(m);
         if (updateStart_) {
             startState_ = state;
             updateStart_ = false;
@@ -50,10 +49,8 @@ void ParkingSys::setRefPose(const geometry_msgs::Pose &pose) {
     if (!init_) {
         goal_ = pose;
         init_ = true;
-        m.lock();
         updatePath_ = true;
         updateStart_ = true;
-        m.unlock();
     }
     double dist2 = util::distSqrd(pose.position, goal_.position);
     double diffYaw = abs(util::getYaw(pose.orientation) - util::getYaw(goal_.orientation));
@@ -63,12 +60,10 @@ void ParkingSys::setRefPose(const geometry_msgs::Pose &pose) {
 
     if (dist2 > 0.3 * 0.3 || diffYaw > 15 * M_PI / 180.0) {
         goal_ = pose;
-        m.lock();
         updatePath_ = true;
         if (dist2 > 2 * 2 || diffYaw > 45 * M_PI / 180.0) {
             updateStart_ = true;
         }
-        m.unlock();
     }
 }
 

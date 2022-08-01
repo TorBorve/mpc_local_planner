@@ -68,15 +68,12 @@ class ParkingSys {
     /// @brief the state where the start position of the car should be
     State startState_;
 
-    /// @brief atomic bool for indicating if we need to update the path.
-    std::atomic<bool> updatePath_{false};
+    /// @brief bool for indicating if we need to update the path.
+    bool updatePath_{false};
 
-    /// @brief atomic bool for indicating if we need to update the start position of the path.
-    std::atomic<bool> updateStart_{false};
+    /// @brief bool for indicating if we need to update the start position of the path.
+    bool updateStart_{false};
 
-    /// @brief mutex for ensuring no problems with data races and so on when seting updatePath_ and
-    /// updateStart_
-    std::mutex m;
 
     /// @brief the desired velocity when driving to the goal.
     double refVel_;
