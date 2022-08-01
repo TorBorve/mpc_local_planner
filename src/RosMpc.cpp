@@ -22,29 +22,21 @@ RosMpc::RosMpc(ros::NodeHandle *nh)
     std::string stopTopic = util::getParamWarn<std::string>(*nh_, "stop_topic", "stop");
     mapFrame_ = util::getParamWarn<std::string>(*nh_, "map_frame", "map");
     carFrame_ = util::getParamWarn<std::string>(*nh_, "car_frame", "base_link");
-    loopHz_ = util::getParamWarn<double>(*nh_, "loop_Hz", 30);
-    mpcDt_ = util::getParamWarn<double>(*nh_, "mpc_dt", 0.2);
     steeringRatio_ = util::getParamWarn<double>(*nh_, "steering_ratio", 1.0);
 
-    mode_ = Mode::Invalid;
-    if (modeStr == "parking") {
-        mode_ = Mode::Parking;
-    } else if (modeStr == "slalom") {
-        mode_ = Mode::Slalom;
-    } else if (modeStr == "path_tracking") {
-        mode_ = Mode::PathTracking;
-    } else {
+    Mode mode = str2Mode(modeStr);
+    if (mode == Mode::Invalid) {
         std::stringstream ss;
         ss << "Invalid mode for mpc: " << modeStr << ". Valid modes are parking, slalom and path_tracking";
         ROS_ERROR_STREAM(ss.str());
         throw std::runtime_error{ss.str()};
     }
-    ROS_INFO_STREAM("Initialized with mode: " << modeStr);
-    controlSys_.setMode(mode_);
-    if (nh_->hasParam("path_topic") && mode_ == Mode::PathTracking) {
+    ROS_INFO_STREAM("Initialized with mode: " << toString(mode));
+    controlSys_.setMode(mode);
+    if (nh_->hasParam("path_topic") && mode == Mode::PathTracking) {
         std::string pathTopic = util::getParamWarn<std::string>(*nh_, "path_topic", "path");
         pathSub_ = nh_->subscribe(pathTopic, 1, &RosMpc::pathCallback, this);
-    } else if (!nh_->hasParam("path_topic") && mode_ == Mode::PathTracking) {
+    } else if (!nh_->hasParam("path_topic") && mode == Mode::PathTracking) {
         ROS_WARN("path_topic parameter not specified. Using hardcode internal path.");
     }
     stopPub_ = nh_->advertise<std_msgs::Bool>(stopTopic, 1);
@@ -54,7 +46,7 @@ RosMpc::RosMpc(ros::NodeHandle *nh)
     mpcPathPub_ = nh_->advertise<nav_msgs::Path>("/local_path", 1);
     twistSub_ = nh_->subscribe(twistTopic, 1, &RosMpc::twistCallback, this);
     actualSteeringSub_ = nh_->subscribe(actualSteeringTopic, 1, &RosMpc::actualSteeringCallback, this);
-    if (mode_ == Mode::Parking || mode_ == Mode::Slalom) {
+    if (mode == Mode::Parking || mode == Mode::Slalom) {
         poseSub_ = nh_->subscribe(parkingTopic, 1, &RosMpc::poseCallback, this);
     }
 }
@@ -85,19 +77,14 @@ MPCReturn RosMpc::solve() {
     }
 
     // publish inputs
-    double dt = 1.0 / loopHz_;
     std_msgs::Float64 msg;
     msg.data = result.mpcHorizon.at(1).x.throttle;
     throttlePub_.publish(msg);
-    if (result.stopSignal) {
-        std_msgs::Bool stop;
-        stop.data = true;
-        stopPub_.publish(stop);
-    } else {
-        std_msgs::Bool stop;
-        stop.data = false;
-        stopPub_.publish(stop);
-    }
+
+    std_msgs::Bool stop;
+    stop.data = result.stopSignal;
+    stopPub_.publish(stop);
+
     prevThrottle = msg.data;
     msg.data = result.mpcHorizon.at(1).x.delta * steeringRatio_;
     steeringPub_.publish(msg);
@@ -116,6 +103,7 @@ MPCReturn RosMpc::solve() {
 
 bool RosMpc::verifyInputs() {
     ros::Duration waitTime{10.0};
+    Mode mode = str2Mode(util::getParamError<std::string>(*nh_, "mode"));
     // check if twist publisher is publishing
     std::string twistTopic = util::getParamWarn<std::string>(*nh_, "twist_topic", "twist");
     while (ros::ok() && !ros::topic::waitForMessage<geometry_msgs::TwistStamped>(twistTopic, waitTime)) {
@@ -129,7 +117,7 @@ bool RosMpc::verifyInputs() {
     }
 
     // if path topic parameter is provided. Get the intial path message.
-    if (nh_->hasParam("path_topic") && mode_ == Mode::PathTracking) {
+    if (nh_->hasParam("path_topic") && mode == Mode::PathTracking) {
         std::string pathTopic = util::getParamWarn<std::string>(*nh_, "path_topic", "path");
         while (ros::ok()) {
             nav_msgs::Path::ConstPtr firstPath = ros::topic::waitForMessage<nav_msgs::Path>(pathTopic, waitTime);
@@ -141,7 +129,7 @@ bool RosMpc::verifyInputs() {
         }
     }
 
-    if (mode_ == Mode::Parking) {
+    if (mode == Mode::Parking) {
         std::string parkingTopic = util::getParamWarn<std::string>(*nh_, "parking_topic", "goal");
         while (ros::ok()) {
             geometry_msgs::PoseStamped::ConstPtr firstPose = ros::topic::waitForMessage<geometry_msgs::PoseStamped>(parkingTopic, waitTime);

@@ -175,6 +175,17 @@ struct Params {
 /// @brief modes the control system can be in.
 enum class Mode { PathTracking, Parking, Slalom, Invalid };
 
+Mode str2Mode(const std::string &str);
+
+constexpr const char* toString(Mode mode) {
+    switch (mode) {
+        case Mode::PathTracking: return "path_tracking";
+        case Mode::Parking: return "parking";
+        case Mode::Slalom: return "slalom";
+        case Mode::Invalid: return "invalid";
+        default: throw std::invalid_argument{"Not implemented toString for this item"};
+    }
+}
 }  // namespace mpc
 
 /// @brief print operator for state

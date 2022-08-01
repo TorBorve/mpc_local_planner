@@ -94,18 +94,9 @@ class RosMpc {
     /// @brief name of frame where the car is located
     std::string carFrame_;
 
-    /// @brief frequency that the mpc is run at.
-    double loopHz_;
-
-    /// @brief time between steps in the mpc calculations.
-    double mpcDt_;
-
     /// @brief Ratio between angle on the wheels and the steering wheel. steeringRatio = "steering
     /// wheel angle" / "wheel angle"
     double steeringRatio_;
-
-    /// @brief the mode of the control system. This can be parking or path tracking.
-    Mode mode_;
 };
 }  // namespace mpc
 
