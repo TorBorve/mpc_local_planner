@@ -1,15 +1,15 @@
 #ifndef MPC_MPC_H_
 #define MPC_MPC_H_
 
-#include <ros/ros.h>
 #include <geometry_msgs/Pose.h>
+#include <ros/ros.h>
 
 #include <eigen3/Eigen/Core>
 
-#include "mpc_local_planner/bounds.h"
-#include "mpc_local_planner/types.h"
 #include "mpc_local_planner/AcadosPathTracking.h"
 #include "mpc_local_planner/AcadosPointStab.h"
+#include "mpc_local_planner/bounds.h"
+#include "mpc_local_planner/types.h"
 
 namespace mpc {
 
@@ -22,15 +22,11 @@ class PathTrackingSys {
 
     /// @brief update track variable for desired trajectory
     /// @param[in] newTrack the new desired trajectory
-    void setTrack(const std::vector<Point> &newTrack) {
-        track_ = newTrack;
-    }
+    void setTrack(const std::vector<Point> &newTrack) { track_ = newTrack; }
 
     /// @brief get the current desired trajectory
     /// @return track for the desired trajectory
-    std::vector<Point> getTrack() const {
-        return track_;
-    }
+    std::vector<Point> getTrack() const { return track_; }
 
     /// @brief solve function for path tracking. Solves the nlp with state as given.
     /// @param[in] state the state of the car.
@@ -38,7 +34,8 @@ class PathTrackingSys {
     /// @return solution from path tracking. See definition of MPCReturn.
     MPCReturn solve(const State &state, double pitch, double vRef);
 
-    /// @brief solve function for path tracking. Uses states and coefficients of a third order polynomial
+    /// @brief solve function for path tracking. Uses states and coefficients of a third order
+    /// polynomial
     ///        that is threated at desired trajectory.
     /// @param[in] state the state of the car. (position, velocity, steering angle, ...)
     /// @param[in] params parameters for solver.
@@ -46,7 +43,8 @@ class PathTrackingSys {
     MPCReturn solve(const State &state, const Acados::PathTrackingParams &params);
 
    private:
-    /// @brief calculates coefficients of third order polynomial that fits the disired trajectory best.
+    /// @brief calculates coefficients of third order polynomial that fits the disired trajectory
+    /// best.
     /// @param[in] state current state of the car.
     /// @param[in] rotation refrence frame roation relative too the car.
     /// @param[out] coeffs the calculated coefficients for the polynomial
@@ -59,11 +57,13 @@ class PathTrackingSys {
     /// @param[in] end the end index for the track section.
     /// @param[out] cost sum of squares between polynomial and points. Least squares method.
     /// @return coefficient for the polynomial found using least squares method.
-    Eigen::Vector4d interpolate(const State &state, double rotation, size_t start, size_t end, double &cost) const;
+    Eigen::Vector4d interpolate(const State &state, double rotation, size_t start, size_t end,
+                                double &cost) const;
 
     /// @brief calculate the rest of the state. i.e. crosstrack error and yaw error
     /// @param[in/out] state state with valid yaw, x, y and vel. Updated with cte and epsi.
-    /// @param[in] coeffs coefficients for third degree polynomial that represents desired trajectory.
+    /// @param[in] coeffs coefficients for third degree polynomial that represents desired
+    /// trajectory.
     void calcState(State &state, const Eigen::Vector4d &coeffs) const;
 
     /// @brief calculate y value of third order polynomial. y = f(x)

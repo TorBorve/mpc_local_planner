@@ -19,13 +19,12 @@ struct State {
     /// @param[in] vel the current velocity
     /// @param[in] delta the current steering angle.
     /// @param[in] throttle the current throttle value.
-    State(double x, double y, double psi, double vel, double delta, double throttle) : x{x}, y{y}, psi{psi}, vel{vel}, delta{delta}, throttle{throttle} {
-    }
+    State(double x, double y, double psi, double vel, double delta, double throttle)
+        : x{x}, y{y}, psi{psi}, vel{vel}, delta{delta}, throttle{throttle} {}
 
     /// @brief constructor with array containig values
     /// @param[in] arr array containg state variables
-    State(const std::array<double, 6> &arr) : State{&arr[0], 6} {
-    }
+    State(const std::array<double, 6> &arr) : State{&arr[0], 6} {}
 
     /// @brief constructor using double pointer
     /// @param[in] arr pointer to start of array.
@@ -68,20 +67,16 @@ struct Input {
     /// @brief constructor with values.
     /// @param[in] deltaDot derivative of the throttle
     /// @param[in] throttleDot derivative of the steering angle
-    Input(double deltaDot, double throttleDot) : deltaDot{deltaDot}, throttleDot{throttleDot} {
-    }
+    Input(double deltaDot, double throttleDot) : deltaDot{deltaDot}, throttleDot{throttleDot} {}
 
-    Input(const std::array<double, 2> &arr) : Input{&arr[0], 2} {
-    }
+    Input(const std::array<double, 2> &arr) : Input{&arr[0], 2} {}
 
     Input(double const *arr, size_t size) {
         assert(size == 2);
         *this = Input{arr[0], arr[1]};
     }
 
-    std::array<double, 2> toArray() const {
-        return std::array<double, 2>{deltaDot, throttleDot};
-    }
+    std::array<double, 2> toArray() const { return std::array<double, 2>{deltaDot, throttleDot}; }
 
     /// @brief derivative of the steering angle
     double deltaDot;
@@ -98,8 +93,7 @@ struct OptVariables {
     /// @brief constructor with variables
     /// @param[in] x state variable
     /// @param[in] u input variable
-    OptVariables(const State &x, const Input &u) : x{x}, u{u} {
-    }
+    OptVariables(const State &x, const Input &u) : x{x}, u{u} {}
 
     /// @brief the state of the car
     State x;
@@ -119,18 +113,23 @@ struct MPCReturn {
     /// @param[in] computeTime the time the solver used in [ms]
     /// @param[in] cost the cost of the mpc horizon.
     /// @param[in] success boolean for indicating if the solver managed to solve the problem.
-    MPCReturn(const Input &u0, const std::vector<OptVariables> &mpcHorizon,
-              double computeTime, double cost, bool success) : u0{u0}, mpcHorizon{mpcHorizon}, computeTime{computeTime}, cost{cost}, success{success} {
-    }
+    MPCReturn(const Input &u0, const std::vector<OptVariables> &mpcHorizon, double computeTime,
+              double cost, bool success, bool stop)
+        : u0{u0},
+          mpcHorizon{mpcHorizon},
+          computeTime{computeTime},
+          cost{cost},
+          success{success},
+          stopSignal{stop} {}
 
     /// @brief constructor with variables
     /// @param[in] mpcHorizon the calculated optimal variables from mpc. size = N
     /// @param[in] computeTime the time the solver used in [ms]
     /// @param[in] cost the cost of the mpc horizon.
     /// @param[in] success boolean for indicating if the solver managed to solve the problem.
-    MPCReturn(const std::vector<OptVariables> &mpcHorizon,
-              double computeTime, double cost, bool success) : MPCReturn{mpcHorizon.at(0).u, mpcHorizon, computeTime, cost, success} {
-    }
+    MPCReturn(const std::vector<OptVariables> &mpcHorizon, double computeTime, double cost,
+              bool success, bool stop)
+        : MPCReturn{mpcHorizon.at(0).u, mpcHorizon, computeTime, cost, success, stop} {}
 
     /// @brief the first input. u0 = mpcHorizon[0].u;
     Input u0;
@@ -146,6 +145,9 @@ struct MPCReturn {
 
     /// @brief boolean for indication if the solver manged to solve the problem
     bool success;
+
+    /// @brief boolean for indicating if we want the car to stop.
+    bool stopSignal = false;
 };
 
 /// @brief struct for point (x, y)
@@ -156,8 +158,7 @@ struct Point {
     /// @brief constructor with values
     /// @param[in] x x value of point
     /// @param[in] y y value of point
-    Point(double x, double y) : x{x}, y{y} {
-    }
+    Point(double x, double y) : x{x}, y{y} {}
 
     /// @brief the x value
     double x;
@@ -167,11 +168,24 @@ struct Point {
 };
 
 /// @brief stuct for params used in solver
-
 struct Params {
     virtual std::vector<double> toVec() const = 0;
 };
 
+/// @brief modes the control system can be in.
+enum class Mode { PathTracking, Parking, Slalom, Invalid };
+
+Mode str2Mode(const std::string &str);
+
+constexpr const char* toString(Mode mode) {
+    switch (mode) {
+        case Mode::PathTracking: return "path_tracking";
+        case Mode::Parking: return "parking";
+        case Mode::Slalom: return "slalom";
+        case Mode::Invalid: return "invalid";
+        default: throw std::invalid_argument{"Not implemented toString for this item"};
+    }
+}
 }  // namespace mpc
 
 /// @brief print operator for state

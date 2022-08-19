@@ -12,9 +12,11 @@ struct PointStabParams : public Params {
     PointStabParams() = default;
 
     /// @brief constructor for params
-    /// @param[in] polyCoeffs tho coefficient for the 3rd deg. polynomial used to represent the road.
+    /// @param[in] polyCoeffs tho coefficient for the 3rd deg. polynomial used to represent the
+    /// road.
     /// @param[in] pitch the pitch of the car. Indicates if the car is going downhill or uphill.
-    PointStabParams(const Point &pRef, double psiRef, double pitch) : pRef{pRef}, psiRef{psiRef}, pitch{pitch} {}
+    PointStabParams(const Point &pRef, double psiRef, double pitch)
+        : pRef{pRef}, psiRef{psiRef}, pitch{pitch} {}
 
     /// @brief constructor using vector.
     /// @param[in] vec vector with params.

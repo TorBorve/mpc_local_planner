@@ -8,7 +8,7 @@ int main(int argc, char **argv) {
     ROS_INFO("MPC node intitialized");
 
     ros::NodeHandle nh{"~"};
-    int rate = nh.param("loop_Hz", 30);
+    int rate = mpc::util::getParamWarn<int>(nh, "loop_Hz", 30);
 
     mpc::RosMpc mpc(&nh);
     mpc.verifyInputs();

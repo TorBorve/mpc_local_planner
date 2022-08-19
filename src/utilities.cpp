@@ -23,8 +23,9 @@ geometry_msgs::Pose toMsg(const State &state) {
 }
 
 // Fit a polynomial.
-// Adapted from
-// https://gist.github.com/ksjgh/4d5050d0e9afc5fdb5908734335138d0
+// Adapted from https://gist.github.com/ksjgh/4d5050d0e9afc5fdb5908734335138d0
+// This function can be significanly speed up if one uses some symmetries for creating smaller
+// matrices that are easier to solve. Contact Tor Børve Rasmussen if you have any questions.
 Eigen::VectorXd polyfit(const Eigen::VectorXd &xvals, const Eigen::VectorXd &yvals, int order) {
     assert(xvals.size() == yvals.size());
     assert(order >= 1 && order <= xvals.size() - 1);
@@ -54,12 +55,14 @@ std::vector<Point> getTestTrack() {
     // }
     for (double theta = 0; theta < 2 * M_PI; theta += 2 * M_PI / (double)n) {
         double radius = 20;
-        track.push_back(Point{2 * radius * cos(theta), radius * sin(1 * theta) + radius / 1.2 * sin(3 * theta)});
+        track.push_back(Point{2 * radius * cos(theta),
+                              radius * sin(1 * theta) + radius / 1.2 * sin(3 * theta)});
     }
     return track;
 }
 
-nav_msgs::Path getPathMsg(const MPCReturn &solution, const std::string &mapFrame, const std::string &carFrame) {
+nav_msgs::Path getPathMsg(const MPCReturn &solution, const std::string &mapFrame,
+                          const std::string &carFrame) {
     nav_msgs::Path path;
     std_msgs::Header header;
     header.frame_id = mapFrame;
@@ -74,7 +77,8 @@ nav_msgs::Path getPathMsg(const MPCReturn &solution, const std::string &mapFrame
     return path;
 }
 
-nav_msgs::Path getPathMsg(const Eigen::Vector4d &coeffs, const std::string &mapFrame, const std::string &carFrame) {
+nav_msgs::Path getPathMsg(const Eigen::Vector4d &coeffs, const std::string &mapFrame,
+                          const std::string &carFrame) {
     double start = -30, finish = 30;
     double step = 0.5;
     nav_msgs::Path path;
@@ -94,7 +98,8 @@ nav_msgs::Path getPathMsg(const Eigen::Vector4d &coeffs, const std::string &mapF
     return path;
 }
 
-nav_msgs::Path getPathMsg(const std::vector<Point> &track, const std::string &mapFrame, const std::string &carFrame) {
+nav_msgs::Path getPathMsg(const std::vector<Point> &track, const std::string &mapFrame,
+                          const std::string &carFrame) {
     nav_msgs::Path path;
     std_msgs::Header header;
     header.frame_id = mapFrame;
@@ -117,9 +122,7 @@ State toState(const nav_msgs::Odometry &odom) {
     return State{odom.pose.pose.position.x, odom.pose.pose.position.y, psi, vel, 0, 0};
 }
 
-double velocity(const nav_msgs::Odometry &odom) {
-    return length(odom.twist.twist.linear);
-}
+double velocity(const nav_msgs::Odometry &odom) { return length(odom.twist.twist.linear); }
 
 double length(const geometry_msgs::Vector3 &vec) {
     return sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
@@ -143,24 +146,6 @@ void getRPY(const geometry_msgs::Quaternion &quat, double &roll, double &pitch, 
     mat.getRPY(roll, pitch, yaw);
 }
 
-bool hasParamError(ros::NodeHandle *nh, const std::string &param) {
-    if (!nh->hasParam(param)) {
-        std::string error = "parameter " + param + " is not set. This needs to be specified as a rosparameter in the launchfile";
-        ROS_ERROR_STREAM(error);
-        throw std::runtime_error{error};
-    }
-    return true;
-}
-
-bool hasParamWarn(ros::NodeHandle *nh, const std::string &param) {
-    if (!nh->hasParam(param)) {
-        std::string error = "parameter " + param + " is not set. This needs to be specified as a rosparameter in the launchfile";
-        ROS_WARN_STREAM(error);
-        return false;
-    }
-    return true;
-}
-
 std::vector<Point> toVector(const nav_msgs::Path &path) {
     std::vector<Point> pathVector(path.poses.size());
     for (unsigned int i = 0; i < pathVector.size(); i++) {
@@ -169,11 +154,10 @@ std::vector<Point> toVector(const nav_msgs::Path &path) {
     return pathVector;
 }
 
-Point toPoint(const geometry_msgs::Point &p) {
-    return Point{p.x, p.y};
-}
+Point toPoint(const geometry_msgs::Point &p) { return Point{p.x, p.y}; }
 
-nav_msgs::Path getPathMsg(const BezierCurve &curve, const std::string &mapFrame, const std::string &carFrame) {
+nav_msgs::Path getPathMsg(const BezierCurve &curve, const std::string &mapFrame,
+                          const std::string &carFrame) {
     return getPathMsg(getPath(curve), mapFrame, carFrame);
 }
 
