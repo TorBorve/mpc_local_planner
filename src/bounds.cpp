@@ -2,20 +2,13 @@
 
 namespace mpc {
 
-Bound::Bound(double lower, double upper) : lower{lower}, upper{upper} {
-}
+Bound::Bound(double lower, double upper) : lower{lower}, upper{upper} {}
 
-Bound Bound::noBound() {
-    return Bound{-1e19, 1e19};
-}
+Bound Bound::noBound() { return Bound{-1e19, 1e19}; }
 
-Bound Bound::zeroBound() {
-    return Bound{0, 0};
-}
+Bound Bound::zeroBound() { return Bound{0, 0}; }
 
-bool Bound::operator==(const Bound &rhs) {
-    return upper == rhs.upper && lower == rhs.lower;
-}
+bool Bound::operator==(const Bound &rhs) { return upper == rhs.upper && lower == rhs.lower; }
 
 std::vector<double> getUpper(const BoundVector &vec) {
     std::vector<double> upper(vec.size());

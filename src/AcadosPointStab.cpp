@@ -25,9 +25,7 @@ void PointStab::setParams(const Params &params) {
     }
 }
 
-int PointStab::acadosSolve() {
-    return point_stab_acados_solve(capsule_);
-}
+int PointStab::acadosSolve() { return point_stab_acados_solve(capsule_); }
 
 void PointStab::init() {
     nx_ = POINT_STAB_NX;

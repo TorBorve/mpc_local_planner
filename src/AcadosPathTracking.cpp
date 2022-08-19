@@ -25,9 +25,7 @@ void PathTracking::setParams(const Params &params) {
     }
 }
 
-int PathTracking::acadosSolve() {
-    return path_tracking_acados_solve(capsule_);
-}
+int PathTracking::acadosSolve() { return path_tracking_acados_solve(capsule_); }
 
 void PathTracking::init() {
     nx_ = PATH_TRACKING_NX;

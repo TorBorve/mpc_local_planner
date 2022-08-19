@@ -16,7 +16,6 @@ void Solver::setInitCondition(const State &state) {
     // initial condition
     auto x0 = state.toArray();
     std::vector<int> idxbx0(x0.size());
-    // int idxbx0[x0.size()];
     for (int i = 0; i < x0.size(); i++) {
         idxbx0[i] = i;
     }

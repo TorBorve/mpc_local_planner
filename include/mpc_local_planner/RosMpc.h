@@ -39,13 +39,9 @@ class RosMpc {
     /// @param[in] msg the new path message. The path we want to follow.
     void pathCallback(const nav_msgs::Path::ConstPtr &msg);
 
+    /// @brief callback function for subscriber to pose topic
+    /// @param[in] msg the new reference pose the car should move to.
     void poseCallback(const geometry_msgs::PoseStamped::ConstPtr &msg);
-
-    /// @brief checks if the desired parameters is given to the MPC class.
-    /// @param[in] nh pointer to Nodehandle with access to the parameters
-    /// @return true if all parameters was defined. False otherwise.
-    /// @throw runtime exception if one or more critical parmeters is not defined.
-    bool verifyParamsForMPC(ros::NodeHandle *nh) const;
 
     /// @brief mpc class that solves the problem given our state and desired trajectory.
     ControlSys controlSys_;
@@ -62,6 +58,7 @@ class RosMpc {
     /// @brief publisher for the mpc trajectory solution
     ros::Publisher mpcPathPub_;
 
+    /// @brief pulisher for the stop signal.
     ros::Publisher stopPub_;
 
     /// @brief subscriber to the twist message send by the car.
@@ -73,6 +70,7 @@ class RosMpc {
     /// @brief subscriber to path topic. The path we want to follow.
     ros::Subscriber pathSub_;
 
+    /// @brief subscriber to the pose topic. The pose we want the car to move to.
     ros::Subscriber poseSub_;
 
     /// @brief buffer for tf. Used to get the position of the car.
@@ -96,17 +94,9 @@ class RosMpc {
     /// @brief name of frame where the car is located
     std::string carFrame_;
 
-    /// @brief frequency that the mpc is run at.
-    double loopHz_;
-
-    /// @brief time between steps in the mpc calculations.
-    double mpcDt_;
-
-    /// @brief Ratio between angle on the wheels and the steering wheel. steeringRatio = "steering wheel angle" / "wheel angle"
+    /// @brief Ratio between angle on the wheels and the steering wheel. steeringRatio = "steering
+    /// wheel angle" / "wheel angle"
     double steeringRatio_;
-
-    /// @brief the mode of the control system. This can be parking or path tracking.
-    Mode mode_;
 };
 }  // namespace mpc
 
