@@ -15,6 +15,7 @@ def bicycleModel(params):
     Cd = params["drag_coefficient"] # Drag coefficient
     rho = 1.2 # Air density [kg/m³]
     A = params["frontal_area"]# Frontal area [m²]
+    v_ref = SX.sym("v_ref") #Velocity reference
 
     #states
     x1 = SX.sym("x1") # x position
@@ -23,8 +24,9 @@ def bicycleModel(params):
     v = SX.sym("v") # velocity
     delta = SX.sym("delta") # steering angle
     throttle = SX.sym("throttle") # throttle
+    gamma = SX.sym("gamma") # intergral of velocity error
 
-    x = vertcat(x1, y1, psi, v, delta, throttle)
+    x = vertcat(x1, y1, psi, v, delta, throttle, gamma)
 
     #inputs
     deltaDotInput = SX.sym("delta_dot_input")
@@ -39,10 +41,11 @@ def bicycleModel(params):
     vDot = SX.sym("v_dot")
     deltaDotState = SX.sym("delta_dot_state")
     throttleDotState = SX.sym("throttle_dot_state")
+    gammaDot = SX.sym("gamma_dot")
 
 
 
-    xDot = vertcat(x1Dot, y1Dot, psiDot, vDot, deltaDotState, throttleDotState)
+    xDot = vertcat(x1Dot, y1Dot, psiDot, vDot, deltaDotState, throttleDotState, gammaDot)
 
     pitch = SX.sym("pitch")
 
@@ -52,11 +55,12 @@ def bicycleModel(params):
             v/Lf*tan(delta),
             5.0*throttle - 0.087*v + sin(pitch)*9.81, #V * 3.2 * throttle * r / (v * G * m + 1) - (1/2*(rho*Cd*A*(v)**2) / m) + sin(pitch)*9.81,
             deltaDotInput,
-            throttleDotInput)
+            throttleDotInput,
+            v - v_ref)
     fImpl = xDot - fExpl            
     model = AcadosModel()
 
-    p = vertcat(SX.sym("coeff_0"), SX.sym("coeff_1"), SX.sym("coeff_2"), SX.sym("coeff_3"), pitch, SX.sym("v_ref"))
+    p = vertcat(SX.sym("coeff_0"), SX.sym("coeff_1"), SX.sym("coeff_2"), SX.sym("coeff_3"), pitch, v_ref)
 
     model.name = modelName
     model.f_expl_expr = fExpl
@@ -85,6 +89,7 @@ def costFunc(model, params):
     v = model.x[3]
     delta = model.x[4]
     throttle = model.x[5]
+    gamma = model.x[6]
     deltaDot = model.u[0]
     throttleDot = model.u[1]
     a = model.f_expl_expr[3]
@@ -97,7 +102,7 @@ def costFunc(model, params):
     epsi = psi - pathYaw
     yPath = coeffs[3]*x1**3 + coeffs[2]*x1**2 + coeffs[1]*x1 + coeffs[0]
     cte = yPath - y1
-    return vertcat(cte, epsi, v - model.p[5], delta, throttle, deltaDot, throttleDot)
+    return vertcat(cte, epsi, v - model.p[5], delta, throttle, deltaDot, throttleDot, gamma)
 
 def ocpSolver():
     with open("../../build/auto_gen.yaml", "r") as paramFile:
@@ -116,10 +121,10 @@ def ocpSolver():
     ny = nx + nu
 
     ocp.cost.cost_type = "NONLINEAR_LS"
-    ocp.cost.yref = np.array([0, 0, 0, 0, 0, 0, 0])
+    ocp.cost.yref = np.array([0, 0, 0, 0, 0, 0, 0, 0])
     ocp.model.cost_y_expr = costFunc(ocp.model, params)
     # ocp.cost.W = np.diag([5, 35, 10, 0, 0, 0, 0, 0.00001]) # Energy Mode
-    ocp.cost.W = np.diag([5, 5, 10, 0.01, 0.1, 0.5, 0.1]) # Not Energy Mode
+    ocp.cost.W = np.diag([5, 5, 10, 0.01, 0.1, 0.5, 0.1, 1]) # Not Energy Mode
 
     deltaMax = params["max_steering_angle"]
     deltaDotMax = params["max_steering_rotation_speed"]
