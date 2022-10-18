@@ -24,7 +24,7 @@ MPCReturn PathTrackingSys::solve(const State &state, double pitch, double vRef, 
     Acados::PathTrackingParams params{coeffs, pitch, vRef};
 
     //compute gamma by approximation the integral with eulers method
-    double gamma = state.gamma,
+    double gamma = state.gamma;
     gamma = gamma + (vRef - (state.vel)) * (1 / loop_HZ);
 
     State transformedState{0, 0, rotation, state.vel, state.delta, state.throttle, gamma};
