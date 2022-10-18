@@ -17,13 +17,18 @@ PathTrackingSys::PathTrackingSys(const std::vector<Point> &track) : track_{track
     polynomPub_ = nh.advertise<nav_msgs::Path>("interpolated_path", 1);
 }
 
-MPCReturn PathTrackingSys::solve(const State &state, double pitch, double vRef) {
+MPCReturn PathTrackingSys::solve(const State &state, double pitch, double vRef, double loop_HZ) {
     double rotation;
     Eigen::Vector4d coeffs;
     calcCoeffs(state, rotation, coeffs);
     Acados::PathTrackingParams params{coeffs, pitch, vRef};
 
-    State transformedState{0, 0, rotation, state.vel, state.delta, state.throttle};
+    //compute gamma by approximation the integral with eulers method
+    double dt = 1 / loop_HZ;
+    static double gamma = state.gamma;
+    gamma = gamma + (vRef - (state.vel)) * dt;
+
+    State transformedState{0, 0, rotation, state.vel, state.delta, state.throttle, gamma};
     // calcState(transformedState, coeffs);
     // OptVariables transformedOptVar{transformedState, optVars.u};
     LOG_DEBUG_STREAM("rot: " << rotation << ", coeffs: " << coeffs[0] << ", " << coeffs[1] << ", "

@@ -23,6 +23,7 @@ RosMpc::RosMpc(ros::NodeHandle *nh)
     mapFrame_ = util::getParamWarn<std::string>(*nh_, "map_frame", "map");
     carFrame_ = util::getParamWarn<std::string>(*nh_, "car_frame", "base_link");
     steeringRatio_ = util::getParamWarn<double>(*nh_, "steering_ratio", 1.0);
+    loop_HZ = util::getParamWarn<double>(*nh_, "loop_HZ", 30.0);
 
     Mode mode = str2Mode(modeStr);
     if (mode == Mode::Invalid) {
@@ -67,10 +68,11 @@ MPCReturn RosMpc::solve() {
                 util::getYaw(tfCar.transform.rotation),
                 currentVel_,
                 currentSteeringAngle_,
-                prevThrottle};
+                prevThrottle,
+                0}; // the value of gamma is computed in PathTrackingSys
 
     // solve mpc
-    const auto result = controlSys_.solve(state, util::getPitch(tfCar.transform.rotation));
+    const auto result = controlSys_.solve(state, util::getPitch(tfCar.transform.rotation), loop_HZ);
 
     if (result.mpcHorizon.size() < 1) {
         return result;

@@ -15,7 +15,7 @@ class ControlSys {
     /// @brief solve function
     /// @param[in] state the state of the car
     /// @param[in] pitch the pitch of the car. Indicates if the car is driving up/down hill.
-    MPCReturn solve(const State &state, double pitch);
+    MPCReturn solve(const State &state, double pitch, double loop_HZ);
 
     /// @brief update track variable for desired trajectory
     /// @param[in] newTrack the new desired trajectory

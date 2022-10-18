@@ -32,7 +32,7 @@ class PathTrackingSys {
     /// @param[in] state the state of the car.
     /// @param[in] pitch the pitch angle of the car
     /// @return solution from path tracking. See definition of MPCReturn.
-    MPCReturn solve(const State &state, double pitch, double vRef);
+    MPCReturn solve(const State &state, double pitch, double vRef, double loop_HZ);
 
     /// @brief solve function for path tracking. Uses states and coefficients of a third order
     /// polynomial

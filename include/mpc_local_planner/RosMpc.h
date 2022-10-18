@@ -97,6 +97,9 @@ class RosMpc {
     /// @brief Ratio between angle on the wheels and the steering wheel. steeringRatio = "steering
     /// wheel angle" / "wheel angle"
     double steeringRatio_;
+
+    /// @brief the frequency of which the mpc is run at
+    double loop_HZ;
 };
 }  // namespace mpc
 

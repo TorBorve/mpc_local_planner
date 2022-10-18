@@ -1,11 +1,11 @@
 #include "mpc_local_planner/ControlSys.h"
 
 namespace mpc {
-MPCReturn ControlSys::solve(const State &state, double pitch) {
+MPCReturn ControlSys::solve(const State &state, double pitch, double loop_HZ) {
     if (mode_ == Mode::Parking || mode_ == Mode::Slalom) {
         return parkingSys_.solve(state, pitch);
     } else if (mode_ == Mode::PathTracking) {
-        return pathTrackingSys_.solve(state, pitch, pathTrackingVel_);
+        return pathTrackingSys_.solve(state, pitch, pathTrackingVel_, loop_HZ);
     } else {
         throw std::runtime_error{
             "Mode of control system not set. use the function setMode to update mode"};
