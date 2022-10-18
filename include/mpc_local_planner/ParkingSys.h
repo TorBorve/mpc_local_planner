@@ -23,7 +23,8 @@ class ParkingSys {
     /// @brief solve function
     /// @param[in] state the state of the car
     /// @param[in] pitch the pitch of the car
-    MPCReturn solve(const State &state, double pitch);
+    /// @param[in] loop_HZ the frequency the mpc is run at
+    MPCReturn solve(const State &state, double pitch, double loop_HZ);
 
     /// @brief set the reference pose for the car. This is where we want to park.
     /// @param[in] pose where we want to park.
@@ -54,7 +55,7 @@ class ParkingSys {
     void createPathToGoal();
 
     /// @brief solver for point stabilization (parking)
-    Acados::PointStab pointStabSolver_ = Acados::PointStab{State{0, 0, 0, 0, 0, 0}};
+    Acados::PointStab pointStabSolver_ = Acados::PointStab{State{0, 0, 0, 0, 0, 0, 0}};
 
     /// @brief path tracking system used to get close to the parking spot
     PathTrackingSys pathTrackingSys_ = PathTrackingSys{util::getTestTrack()};

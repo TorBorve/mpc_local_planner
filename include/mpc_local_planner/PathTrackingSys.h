@@ -31,6 +31,7 @@ class PathTrackingSys {
     /// @brief solve function for path tracking. Solves the nlp with state as given.
     /// @param[in] state the state of the car.
     /// @param[in] pitch the pitch angle of the car
+    /// @param[in] loop_HZ the frequency the mpc is run at
     /// @return solution from path tracking. See definition of MPCReturn.
     MPCReturn solve(const State &state, double pitch, double vRef, double loop_HZ);
 

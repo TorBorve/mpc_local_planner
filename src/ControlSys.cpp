@@ -3,7 +3,7 @@
 namespace mpc {
 MPCReturn ControlSys::solve(const State &state, double pitch, double loop_HZ) {
     if (mode_ == Mode::Parking || mode_ == Mode::Slalom) {
-        return parkingSys_.solve(state, pitch);
+        return parkingSys_.solve(state, pitch, loop_HZ);
     } else if (mode_ == Mode::PathTracking) {
         return pathTrackingSys_.solve(state, pitch, pathTrackingVel_, loop_HZ);
     } else {

@@ -56,7 +56,7 @@ def bicycleModel(params):
             5.0*throttle - 0.087*v + sin(pitch)*9.81, #V * 3.2 * throttle * r / (v * G * m + 1) - (1/2*(rho*Cd*A*(v)**2) / m) + sin(pitch)*9.81,
             deltaDotInput,
             throttleDotInput,
-            v - v_ref)
+            v_ref - v)
     fImpl = xDot - fExpl            
     model = AcadosModel()
 

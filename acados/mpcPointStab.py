@@ -8,6 +8,7 @@ def bicycleModel(params):
     modelName = "point_stab"
     #distance between front and rear axle
     Lf = params["wheelbase"]
+    v_ref = SX.sym("v_ref") #Velocity reference
     #states
     x1 = SX.sym("x1") # x position
     y1 = SX.sym("y1") # y position
@@ -15,8 +16,9 @@ def bicycleModel(params):
     v = SX.sym("v") # velocity
     delta = SX.sym("delta") # steering angle
     throttle = SX.sym("throttle") # throttle
+    gamma = SX.sym("gamma") # intergral of velocity error
 
-    x = vertcat(x1, y1, psi, v, delta, throttle)
+    x = vertcat(x1, y1, psi, v, delta, throttle, gamma)
 
     #inputs
     deltaDotInput = SX.sym("delta_dot_input")
@@ -31,10 +33,11 @@ def bicycleModel(params):
     vDot = SX.sym("v_dot")
     deltaDotState = SX.sym("delta_dot_state")
     throttleDotState = SX.sym("throttle_dot_state")
+    gammaDot = SX.sym("gamma_dot")
 
 
 
-    xDot = vertcat(x1Dot, y1Dot, psiDot, vDot, deltaDotState, throttleDotState)
+    xDot = vertcat(x1Dot, y1Dot, psiDot, vDot, deltaDotState, throttleDotState, gammaDot)
 
     pitch = SX.sym("pitch")
 
@@ -46,11 +49,12 @@ def bicycleModel(params):
             v/Lf*delta,
             a,
             deltaDotInput,
-            throttleDotInput)
+            throttleDotInput,
+            v_ref - v)
     fImpl = xDot - fExpl            
     model = AcadosModel()
 
-    p = vertcat(SX.sym("x_ref"), SX.sym("y_ref"), SX.sym("psi_ref"), pitch)
+    p = vertcat(SX.sym("x_ref"), SX.sym("y_ref"), SX.sym("psi_ref"), pitch, v_ref)
 
     model.name = modelName
     model.f_expl_expr = fExpl
@@ -70,13 +74,14 @@ def costFunc(model):
     v = model.x[3]
     delta = model.x[4]
     throttle = model.x[5]
+    gamma = model.x[6]
     deltaDot = model.u[0]
     throttleDot = model.u[1]
     xRef = model.p[0]
     yRef = model.p[1]
     psiRef = model.p[2]
     
-    return vertcat(x1 - xRef, y1 - yRef, psi - psiRef, v, delta, throttle, deltaDot, throttleDot)
+    return vertcat(x1 - xRef, y1 - yRef, psi - psiRef, v, delta, throttle, deltaDot, throttleDot, gamma)
 
 def ocpSolver():
     with open("../../build/auto_gen.yaml", "r") as paramFile:
@@ -98,7 +103,7 @@ def ocpSolver():
     ocp.cost.cost_type = "NONLINEAR_LS"
     ocp.model.cost_y_expr = costFunc(ocp.model)
     ocp.cost.yref = np.array([0, 0, 0, 0, 0, 0, 0, 0])
-    Q = 2*np.diag([5, 5, 10, 10, 0.01, 1])
+    Q = 2*np.diag([5, 5, 10, 10, 0.01, 1, 1])
     R = 2*np.diag([0.1, 0.1])
     ocp.cost.W = scipy.linalg.block_diag(Q, R)
 #     ocp.cost.Vx = np.zeros((ny, nx))
@@ -131,7 +136,7 @@ def ocpSolver():
 
     ocp.constraints.idxsh = np.array([0])
 
-    x0 = np.array([-10, 0, 0, 0, 0, 0])
+    x0 = np.array([-10, 0, 0, 0, 0, 0, 0])
     ocp.constraints.x0 = x0
 
     param = np.array([0, 0, 0, 0])
