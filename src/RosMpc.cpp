@@ -54,7 +54,7 @@ RosMpc::RosMpc(ros::NodeHandle *nh)
 
 MPCReturn RosMpc::solve() {
     static double prevThrottle = 0;
-
+    static double prevGamma = 0;
     geometry_msgs::TransformStamped tfCar;
     try {
         // get position of vehicle
@@ -69,7 +69,7 @@ MPCReturn RosMpc::solve() {
                 currentVel_,
                 currentSteeringAngle_,
                 prevThrottle,
-                0}; // the value of gamma is computed in PathTrackingSys
+                prevGamma}; // the value of gamma is computed in PathTrackingSys.cpp
 
     // solve mpc
     const auto result = controlSys_.solve(state, util::getPitch(tfCar.transform.rotation), loop_HZ);
