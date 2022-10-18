@@ -18,7 +18,7 @@ Mode str2Mode(const std::string &str) {
 
 std::ostream &operator<<(std::ostream &os, const mpc::State &state) {
     os << "x: " << state.x << ", y: " << state.y << ", psi: " << state.psi << ", vel: " << state.vel << ", delta: " << state.delta
-       << ", throttle: " << state.throttle;
+       << ", throttle: " << state.throttle << "gamma: " << state.gamma;
     return os;
 }
 

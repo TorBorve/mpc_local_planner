@@ -19,25 +19,26 @@ struct State {
     /// @param[in] vel the current velocity
     /// @param[in] delta the current steering angle.
     /// @param[in] throttle the current throttle value.
-    State(double x, double y, double psi, double vel, double delta, double throttle)
-        : x{x}, y{y}, psi{psi}, vel{vel}, delta{delta}, throttle{throttle} {}
+    /// @param[in] gamma the integral of the velocity error
+    State(double x, double y, double psi, double vel, double delta, double throttle, double gamma)
+        : x{x}, y{y}, psi{psi}, vel{vel}, delta{delta}, throttle{throttle}, gamma{gamma} {}
 
     /// @brief constructor with array containig values
     /// @param[in] arr array containg state variables
-    State(const std::array<double, 6> &arr) : State{&arr[0], 6} {}
+    State(const std::array<double, 7> &arr) : State{&arr[0], 7} {}
 
     /// @brief constructor using double pointer
     /// @param[in] arr pointer to start of array.
     /// @param[in] size size of array.
     State(double const *arr, size_t size) {
-        assert(size == 6);
-        *this = State{arr[0], arr[1], arr[2], arr[3], arr[4], arr[5]};
+        assert(size == 7);
+        *this = State{arr[0], arr[1], arr[2], arr[3], arr[4], arr[5], arr[6]};
     }
 
     /// @brief convert state to array containg state varibles
     /// @return array with state varibles
-    std::array<double, 6> toArray() const {
-        return std::array<double, 6>{x, y, psi, vel, delta, throttle};
+    std::array<double, 7> toArray() const {
+        return std::array<double, 7>{x, y, psi, vel, delta, throttle, gamma};
     }
 
     /// @brief x position
@@ -57,6 +58,9 @@ struct State {
 
     /// @brief throttle value
     double throttle;
+
+    /// @brief integral of velocity error
+    double gamma;
 };
 
 /// @brief Input struct for car. Inputs is what command that are sendt to the car.

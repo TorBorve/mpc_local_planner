@@ -119,7 +119,7 @@ nav_msgs::Path getPathMsg(const std::vector<Point> &track, const std::string &ma
 State toState(const nav_msgs::Odometry &odom) {
     double vel = velocity(odom);
     double psi = getYaw(odom.pose.pose.orientation);
-    return State{odom.pose.pose.position.x, odom.pose.pose.position.y, psi, vel, 0, 0};
+    return State{odom.pose.pose.position.x, odom.pose.pose.position.y, psi, vel, 0, 0, 0};
 }
 
 double velocity(const nav_msgs::Odometry &odom) { return length(odom.twist.twist.linear); }
