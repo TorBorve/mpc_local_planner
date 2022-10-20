@@ -4,7 +4,7 @@
 
 namespace mpc {
 
-MPCReturn ParkingSys::solve(const State &state, double pitch, double loop_HZ) {
+MPCReturn ParkingSys::solve(const State &state, double pitch, double loop_HZ, std::vector<double> &augmentedStates) {
     if (!init_ || mode_ == Mode::Invalid) {
         return MPCReturn{};
     }
@@ -28,7 +28,7 @@ MPCReturn ParkingSys::solve(const State &state, double pitch, double loop_HZ) {
             createPathToGoal();
             updatePath_ = false;
         }
-        return pathTrackingSys_.solve(state, pitch, refVel_, loop_HZ);
+        return pathTrackingSys_.solve(state, pitch, refVel_, loop_HZ, augmentedStates);
     }
 }
 

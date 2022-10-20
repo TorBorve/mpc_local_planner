@@ -100,6 +100,9 @@ class RosMpc {
 
     /// @brief the frequency of which the mpc is run at
     double loop_HZ;
+
+    /// @brief the augmented states of the model
+    std::vector<double> augmentedStates;
 };
 }  // namespace mpc
 

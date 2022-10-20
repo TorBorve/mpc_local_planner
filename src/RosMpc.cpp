@@ -24,6 +24,8 @@ RosMpc::RosMpc(ros::NodeHandle *nh)
     carFrame_ = util::getParamWarn<std::string>(*nh_, "car_frame", "base_link");
     steeringRatio_ = util::getParamWarn<double>(*nh_, "steering_ratio", 1.0);
     loop_HZ = util::getParamWarn<double>(*nh_, "loop_HZ", 30.0);
+    static double gamma = 0;
+    augmentedStates.push_back(gamma);
 
     Mode mode = str2Mode(modeStr);
     if (mode == Mode::Invalid) {
@@ -54,7 +56,7 @@ RosMpc::RosMpc(ros::NodeHandle *nh)
 
 MPCReturn RosMpc::solve() {
     static double prevThrottle = 0;
-    static double prevGamma = 0;
+    
     geometry_msgs::TransformStamped tfCar;
     try {
         // get position of vehicle
@@ -69,10 +71,10 @@ MPCReturn RosMpc::solve() {
                 currentVel_,
                 currentSteeringAngle_,
                 prevThrottle,
-                prevGamma}; // the value of gamma is computed in PathTrackingSys.cpp
+                augmentedStates[0]}; // the value of gamma is computed in PathTrackingSys.cpp
 
     // solve mpc
-    const auto result = controlSys_.solve(state, util::getPitch(tfCar.transform.rotation), loop_HZ);
+    const auto result = controlSys_.solve(state, util::getPitch(tfCar.transform.rotation), loop_HZ, augmentedStates);
 
     if (result.mpcHorizon.size() < 1) {
         return result;

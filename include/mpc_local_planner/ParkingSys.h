@@ -24,7 +24,8 @@ class ParkingSys {
     /// @param[in] state the state of the car
     /// @param[in] pitch the pitch of the car
     /// @param[in] loop_HZ the frequency the mpc is run at
-    MPCReturn solve(const State &state, double pitch, double loop_HZ);
+    /// @param[in] augmentedStates the augmented states of the model
+    MPCReturn solve(const State &state, double pitch, double loop_HZ, std::vector<double> &augmentedStates);
 
     /// @brief set the reference pose for the car. This is where we want to park.
     /// @param[in] pose where we want to park.

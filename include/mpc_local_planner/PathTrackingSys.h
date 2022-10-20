@@ -32,8 +32,9 @@ class PathTrackingSys {
     /// @param[in] state the state of the car.
     /// @param[in] pitch the pitch angle of the car
     /// @param[in] loop_HZ the frequency the mpc is run at
+    /// @param[in] augmentedStates the augmented states of the model
     /// @return solution from path tracking. See definition of MPCReturn.
-    MPCReturn solve(const State &state, double pitch, double vRef, double loop_HZ);
+    MPCReturn solve(const State &state, double pitch, double vRef, double loop_HZ, std::vector<double> &augmentedStates);
 
     /// @brief solve function for path tracking. Uses states and coefficients of a third order
     /// polynomial
