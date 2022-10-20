@@ -9,7 +9,7 @@ set(ACADOS_LIB $ENV{ACADOS_SOURCE_DIR})
 add_compile_options(-std=c++14)
 
 # Uncomment if you want debugging
-# set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Debug)
 
 # Default build type
 if(NOT CMAKE_BUILD_TYPE)

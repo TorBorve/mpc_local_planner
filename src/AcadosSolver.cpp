@@ -1,4 +1,5 @@
 #include "mpc_local_planner/AcadosSolver.h"
+#include "mpc_local_planner/utilities.h"
 
 #include <ros/ros.h>
 
@@ -20,6 +21,7 @@ void Solver::setInitCondition(const State &state) {
         idxbx0[i] = i;
     }
 
+
     ocp_nlp_constraints_model_set(config_, dims_, in_, 0, "idxbx", &idxbx0[0]);
     ocp_nlp_constraints_model_set(config_, dims_, in_, 0, "lbx", &x0[0]);
     ocp_nlp_constraints_model_set(config_, dims_, in_, 0, "ubx", &x0[0]);
@@ -28,6 +30,7 @@ void Solver::setInitCondition(const State &state) {
 MPCReturn Solver::solve(const State &state, const Params &params) {
     auto start = std::chrono::high_resolution_clock::now();
     int N = dims_->N;
+
 
     setInitCondition(state);
     setParams(params);

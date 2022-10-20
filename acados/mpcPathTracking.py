@@ -124,7 +124,7 @@ def ocpSolver():
     ocp.cost.yref = np.array([0, 0, 0, 0, 0, 0, 0, 0])
     ocp.model.cost_y_expr = costFunc(ocp.model, params)
     # ocp.cost.W = np.diag([5, 35, 10, 0, 0, 0, 0, 0.00001]) # Energy Mode
-    ocp.cost.W = np.diag([5, 5, 10, 0.01, 0.1, 0.5, 0.1, 1]) # Not Energy Mode
+    ocp.cost.W = np.diag([5, 5, 10, 0.01, 0.1, 0.5, 0.1, 5]) # Not Energy Mode
 
     deltaMax = params["max_steering_angle"]
     deltaDotMax = params["max_steering_rotation_speed"]
@@ -149,7 +149,7 @@ def ocpSolver():
     # ocp.constraints.idxsh = np.array([0])
 
 
-    x0 = np.array([-10, 0, 0, 0, 0, 0])
+    x0 = np.array([-10, 0, 0, 0, 0, 0, 0])
     ocp.constraints.x0 = x0
 
     param = np.array([0, -1, 0, 0.002, 0.0, 4.0])

@@ -30,7 +30,7 @@ MPCReturn PathTrackingSys::solve(const State &state, double pitch, double vRef, 
     // calcState(transformedState, coeffs);
     // OptVariables transformedOptVar{transformedState, optVars.u};
     LOG_DEBUG_STREAM("rot: " << rotation << ", coeffs: " << coeffs[0] << ", " << coeffs[1] << ", "
-                             << coeffs[2] << ", " << coeffs[3]);
+                             << coeffs[2] << ", " << coeffs[3] << " , gamma: " << augmentedStates[0]);
     auto result = solve(transformedState, params);
 
     const double rotAngle = state.psi - rotation;

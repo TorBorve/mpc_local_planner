@@ -24,7 +24,7 @@ RosMpc::RosMpc(ros::NodeHandle *nh)
     carFrame_ = util::getParamWarn<std::string>(*nh_, "car_frame", "base_link");
     steeringRatio_ = util::getParamWarn<double>(*nh_, "steering_ratio", 1.0);
     loop_HZ = util::getParamWarn<double>(*nh_, "loop_HZ", 30.0);
-    static double gamma = 0;
+    double gamma = 0;
     augmentedStates.push_back(gamma);
 
     Mode mode = str2Mode(modeStr);
@@ -97,7 +97,7 @@ MPCReturn RosMpc::solve() {
     trackPub_.publish(util::getPathMsg(controlSys_.getTrack(), mapFrame_, carFrame_));
 
     // LOG_DEBUG_STREAM(state);
-    LOG_DEBUG_STREAM(std::fixed << std::setprecision(2) << result.mpcHorizon.at(1));
+    LOG_DEBUG_STREAM(std::fixed << std::setprecision(2) << result.mpcHorizon.at(0));
 
     // LOG_DEBUG("Time: %i [ms]", (int)result.computeTime);
     // LOG_DEBUG("carVel: %.2f, steering: %.2f [deg], throttle: %.2f", state.vel,
