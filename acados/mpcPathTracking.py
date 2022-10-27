@@ -45,7 +45,7 @@ def bicycleModel(params):
 
 
 
-    xDot = vertcat(x1Dot, y1Dot, psiDot, vDot, deltaDotState, throttleDotState, gammaDot)
+    xDot = vertcat(x1Dot, y1Dot, psiDot, vDot, gammaDot, deltaDotState, throttleDotState)
 
     pitch = SX.sym("pitch")
 
@@ -54,9 +54,9 @@ def bicycleModel(params):
             v*sin(psi),
             v/Lf*tan(delta),
             5.0*throttle - 0.087*v + sin(pitch)*9.81, #V * 3.2 * throttle * r / (v * G * m + 1) - (1/2*(rho*Cd*A*(v)**2) / m) + sin(pitch)*9.81,
+            v_ref - v,
             deltaDotInput,
-            throttleDotInput,
-            v_ref - v)
+            throttleDotInput)
     fImpl = xDot - fExpl            
     model = AcadosModel()
 
@@ -87,9 +87,9 @@ def costFunc(model, params):
     y1 = model.x[1]
     psi = model.x[2]
     v = model.x[3]
-    delta = model.x[4]
-    throttle = model.x[5]
-    gamma = model.x[6]
+    gamma = model.x[4]
+    delta = model.x[5]
+    throttle = model.x[6]
     deltaDot = model.u[0]
     throttleDot = model.u[1]
     a = model.f_expl_expr[3]
@@ -102,7 +102,7 @@ def costFunc(model, params):
     epsi = psi - pathYaw
     yPath = coeffs[3]*x1**3 + coeffs[2]*x1**2 + coeffs[1]*x1 + coeffs[0]
     cte = yPath - y1
-    return vertcat(cte, epsi, v - model.p[5], delta, throttle, deltaDot, throttleDot, gamma)
+    return vertcat(cte, epsi, v - model.p[5], delta, throttle, gamma, deltaDot, throttleDot)
 
 def ocpSolver():
     with open("../../build/auto_gen.yaml", "r") as paramFile:
@@ -124,7 +124,7 @@ def ocpSolver():
     ocp.cost.yref = np.array([0, 0, 0, 0, 0, 0, 0, 0])
     ocp.model.cost_y_expr = costFunc(ocp.model, params)
     # ocp.cost.W = np.diag([5, 35, 10, 0, 0, 0, 0, 0.00001]) # Energy Mode
-    ocp.cost.W = np.diag([5, 5, 10, 0.01, 0.1, 0.5, 0.1, 5]) # Not Energy Mode
+    ocp.cost.W = np.diag([5, 5, 10, 0.01, 0.1, 1, 0.5, 0.1]) # Not Energy Mode
 
     deltaMax = params["max_steering_angle"]
     deltaDotMax = params["max_steering_rotation_speed"]
@@ -134,7 +134,7 @@ def ocpSolver():
     ocp.constraints.constr_type = "BGH"
     ocp.constraints.lbx = np.array([-deltaMax, throttleMin])
     ocp.constraints.ubx = np.array([deltaMax, throttleMax])
-    ocp.constraints.idxbx = np.array([4, 5])
+    ocp.constraints.idxbx = np.array([5, 6])
     ocp.constraints.lbu = np.array([-deltaDotMax, -throttleDotMax])
     ocp.constraints.ubu = np.array([deltaDotMax, throttleDotMax])
     ocp.constraints.idxbu = np.array([0, 1])

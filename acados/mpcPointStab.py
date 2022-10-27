@@ -18,7 +18,7 @@ def bicycleModel(params):
     throttle = SX.sym("throttle") # throttle
     gamma = SX.sym("gamma") # intergral of velocity error
 
-    x = vertcat(x1, y1, psi, v, delta, throttle, gamma)
+    x = vertcat(x1, y1, psi, v, gamma, delta, throttle)
 
     #inputs
     deltaDotInput = SX.sym("delta_dot_input")
@@ -37,7 +37,7 @@ def bicycleModel(params):
 
 
 
-    xDot = vertcat(x1Dot, y1Dot, psiDot, vDot, deltaDotState, throttleDotState, gammaDot)
+    xDot = vertcat(x1Dot, y1Dot, psiDot, vDot, gammaDot, deltaDotState, throttleDotState)
 
     pitch = SX.sym("pitch")
 
@@ -48,13 +48,13 @@ def bicycleModel(params):
             v*sin(psi),
             v/Lf*delta,
             a,
+            -v,
             deltaDotInput,
-            throttleDotInput,
-            v_ref - v)
+            throttleDotInput)
     fImpl = xDot - fExpl            
     model = AcadosModel()
 
-    p = vertcat(SX.sym("x_ref"), SX.sym("y_ref"), SX.sym("psi_ref"), pitch, v_ref)
+    p = vertcat(SX.sym("x_ref"), SX.sym("y_ref"), SX.sym("psi_ref"), pitch)
 
     model.name = modelName
     model.f_expl_expr = fExpl
@@ -72,16 +72,18 @@ def costFunc(model):
     y1 = model.x[1]
     psi = model.x[2]
     v = model.x[3]
-    delta = model.x[4]
-    throttle = model.x[5]
-    gamma = model.x[6]
+    gamma = model.x[4]
+    delta = model.x[5]
+    throttle = model.x[6]
+    
     deltaDot = model.u[0]
     throttleDot = model.u[1]
+
     xRef = model.p[0]
     yRef = model.p[1]
     psiRef = model.p[2]
     
-    return vertcat(x1 - xRef, y1 - yRef, psi - psiRef, v, delta, throttle, deltaDot, throttleDot, gamma)
+    return vertcat(x1 - xRef, y1 - yRef, psi - psiRef, v, delta, throttle, gamma, deltaDot, throttleDot)
 
 def ocpSolver():
     with open("../../build/auto_gen.yaml", "r") as paramFile:
@@ -103,7 +105,7 @@ def ocpSolver():
     ocp.cost.cost_type = "NONLINEAR_LS"
     ocp.model.cost_y_expr = costFunc(ocp.model)
     ocp.cost.yref = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0])
-    Q = 2*np.diag([5, 5, 10, 10, 0.01, 1, 1])
+    Q = 2*np.diag([5, 5, 10, 10, 0.01, 1, 0.0001])
     R = 2*np.diag([0.1, 0.1])
     ocp.cost.W = scipy.linalg.block_diag(Q, R)
 #     ocp.cost.Vx = np.zeros((ny, nx))
@@ -121,7 +123,7 @@ def ocpSolver():
     ocp.constraints.constr_type = "BGH"
     ocp.constraints.lbx = np.array([-deltaMax, throttleMin])
     ocp.constraints.ubx = np.array([deltaMax, throttleMax])
-    ocp.constraints.idxbx = np.array([4, 5])
+    ocp.constraints.idxbx = np.array([5, 6])
     ocp.constraints.lbu = np.array([-deltaDotMax, -throttleDotMax])
     ocp.constraints.ubu = np.array([deltaDotMax/4, throttleDotMax])
     ocp.constraints.idxbu = np.array([0, 1])
@@ -139,7 +141,7 @@ def ocpSolver():
     x0 = np.array([-10, 0, 0, 0, 0, 0, 0])
     ocp.constraints.x0 = x0
 
-    param = np.array([0, 0, 0, 0, 0])
+    param = np.array([0, 0, 0, 0])
     ocp.parameter_values = param
 
     ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM" #"PARTIAL_CONDENSING_HPIPM" "FULL_CONDENSING_QPOASES" 
