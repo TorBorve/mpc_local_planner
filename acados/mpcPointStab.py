@@ -48,7 +48,7 @@ def bicycleModel(params):
             v*sin(psi),
             v/Lf*delta,
             a,
-            -v,
+            0, #set gamma to 0 for the parking system, it goes to hell if not
             deltaDotInput,
             throttleDotInput)
     fImpl = xDot - fExpl            
@@ -83,7 +83,7 @@ def costFunc(model):
     yRef = model.p[1]
     psiRef = model.p[2]
     
-    return vertcat(x1 - xRef, y1 - yRef, psi - psiRef, v, delta, throttle, gamma, deltaDot, throttleDot)
+    return vertcat(x1 - xRef, y1 - yRef, psi - psiRef, v, gamma, delta, throttle, deltaDot, throttleDot)
 
 def ocpSolver():
     with open("../../build/auto_gen.yaml", "r") as paramFile:
@@ -105,7 +105,7 @@ def ocpSolver():
     ocp.cost.cost_type = "NONLINEAR_LS"
     ocp.model.cost_y_expr = costFunc(ocp.model)
     ocp.cost.yref = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0])
-    Q = 2*np.diag([5, 5, 10, 10, 0.01, 1, 0.0001])
+    Q = 2*np.diag([5, 5, 10, 10, 1, 0.01, 1])
     R = 2*np.diag([0.1, 0.1])
     ocp.cost.W = scipy.linalg.block_diag(Q, R)
 #     ocp.cost.Vx = np.zeros((ny, nx))

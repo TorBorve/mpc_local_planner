@@ -69,9 +69,9 @@ MPCReturn RosMpc::solve() {
                 tfCar.transform.translation.y,
                 util::getYaw(tfCar.transform.rotation),
                 currentVel_,
+                augmentedStates[0],
                 currentSteeringAngle_,
-                prevThrottle,
-                augmentedStates[0]}; // the value of gamma is computed in PathTrackingSys.cpp
+                prevThrottle}; // the value of gamma is computed in PathTrackingSys.cpp
 
     // solve mpc
     const auto result = controlSys_.solve(state, util::getPitch(tfCar.transform.rotation), loop_HZ, augmentedStates);

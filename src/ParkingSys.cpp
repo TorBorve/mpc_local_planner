@@ -9,14 +9,12 @@ MPCReturn ParkingSys::solve(const State &state, double pitch, double loop_HZ, st
         return MPCReturn{};
     }
     double distSqrdToGoal = util::distSqrd(state.x - goal_.position.x, state.y - goal_.position.y);
-    State state_copy = state;
-    state_copy.gamma = 0;
     if (distSqrdToGoal < 5 * 5) {
         Acados::PointStabParams params;
         params.pitch = pitch;
         params.pRef = Point{goal_.position.x, goal_.position.y};
         params.psiRef = util::getYaw(goal_.orientation);
-        auto res = pointStabSolver_.solve(state_copy, params);
+        auto res = pointStabSolver_.solve(state, params);
         if (distSqrdToGoal < 2 * 2 && mode_ == Mode::Parking) {
             res.stopSignal = true;
         }

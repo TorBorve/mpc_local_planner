@@ -20,8 +20,8 @@ struct State {
     /// @param[in] delta the current steering angle.
     /// @param[in] throttle the current throttle value.
     /// @param[in] gamma the integral of the velocity error
-    State(double x, double y, double psi, double vel, double delta, double throttle, double gamma)
-        : x{x}, y{y}, psi{psi}, vel{vel}, delta{delta}, throttle{throttle}, gamma{gamma} {}
+    State(double x, double y, double psi, double vel, double gamma, double delta, double throttle)
+        : x{x}, y{y}, psi{psi}, vel{vel}, gamma{gamma}, delta{delta}, throttle{throttle} {}
 
     /// @brief constructor with array containig values
     /// @param[in] arr array containg state variables
@@ -38,7 +38,7 @@ struct State {
     /// @brief convert state to array containg state varibles
     /// @return array with state varibles
     std::array<double, 7> toArray() const {
-        return std::array<double, 7>{x, y, psi, vel, delta, throttle, gamma};
+        return std::array<double, 7>{x, y, psi, vel, gamma, delta, throttle};
     }
 
     /// @brief x position

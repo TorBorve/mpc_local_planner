@@ -26,7 +26,7 @@ def bicycleModel(params):
     throttle = SX.sym("throttle") # throttle
     gamma = SX.sym("gamma") # intergral of velocity error
 
-    x = vertcat(x1, y1, psi, v, delta, throttle, gamma)
+    x = vertcat(x1, y1, psi, v, gamma, delta, throttle)
 
     #inputs
     deltaDotInput = SX.sym("delta_dot_input")
@@ -102,7 +102,7 @@ def costFunc(model, params):
     epsi = psi - pathYaw
     yPath = coeffs[3]*x1**3 + coeffs[2]*x1**2 + coeffs[1]*x1 + coeffs[0]
     cte = yPath - y1
-    return vertcat(cte, epsi, v - model.p[5], delta, throttle, gamma, deltaDot, throttleDot)
+    return vertcat(cte, epsi, v - model.p[5], gamma, delta, throttle, deltaDot, throttleDot)
 
 def ocpSolver():
     with open("../../build/auto_gen.yaml", "r") as paramFile:
@@ -124,7 +124,7 @@ def ocpSolver():
     ocp.cost.yref = np.array([0, 0, 0, 0, 0, 0, 0, 0])
     ocp.model.cost_y_expr = costFunc(ocp.model, params)
     # ocp.cost.W = np.diag([5, 35, 10, 0, 0, 0, 0, 0.00001]) # Energy Mode
-    ocp.cost.W = np.diag([5, 5, 10, 0.01, 0.1, 1, 0.5, 0.1]) # Not Energy Mode
+    ocp.cost.W = np.diag([5, 5, 10, 1, 0.01, 0.1, 0.5, 0.1]) # Not Energy Mode
 
     deltaMax = params["max_steering_angle"]
     deltaDotMax = params["max_steering_rotation_speed"]
