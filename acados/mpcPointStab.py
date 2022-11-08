@@ -105,7 +105,7 @@ def ocpSolver():
     ocp.cost.cost_type = "NONLINEAR_LS"
     ocp.model.cost_y_expr = costFunc(ocp.model)
     ocp.cost.yref = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0])
-    Q = 2*np.diag([5, 5, 10, 10, 1, 0.01, 1])
+    Q = 2*np.diag([5, 5, 10, 10, 0.1, 0.01, 1])
     R = 2*np.diag([0.1, 0.1])
     ocp.cost.W = scipy.linalg.block_diag(Q, R)
 #     ocp.cost.Vx = np.zeros((ny, nx))
