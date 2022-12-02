@@ -1,7 +1,5 @@
 #include "mpc_local_planner/AcadosPointStab.h"
 
-#include <ros/ros.h>
-
 namespace mpc {
 namespace Acados {
 
@@ -44,7 +42,7 @@ void PointStab::init() {
     if (status) {
         std::stringstream error;
         error << "point_stab_acados_create() returned status: " << status << ". Exiting.";
-        ROS_ERROR_STREAM(error.str());
+        std::cout << "Error: " << error.str() << std::endl;
         throw std::runtime_error{error.str()};
     }
     return;
@@ -54,12 +52,12 @@ void PointStab::freeAllocated() {
     // free solver
     int status = point_stab_acados_free(capsule_);
     if (status) {
-        ROS_ERROR("point_stab_acados_free() returned status %d. \n", status);
+        std::cout << "Error: " << "point_stab_acados_free() returned status " << status << std::endl;
     }
     // free solver capsule
     status = point_stab_acados_free_capsule(capsule_);
     if (status) {
-        ROS_ERROR("point_stab_acados_free_capsule() returned status %d. \n", status);
+        std::cout << "Error: " << "point_stab_acados_free_capsule() returned status " << status << std::endl;
     }
     return;
 }

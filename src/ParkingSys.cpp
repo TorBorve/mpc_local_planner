@@ -45,7 +45,7 @@ void ParkingSys::createPathToGoal() {
     pathTrackingSys_.setTrack(util::getPath(bCurve));
 }
 
-void ParkingSys::setRefPose(const geometry_msgs::Pose &pose) {
+void ParkingSys::setRefPose(const geometry_msgs::msg::Pose &pose) {
     if (!init_) {
         goal_ = pose;
         init_ = true;

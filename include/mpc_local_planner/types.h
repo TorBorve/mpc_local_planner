@@ -30,6 +30,7 @@ struct State {
     /// @param[in] arr pointer to start of array.
     /// @param[in] size size of array.
     State(double const *arr, size_t size) {
+        (void)size;
         assert(size == 6);
         *this = State{arr[0], arr[1], arr[2], arr[3], arr[4], arr[5]};
     }
@@ -72,6 +73,7 @@ struct Input {
     Input(const std::array<double, 2> &arr) : Input{&arr[0], 2} {}
 
     Input(double const *arr, size_t size) {
+        (void)size;
         assert(size == 2);
         *this = Input{arr[0], arr[1]};
     }

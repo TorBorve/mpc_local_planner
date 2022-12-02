@@ -10,7 +10,7 @@ namespace mpc {
 class ControlSys {
    public:
     ControlSys(double pathTrackingVel, double parkingVel)
-        : pathTrackingVel_{pathTrackingVel}, parkingSys_{parkingVel} {}
+        : parkingSys_{parkingVel}, pathTrackingVel_{pathTrackingVel} {}
 
     /// @brief solve function
     /// @param[in] state the state of the car
@@ -33,10 +33,10 @@ class ControlSys {
     Mode getMode() const { return mode_; }
     /// @brief set the reference pose for parking system.
     /// @param[in] pose the pose we want to get to.
-    void setRefPose(const geometry_msgs::Pose &pose) { parkingSys_.setRefPose(pose); }
+    void setRefPose(const geometry_msgs::msg::Pose &pose) { parkingSys_.setRefPose(pose); }
 
     /// @brief get the reference pose for the parking system.
-    geometry_msgs::Pose getRefPose() const { return parkingSys_.getRefPose(); }
+    geometry_msgs::msg::Pose getRefPose() const { return parkingSys_.getRefPose(); }
 
    private:
     /// @brief the parking system class

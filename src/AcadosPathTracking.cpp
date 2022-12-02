@@ -1,7 +1,5 @@
 #include "mpc_local_planner/AcadosPathTracking.h"
 
-#include <ros/ros.h>
-
 namespace mpc {
 namespace Acados {
 
@@ -44,7 +42,7 @@ void PathTracking::init() {
     if (status) {
         std::stringstream error;
         error << "path_tracking_acados_create() returned status: " << status << ". Exiting.";
-        ROS_ERROR_STREAM(error.str());
+        std::cout << "Error: " << error.str() << std::endl;
         throw std::runtime_error{error.str()};
     }
     return;
@@ -54,12 +52,13 @@ void PathTracking::freeAllocated() {
     // free solver
     int status = path_tracking_acados_free(capsule_);
     if (status) {
-        ROS_ERROR("path_tracking_acados_free() returned status %d. \n", status);
+        std::cout << "Error: " << "point_stab_acados_free() returned status " << status << std::endl;
     }
     // free solver capsule
     status = path_tracking_acados_free_capsule(capsule_);
     if (status) {
-        ROS_ERROR("path_tracking_acados_free_capsule() returned status %d. \n", status);
+        std::cout << "Error: " << "point_stab_acados_free_capsule() returned status " << status << std::endl;
+
     }
     return;
 }

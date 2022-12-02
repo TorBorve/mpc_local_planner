@@ -1,8 +1,7 @@
 #pragma once
 
-#include <geometry_msgs/Pose.h>
-
 #include <atomic>
+#include <geometry_msgs/msg/pose.hpp>
 
 #include "mpc_local_planner/AcadosPointStab.h"
 #include "mpc_local_planner/PathTrackingSys.h"
@@ -17,8 +16,7 @@ class ParkingSys {
 
     /// @brief constructor for parking system.
     /// @param[in] goal where we want to park
-    ParkingSys(const geometry_msgs::Pose &goal, double refVel)
-        : refVel_{refVel}, goal_{goal}, init_{true} {}
+    ParkingSys(const geometry_msgs::msg::Pose &goal, double refVel) : goal_{goal}, init_{true}, refVel_{refVel} {}
 
     /// @brief solve function
     /// @param[in] state the state of the car
@@ -27,14 +25,14 @@ class ParkingSys {
 
     /// @brief set the reference pose for the car. This is where we want to park.
     /// @param[in] pose where we want to park.
-    void setRefPose(const geometry_msgs::Pose &pose);
+    void setRefPose(const geometry_msgs::msg::Pose &pose);
 
     /// @brief get the current desired trajectory
     /// @return track for the desired trajectory
     std::vector<Point> getTrack() const { return pathTrackingSys_.getTrack(); }
 
     /// @brief get the reference pose. This is where we want to park.
-    geometry_msgs::Pose getRefPose() const { return goal_; }
+    geometry_msgs::msg::Pose getRefPose() const { return goal_; }
 
     /// @brief set the mode of the parking system. Either parking or Slalom
     /// @param[in] mode the new mode wanted.
@@ -60,7 +58,7 @@ class ParkingSys {
     PathTrackingSys pathTrackingSys_ = PathTrackingSys{util::getTestTrack()};
 
     /// @brief the goal position. Where we want to park.
-    geometry_msgs::Pose goal_;
+    geometry_msgs::msg::Pose goal_;
 
     /// @brief if the system has been initialized
     bool init_ = false;
@@ -73,7 +71,6 @@ class ParkingSys {
 
     /// @brief bool for indicating if we need to update the start position of the path.
     bool updateStart_{false};
-
 
     /// @brief the desired velocity when driving to the goal.
     double refVel_;

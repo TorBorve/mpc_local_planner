@@ -1,23 +1,26 @@
 #ifndef MPC_ROS_MPC_H_
 #define MPC_ROS_MPC_H_
 
-#include <geometry_msgs/TwistStamped.h>
-#include <nav_msgs/Odometry.h>
-#include <nav_msgs/Path.h>
-#include <ros/ros.h>
-#include <std_msgs/Float64.h>
-#include <tf2_ros/transform_listener.h>
+#include "geometry_msgs/msg/twist_stamped.hpp"
+#include "nav_msgs/msg/odometry.hpp"
+#include "nav_msgs/msg/path.hpp"
+#include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/float64.hpp"
+#include "tf2/exceptions.h"
+#include "tf2_ros/buffer.h"
+#include "tf2_ros/transform_listener.h"
+#include "std_msgs/msg/bool.hpp"
 
 #include "mpc_local_planner/ControlSys.h"
 
 namespace mpc {
 
 /// @brief class for mpc with ROS interface
-class RosMpc {
+class RosMpc : public rclcpp::Node {
    public:
     /// @brief default constructor for RosMpc class
     /// @param[in] nh pointer to NodeHandle with access to private variables .
-    RosMpc(ros::NodeHandle *nh);
+    RosMpc();
 
     /// @brief solve function for mpc. Calls internal mpc class with latest values for state.
     MPCReturn solve();
@@ -29,58 +32,58 @@ class RosMpc {
    private:
     /// @brief callback function for subscriber to twist topic.
     /// @param[in] msg the motion of the car (twist message)
-    void twistCallback(const geometry_msgs::TwistStamped::ConstPtr &msg);
+    void twistCallback(const geometry_msgs::msg::TwistStamped::SharedPtr msg);
 
     /// @brief callback function for subscriber to steering angle.
     /// @param[in] msg the current steering angle of the var.
-    void actualSteeringCallback(const std_msgs::Float64::ConstPtr &msg);
+    void actualSteeringCallback(const std_msgs::msg::Float64::SharedPtr msg);
 
     /// @brief callback function for subscriber to path topic.
     /// @param[in] msg the new path message. The path we want to follow.
-    void pathCallback(const nav_msgs::Path::ConstPtr &msg);
+    void pathCallback(const nav_msgs::msg::Path::SharedPtr msg);
 
     /// @brief callback function for subscriber to pose topic
     /// @param[in] msg the new reference pose the car should move to.
-    void poseCallback(const geometry_msgs::PoseStamped::ConstPtr &msg);
+    void poseCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
 
     /// @brief mpc class that solves the problem given our state and desired trajectory.
     ControlSys controlSys_;
 
     /// @brief publisher for the steering angle.
-    ros::Publisher steeringPub_;
+    rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr steeringPub_;
 
     /// @brief publisher for throttle value
-    ros::Publisher throttlePub_;
+    rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr  throttlePub_;
 
     /// @brief publisher for the desired trajectory
-    ros::Publisher trackPub_;
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr  trackPub_;
 
     /// @brief publisher for the mpc trajectory solution
-    ros::Publisher mpcPathPub_;
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr  mpcPathPub_;
 
     /// @brief pulisher for the stop signal.
-    ros::Publisher stopPub_;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr  stopPub_;
 
     /// @brief subscriber to the twist message send by the car.
-    ros::Subscriber twistSub_;
+    rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr twistSub_;
 
     /// @brief subscriber to the steering angle of the car.
-    ros::Subscriber actualSteeringSub_;
+    rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr actualSteeringSub_;
 
     /// @brief subscriber to path topic. The path we want to follow.
-    ros::Subscriber pathSub_;
+    rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr pathSub_;
 
     /// @brief subscriber to the pose topic. The pose we want the car to move to.
-    ros::Subscriber poseSub_;
+    rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr poseSub_;
 
     /// @brief buffer for tf. Used to get the position of the car.
-    tf2_ros::Buffer tfBuffer_;
+    std::unique_ptr<tf2_ros::Buffer> tfBuffer_;
 
     /// @brief tf listener
-    tf2_ros::TransformListener tfListener_;
+    std::shared_ptr<tf2_ros::TransformListener> tfListener_;
 
     /// @brief pointer to nodehandle with access to private parameters.
-    ros::NodeHandle *nh_;
+    // ros::NodeHandle *nh_;
 
     /// @brief the latest velocity recived from car.
     double currentVel_ = 0;

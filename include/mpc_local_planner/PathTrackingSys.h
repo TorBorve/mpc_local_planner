@@ -1,8 +1,9 @@
 #ifndef MPC_MPC_H_
 #define MPC_MPC_H_
 
-#include <geometry_msgs/Pose.h>
-#include <ros/ros.h>
+#include <geometry_msgs/msg/pose.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <nav_msgs/msg/path.hpp>
 
 #include <eigen3/Eigen/Core>
 
@@ -84,7 +85,8 @@ class PathTrackingSys {
     std::vector<Point> track_;
 
     /// @brief publisher for the interpolated polynomial.
-    ros::Publisher polynomPub_;
+    // rclcpp::Node node_;
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr polynomPub_;
 };
 
 }  // namespace mpc

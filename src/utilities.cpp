@@ -9,8 +9,8 @@
 
 namespace mpc {
 namespace util {
-geometry_msgs::Pose toMsg(const State &state) {
-    geometry_msgs::Pose pose;
+geometry_msgs::msg::Pose toMsg(const State &state) {
+    geometry_msgs::msg::Pose pose;
     pose.position.x = state.x;
     pose.position.y = state.y;
     tf2::Quaternion quat;
@@ -28,7 +28,7 @@ geometry_msgs::Pose toMsg(const State &state) {
 // matrices that are easier to solve. Contact Tor Børve Rasmussen if you have any questions.
 Eigen::VectorXd polyfit(const Eigen::VectorXd &xvals, const Eigen::VectorXd &yvals, int order) {
     assert(xvals.size() == yvals.size());
-    assert(order >= 1 && order <= xvals.size() - 1);
+    assert(order >= 1 && (unsigned int)order <= xvals.size() - 1);
     Eigen::MatrixXd A(xvals.size(), order + 1);
 
     for (int i = 0; i < xvals.size(); i++) {
@@ -61,35 +61,35 @@ std::vector<Point> getTestTrack() {
     return track;
 }
 
-nav_msgs::Path getPathMsg(const MPCReturn &solution, const std::string &mapFrame,
-                          const std::string &carFrame) {
-    nav_msgs::Path path;
-    std_msgs::Header header;
+nav_msgs::msg::Path getPathMsg(const MPCReturn &solution, const std::string &mapFrame,
+                          const std::string &carFrame, const rclcpp::Node& node) {
+    nav_msgs::msg::Path path;
+    std_msgs::msg::Header header;
     header.frame_id = mapFrame;
-    header.stamp = ros::Time::now();
+    header.stamp = node.now();
     path.header = header;
     header.frame_id = carFrame;
     path.poses.resize(solution.mpcHorizon.size());
-    for (int i = 0; i < path.poses.size(); i++) {
+    for (unsigned int i = 0; i < path.poses.size(); i++) {
         path.poses[i].pose = toMsg(solution.mpcHorizon[i].x);
         path.poses[i].header = header;
     }
     return path;
 }
 
-nav_msgs::Path getPathMsg(const Eigen::Vector4d &coeffs, const std::string &mapFrame,
-                          const std::string &carFrame) {
+nav_msgs::msg::Path getPathMsg(const Eigen::Vector4d &coeffs, const std::string &mapFrame,
+                          const std::string &carFrame, const rclcpp::Node& node) {
     double start = -30, finish = 30;
     double step = 0.5;
-    nav_msgs::Path path;
-    std_msgs::Header header;
+    nav_msgs::msg::Path path;
+    std_msgs::msg::Header header;
     header.frame_id = mapFrame;
-    header.stamp = ros::Time::now();
+    header.stamp = node.now();
     path.header = header;
     header.frame_id = carFrame;
     for (double x = start; x < finish; x += step) {
         double y = coeffs[0] + coeffs[1] * x + coeffs[2] * x * x + coeffs[3] * x * x * x;
-        geometry_msgs::PoseStamped pose;
+        geometry_msgs::msg::PoseStamped pose;
         pose.pose.position.x = x;
         pose.pose.position.y = y;
         pose.header = header;
@@ -98,16 +98,16 @@ nav_msgs::Path getPathMsg(const Eigen::Vector4d &coeffs, const std::string &mapF
     return path;
 }
 
-nav_msgs::Path getPathMsg(const std::vector<Point> &track, const std::string &mapFrame,
-                          const std::string &carFrame) {
-    nav_msgs::Path path;
-    std_msgs::Header header;
+nav_msgs::msg::Path getPathMsg(const std::vector<Point> &track, const std::string &mapFrame,
+                          const std::string &carFrame, const rclcpp::Node& node) {
+    nav_msgs::msg::Path path;
+    std_msgs::msg::Header header;
     header.frame_id = mapFrame;
-    header.stamp = ros::Time::now();
+    header.stamp = node.now();
     path.header = header;
     header.frame_id = carFrame;
     for (const auto &p : track) {
-        geometry_msgs::PoseStamped pose;
+        geometry_msgs::msg::PoseStamped pose;
         pose.pose.position.x = p.x;
         pose.pose.position.y = p.y;
         pose.header = header;
@@ -116,37 +116,37 @@ nav_msgs::Path getPathMsg(const std::vector<Point> &track, const std::string &ma
     return path;
 }
 
-State toState(const nav_msgs::Odometry &odom) {
+State toState(const nav_msgs::msg::Odometry &odom) {
     double vel = velocity(odom);
     double psi = getYaw(odom.pose.pose.orientation);
     return State{odom.pose.pose.position.x, odom.pose.pose.position.y, psi, vel, 0, 0};
 }
 
-double velocity(const nav_msgs::Odometry &odom) { return length(odom.twist.twist.linear); }
+double velocity(const nav_msgs::msg::Odometry &odom) { return length(odom.twist.twist.linear); }
 
-double length(const geometry_msgs::Vector3 &vec) {
+double length(const geometry_msgs::msg::Vector3 &vec) {
     return sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
 }
 
-double getYaw(const geometry_msgs::Quaternion &quat) {
+double getYaw(const geometry_msgs::msg::Quaternion &quat) {
     double roll, pitch, yaw;
     getRPY(quat, roll, pitch, yaw);
     return yaw;
 }
 
-double getPitch(const geometry_msgs::Quaternion &quat) {
+double getPitch(const geometry_msgs::msg::Quaternion &quat) {
     double roll, pitch, yaw;
     getRPY(quat, roll, pitch, yaw);
     return pitch;
 }
 
-void getRPY(const geometry_msgs::Quaternion &quat, double &roll, double &pitch, double &yaw) {
+void getRPY(const geometry_msgs::msg::Quaternion &quat, double &roll, double &pitch, double &yaw) {
     tf2::Quaternion q{quat.x, quat.y, quat.z, quat.w};
     tf2::Matrix3x3 mat{q};
     mat.getRPY(roll, pitch, yaw);
 }
 
-std::vector<Point> toVector(const nav_msgs::Path &path) {
+std::vector<Point> toVector(const nav_msgs::msg::Path &path) {
     std::vector<Point> pathVector(path.poses.size());
     for (unsigned int i = 0; i < pathVector.size(); i++) {
         pathVector.at(i) = toPoint(path.poses.at(i).pose.position);
@@ -154,11 +154,11 @@ std::vector<Point> toVector(const nav_msgs::Path &path) {
     return pathVector;
 }
 
-Point toPoint(const geometry_msgs::Point &p) { return Point{p.x, p.y}; }
+Point toPoint(const geometry_msgs::msg::Point &p) { return Point{p.x, p.y}; }
 
-nav_msgs::Path getPathMsg(const BezierCurve &curve, const std::string &mapFrame,
-                          const std::string &carFrame) {
-    return getPathMsg(getPath(curve), mapFrame, carFrame);
+nav_msgs::msg::Path getPathMsg(const BezierCurve &curve, const std::string &mapFrame,
+                          const std::string &carFrame, const rclcpp::Node& node) {
+    return getPathMsg(getPath(curve), mapFrame, carFrame, node);
 }
 
 std::vector<Point> getPath(const BezierCurve &curve) {

@@ -12,7 +12,7 @@ bool Bound::operator==(const Bound &rhs) { return upper == rhs.upper && lower ==
 
 std::vector<double> getUpper(const BoundVector &vec) {
     std::vector<double> upper(vec.size());
-    for (int i = 0; i < vec.size(); i++) {
+    for (unsigned int i = 0; i < vec.size(); i++) {
         upper[i] = vec[i].upper;
     }
     return upper;
@@ -20,7 +20,7 @@ std::vector<double> getUpper(const BoundVector &vec) {
 
 std::vector<double> getLower(const BoundVector &vec) {
     std::vector<double> lower(vec.size());
-    for (int i = 0; i < vec.size(); i++) {
+    for (unsigned int i = 0; i < vec.size(); i++) {
         lower[i] = vec[i].lower;
     }
     return lower;

@@ -1,7 +1,6 @@
 #ifndef MPC_ACADOS_SOLVER_H_
 #define MPC_ACADOS_SOLVER_H_
 
-#include <ros/ros.h>
 #include <stdio.h>
 #include <stdlib.h>
 
