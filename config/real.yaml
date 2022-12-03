@@ -1,0 +1,94 @@
+# Here we define parameters for the mpc. These are used for generating the mpc with acados and also for running the mpc
+/mpc_local_planner:
+  mpc_local_planner:
+    ros__parameters:
+      # The mode of the control system. "parking", "path_tracking" and "slalom" are the avalible modes.
+      mode: "slalom"
+
+      # The frequency that the mpc is run at. Given that the pc is able to run the code fast enough.
+      loop_Hz: 30
+
+      # The topic where the linear and angular speed of the car is published. The message type should be twist.
+      twist_topic: "/vectornav/twist"
+
+      # The topic where we can publish emergency stop of the car.
+      stop_topic: "/stop"
+
+      # The topic where the current steering angle of the car is published. The message type should be Float64
+      actual_steering_topic: "/actual_steering_angle"
+
+      # The topic where the desired steering angle is published.
+      steering_topic: "/steering_cmd"
+
+      # The topic where the desired throttle value is published
+      throttle_topic: "/throttle_cmd"
+
+      # The topic where the pose of the parking spot is published
+      parking_topic: "/goal"
+
+      # Where tha global path should be published. The path we want to follow. If this parameter is not provided
+      # the mpc will use a internal hard coded path.
+      path_topic: "/path"
+
+      # The ""global"" frame. Typically map or odom.
+      map_frame: "odom"
+
+      # The frame where the car is located. The mpc model assumes that this is the middel of the rear axle.
+      car_frame: "base_footprint"
+
+      # Number of steps in the mpc horizon
+      mpc_N: 30
+
+      # Solver type used by acados
+      nlp_solver_type: "SQP" #SQP or SQP_RTI
+
+      # Time between the steps in the mpc horizon.
+      mpc_dt: 0.25
+
+      # The reference velocity when the car is following a path
+      path_tracking_vel: 2.0
+
+      # The reference velocity when the car is in parking mode
+      parking_vel: 2.0
+
+      # Minimum value for throttle
+      throttle_min: 0
+
+      # Maximum value for throttle
+      throttle_max: 1.0
+
+      # Maximum allowed value for change throttle value pr second
+      throttle_dot_max: 0.33
+
+      # Maximum steering angle of the car (to the left and right). Given in [rad]
+      max_steering_angle: 0.4
+
+      # Maximum rotation speed of the wheels. How fast the wheels can turn. Given in [rad/s]
+      max_steering_rotation_speed: 0.4
+
+      # Distance between front and rear wheels on the car.
+      wheelbase: 1.8
+
+      # Wheel radius
+      radius: 0.225
+
+      # Gear ratio
+      gear_ratio: 0.05
+
+      # Mass of car
+      mass_car: 70
+
+      # Voltage on batteries
+      voltage: 48
+
+      # Drag coefficient
+      drag_coefficient: 0.218
+
+      # Frontal area of the car
+      frontal_area: 1
+
+      # Rolling resistance
+      rolling_resistance: 0.015
+
+      # Ratio between angle on the wheels and the steering wheel. steering_ratio = "steering wheel angle" / "wheel angle"
+      steering_ratio: 1.0
