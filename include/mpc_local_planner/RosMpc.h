@@ -5,7 +5,8 @@
 #include "nav_msgs/msg/odometry.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "rclcpp/rclcpp.hpp"
-#include "std_msgs/msg/float64.hpp"
+// #include "std_msgs/msg/float64.hpp"
+#include "example_interfaces/msg/float64.hpp"
 #include "tf2/exceptions.h"
 #include "tf2_ros/buffer.h"
 #include "tf2_ros/transform_listener.h"
@@ -36,7 +37,7 @@ class RosMpc : public rclcpp::Node {
 
     /// @brief callback function for subscriber to steering angle.
     /// @param[in] msg the current steering angle of the var.
-    void actualSteeringCallback(const std_msgs::msg::Float64::SharedPtr msg);
+    void actualSteeringCallback(const example_interfaces::msg::Float64::SharedPtr msg);
 
     /// @brief callback function for subscriber to path topic.
     /// @param[in] msg the new path message. The path we want to follow.
@@ -50,10 +51,10 @@ class RosMpc : public rclcpp::Node {
     ControlSys controlSys_;
 
     /// @brief publisher for the steering angle.
-    rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr steeringPub_;
+    rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr steeringPub_;
 
     /// @brief publisher for throttle value
-    rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr  throttlePub_;
+    rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr  throttlePub_;
 
     /// @brief publisher for the desired trajectory
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr  trackPub_;
@@ -68,7 +69,7 @@ class RosMpc : public rclcpp::Node {
     rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr twistSub_;
 
     /// @brief subscriber to the steering angle of the car.
-    rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr actualSteeringSub_;
+    rclcpp::Subscription<example_interfaces::msg::Float64>::SharedPtr actualSteeringSub_;
 
     /// @brief subscriber to path topic. The path we want to follow.
     rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr pathSub_;

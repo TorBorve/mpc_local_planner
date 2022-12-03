@@ -2,13 +2,14 @@
 
 #include <geometry_msgs/msg/twist.hpp>
 #include <std_msgs/msg/bool.hpp>
-#include <std_msgs/msg/float64.hpp>
+// #include <std_msgs/msg/float64.hpp>
 #include <tf2/LinearMath/Transform.h>
 
 #include <chrono>
 #include <functional>
 #include <memory>
 #include <string>
+#include <iomanip>
 
 #include <rclcpp/wait_for_message.hpp>
 
@@ -54,12 +55,12 @@ RosMpc::RosMpc()
     }
 
     stopPub_ = this->create_publisher<std_msgs::msg::Bool>(stopTopic, 1);
-    throttlePub_ = this->create_publisher<std_msgs::msg::Float64>(throttleTopic, 1);
-    steeringPub_ = this->create_publisher<std_msgs::msg::Float64>(steeringTopic, 1);
+    throttlePub_ = this->create_publisher<example_interfaces::msg::Float64>(throttleTopic, 1);
+    steeringPub_ = this->create_publisher<example_interfaces::msg::Float64>(steeringTopic, 1);
     trackPub_ = this->create_publisher<nav_msgs::msg::Path>("global_path", 1);
     mpcPathPub_ = this->create_publisher<nav_msgs::msg::Path>("local_path", 1);
     twistSub_ = this->create_subscription<geometry_msgs::msg::TwistStamped>(twistTopic, 1, std::bind(&RosMpc::twistCallback, this, _1));
-    actualSteeringSub_ = this->create_subscription<std_msgs::msg::Float64>(actualSteeringTopic, 1, std::bind(&RosMpc::actualSteeringCallback, this, _1));
+    actualSteeringSub_ = this->create_subscription<example_interfaces::msg::Float64>(actualSteeringTopic, 1, std::bind(&RosMpc::actualSteeringCallback, this, _1));
     if (mode == Mode::Parking || mode == Mode::Slalom) {
         poseSub_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(parkingTopic, 1, std::bind(&RosMpc::poseCallback, this, _1));
     }
@@ -77,6 +78,7 @@ RosMpc::RosMpc()
 }
 
 MPCReturn RosMpc::solve() {
+    static double prevSteering = 0;
     static double prevThrottle = 0;
 
     geometry_msgs::msg::TransformStamped tfCar;
@@ -91,7 +93,7 @@ MPCReturn RosMpc::solve() {
                 tfCar.transform.translation.y,
                 util::getYaw(tfCar.transform.rotation),
                 currentVel_,
-                currentSteeringAngle_,
+                prevSteering,
                 prevThrottle};
 
     // solve mpc
@@ -102,7 +104,7 @@ MPCReturn RosMpc::solve() {
     }
 
     // publish inputs
-    std_msgs::msg::Float64 msg;
+    example_interfaces::msg::Float64 msg;
     msg.data = result.mpcHorizon.at(1).x.throttle;
     throttlePub_->publish(msg);
 
@@ -111,6 +113,7 @@ MPCReturn RosMpc::solve() {
     stopPub_->publish(stop);
 
     prevThrottle = msg.data;
+    prevSteering = result.mpcHorizon.at(1).x.delta;
     msg.data = result.mpcHorizon.at(1).x.delta * steeringRatio_;
     steeringPub_->publish(msg);
 
@@ -143,7 +146,7 @@ bool RosMpc::verifyInputs() {
     // check if actual steering angle is published
     std::string actualSteeringTopic = util::getParamWarn<std::string>(*this, "actual_steering_topic", "actual_steering_topic");
 
-    auto steeringMsg = std::make_unique<std_msgs::msg::Float64>();
+    auto steeringMsg = std::make_unique<example_interfaces::msg::Float64>();
     while (!rclcpp::wait_for_message(*steeringMsg, waitNode, actualSteeringTopic, waitTime)){
         RCLCPP_WARN_STREAM(this->get_logger(), "Waiting for actual steering angle. Should be published at the topic: " << actualSteeringTopic);
     }
@@ -180,6 +183,7 @@ bool RosMpc::verifyInputs() {
         try {
             // get position of vehicle
             tfCar = tfBuffer_->lookupTransform(mapFrame_, carFrame_, tf2::TimePointZero, waitTime);
+            break;
         } catch (tf2::TransformException &e) {
             RCLCPP_WARN_STREAM(this->get_logger(), "Waiting for transform from " << mapFrame_ << " to " << carFrame_ << ". Error thrown: " << e.what());
         }
@@ -189,7 +193,7 @@ bool RosMpc::verifyInputs() {
 
 void RosMpc::twistCallback(const geometry_msgs::msg::TwistStamped::SharedPtr msg) { currentVel_ = util::length(msg->twist.linear); }
 
-void RosMpc::actualSteeringCallback(const std_msgs::msg::Float64::SharedPtr msg) { currentSteeringAngle_ = msg->data / steeringRatio_; }
+void RosMpc::actualSteeringCallback(const example_interfaces::msg::Float64::SharedPtr msg) { currentSteeringAngle_ = msg->data / steeringRatio_; }
 
 void RosMpc::pathCallback(const nav_msgs::msg::Path::SharedPtr msg) {
     nav_msgs::msg::Path path = *msg;

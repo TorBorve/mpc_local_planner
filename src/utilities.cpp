@@ -7,8 +7,18 @@
 #include <fstream>
 #include <iomanip>
 
+rclcpp::Node::SharedPtr logNode = nullptr;
+#ifndef NDEBUG                                // true if the build type is not debug
+#endif
+
 namespace mpc {
 namespace util {
+
+void initLogger() {
+    logNode = std::make_shared<rclcpp::Node>("log_node");
+}
+
+
 geometry_msgs::msg::Pose toMsg(const State &state) {
     geometry_msgs::msg::Pose pose;
     pose.position.x = state.x;
@@ -62,11 +72,11 @@ std::vector<Point> getTestTrack() {
 }
 
 nav_msgs::msg::Path getPathMsg(const MPCReturn &solution, const std::string &mapFrame,
-                          const std::string &carFrame, const rclcpp::Node& node) {
+                          const std::string &carFrame, rclcpp::Node& node) {
     nav_msgs::msg::Path path;
     std_msgs::msg::Header header;
     header.frame_id = mapFrame;
-    header.stamp = node.now();
+    header.stamp = node.get_clock()->now();
     path.header = header;
     header.frame_id = carFrame;
     path.poses.resize(solution.mpcHorizon.size());
@@ -78,13 +88,13 @@ nav_msgs::msg::Path getPathMsg(const MPCReturn &solution, const std::string &map
 }
 
 nav_msgs::msg::Path getPathMsg(const Eigen::Vector4d &coeffs, const std::string &mapFrame,
-                          const std::string &carFrame, const rclcpp::Node& node) {
+                          const std::string &carFrame, rclcpp::Node& node) {
     double start = -30, finish = 30;
     double step = 0.5;
     nav_msgs::msg::Path path;
     std_msgs::msg::Header header;
     header.frame_id = mapFrame;
-    header.stamp = node.now();
+    header.stamp = node.get_clock()->now();
     path.header = header;
     header.frame_id = carFrame;
     for (double x = start; x < finish; x += step) {
@@ -99,11 +109,11 @@ nav_msgs::msg::Path getPathMsg(const Eigen::Vector4d &coeffs, const std::string 
 }
 
 nav_msgs::msg::Path getPathMsg(const std::vector<Point> &track, const std::string &mapFrame,
-                          const std::string &carFrame, const rclcpp::Node& node) {
+                          const std::string &carFrame, rclcpp::Node& node) {
     nav_msgs::msg::Path path;
     std_msgs::msg::Header header;
     header.frame_id = mapFrame;
-    header.stamp = node.now();
+    header.stamp = node.get_clock()->now();
     path.header = header;
     header.frame_id = carFrame;
     for (const auto &p : track) {
@@ -157,7 +167,7 @@ std::vector<Point> toVector(const nav_msgs::msg::Path &path) {
 Point toPoint(const geometry_msgs::msg::Point &p) { return Point{p.x, p.y}; }
 
 nav_msgs::msg::Path getPathMsg(const BezierCurve &curve, const std::string &mapFrame,
-                          const std::string &carFrame, const rclcpp::Node& node) {
+                          const std::string &carFrame, rclcpp::Node& node) {
     return getPathMsg(getPath(curve), mapFrame, carFrame, node);
 }
 

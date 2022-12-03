@@ -15,16 +15,20 @@
 #include "mpc_local_planner/PathTrackingSys.h"
 #include "mpc_local_planner/bounds.h"
 
+extern rclcpp::Node::SharedPtr logNode;
+#define LOG_STREAM(...) RCLCPP_INFO_STREAM(logNode->get_logger(), __VA_ARGS__)
 #ifdef NDEBUG                                // true if the build type is not debug
 #define LOG_DEBUG_STREAM(...) ((void)0)  // define as do nothing
 #define LOG_DEBUG(...) ((void)0)         // define as do nothing
 #else
-#define LOG_DEBUG_STREAM(...) ROS_INFO_STREAM(__VA_ARGS__)  // print args to console
-#define LOG_DEBUG(...) ROS_INFO(__VA_ARGS__)                // print args to console
+#define LOG_DEBUG_STREAM(...) RCLCPP_INFO_STREAM(logNode->get_logger(), __VA_ARGS__)  // print args to console
+#define LOG_DEBUG(...) RCLCPP_INFO(logNode->get_logger(), __VA_ARGS__)                // print args to console
 #endif
 
 namespace mpc {
 namespace util {
+
+void initLogger();
 
 /// @brief convert State class to Pose message
 geometry_msgs::msg::Pose toMsg(const State &state);
@@ -64,7 +68,7 @@ std::vector<Point> getTestTrack();
 /// @param[in] carFrame the frame of the points. Here the frame of the car.
 /// @return Path message from mpcHorizon
 nav_msgs::msg::Path getPathMsg(const MPCReturn &solution, const std::string &mapFrame,
-                          const std::string &carFrame, const rclcpp::Node& node);
+                          const std::string &carFrame, rclcpp::Node& node);
 
 /// @brief convert third order polynomial to path message
 /// @param[in] coeffs coefficents of the polynomial
@@ -73,7 +77,7 @@ nav_msgs::msg::Path getPathMsg(const MPCReturn &solution, const std::string &map
 /// @param[in] carFrame the frame of the points. Here the frame of the car.
 /// @return path message with points that lay on the polynomial
 nav_msgs::msg::Path getPathMsg(const Eigen::Vector4d &coeffs, const std::string &mapFrame,
-                          const std::string &carFrame, const rclcpp::Node& node);
+                          const std::string &carFrame, rclcpp::Node& node);
 
 /// @brief convert track to path message
 /// @param[in] track the track that should be converted
@@ -82,7 +86,7 @@ nav_msgs::msg::Path getPathMsg(const Eigen::Vector4d &coeffs, const std::string 
 /// @param[in] carFrame the frame of the points. Here the frame of the car.
 /// @return the resulting path message
 nav_msgs::msg::Path getPathMsg(const std::vector<Point> &track, const std::string &mapFrame,
-                          const std::string &carFrame, const rclcpp::Node& node);
+                          const std::string &carFrame, rclcpp::Node& node);
 
 /// @brief convert odometry message to State
 /// @param[in] odom odometry message
@@ -161,7 +165,7 @@ Point toPoint(const geometry_msgs::msg::Point &p);
 /// @param[in] carFrame the frame of the car
 /// @return path message
 nav_msgs::msg::Path getPathMsg(const mpc::BezierCurve &curve, const std::string &mapFrame,
-                          const std::string &carFrame, const rclcpp::Node& node);
+                          const std::string &carFrame, rclcpp::Node& node);
 
 /// @brief convert bezier curve to vector with points
 /// @param[in] curve the bezier curve
