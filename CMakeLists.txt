@@ -33,12 +33,12 @@ if (NOT MPC_PARAMS)
 endif()
 
 # check that params file exists
-if (NOT EXISTS ${PROJECT_SOURCE_DIR}/params/${MPC_PARAMS})
-  message(FATAL_ERROR "The mpc params file does not exist. Specify a yaml file that exists. Path: ${PROJECT_SOURCE_DIR}/params/${MPC_PARAMS}")
+if (NOT EXISTS ${PROJECT_SOURCE_DIR}/config/${MPC_PARAMS})
+  message(FATAL_ERROR "The mpc params file does not exist. Specify a yaml file that exists. Path: ${PROJECT_SOURCE_DIR}/config/${MPC_PARAMS}")
 endif()
 
 # Copy params file to new file
-configure_file(${PROJECT_SOURCE_DIR}/params/${MPC_PARAMS} ${PROJECT_SOURCE_DIR}/build/auto_gen.yaml COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/config/${MPC_PARAMS} ${PROJECT_SOURCE_DIR}/build/auto_gen.yaml COPYONLY)
 
 # make command for generating the build folders for the acados code
 add_custom_command(
@@ -60,6 +60,7 @@ find_package(std_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(example_interfaces REQUIRED)
 
 # catkin_package(
 # #  INCLUDE_DIRS include
@@ -129,6 +130,7 @@ nav_msgs
 std_msgs
 tf2
 tf2_ros
+example_interfaces
 )
 target_link_libraries(ff_mpc path_tracking_mpc point_stab_mpc acados hpipm blasfeo m)
 add_dependencies(ff_mpc path_tracking_lib point_stab_lib)
@@ -140,5 +142,15 @@ install(TARGETS
 
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME})
+
+install(DIRECTORY config
+DESTINATION share/${PROJECT_NAME})
+
+install(DIRECTORY rviz
+DESTINATION share/${PROJECT_NAME})
+
+install(DIRECTORY build/
+DESTINATION share/${PROJECT_NAME}
+FILES_MATCHING PATTERN "*.yaml")
 
 ament_package()

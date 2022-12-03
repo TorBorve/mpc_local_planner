@@ -102,6 +102,8 @@ def costFunc(model, params):
 def ocpSolver():
     with open("../../build/auto_gen.yaml", "r") as paramFile:
             params = yaml.safe_load(paramFile)
+    params = params["/mpc_local_planner"]["mpc_local_planner"]["ros__parameters"]
+
 
     ocp = AcadosOcp()
     ocp.model = bicycleModel(params)
