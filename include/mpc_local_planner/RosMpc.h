@@ -1,16 +1,16 @@
 #ifndef MPC_ROS_MPC_H_
 #define MPC_ROS_MPC_H_
 
+#include "example_interfaces/msg/float64.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "rclcpp/rclcpp.hpp"
-// #include "std_msgs/msg/float64.hpp"
-#include "example_interfaces/msg/float64.hpp"
+#include "std_msgs/msg/bool.hpp"
 #include "tf2/exceptions.h"
 #include "tf2_ros/buffer.h"
 #include "tf2_ros/transform_listener.h"
-#include "std_msgs/msg/bool.hpp"
+// #include "std_msgs/msg/float64.hpp"
 
 #include "mpc_local_planner/ControlSys.h"
 
@@ -54,16 +54,16 @@ class RosMpc : public rclcpp::Node {
     rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr steeringPub_;
 
     /// @brief publisher for throttle value
-    rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr  throttlePub_;
+    rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr throttlePub_;
 
     /// @brief publisher for the desired trajectory
-    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr  trackPub_;
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr trackPub_;
 
     /// @brief publisher for the mpc trajectory solution
-    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr  mpcPathPub_;
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr mpcPathPub_;
 
     /// @brief pulisher for the stop signal.
-    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr  stopPub_;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr stopPub_;
 
     /// @brief subscriber to the twist message send by the car.
     rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr twistSub_;
@@ -82,9 +82,6 @@ class RosMpc : public rclcpp::Node {
 
     /// @brief tf listener
     std::shared_ptr<tf2_ros::TransformListener> tfListener_;
-
-    /// @brief pointer to nodehandle with access to private parameters.
-    // ros::NodeHandle *nh_;
 
     /// @brief the latest velocity recived from car.
     double currentVel_ = 0;

@@ -64,21 +64,9 @@ RosMpc::RosMpc()
     if (mode == Mode::Parking || mode == Mode::Slalom) {
         poseSub_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(parkingTopic, 1, std::bind(&RosMpc::poseCallback, this, _1));
     }
-
-    // stopPub_ = nh_->advertise<std_msgs::Bool>(stopTopic, 1);
-    // throttlePub_ = nh_->advertise<std_msgs::Float64>(throttleTopic, 1);
-    // steeringPub_ = nh_->advertise<std_msgs::Float64>(steeringTopic, 1);
-    // trackPub_ = nh_->advertise<nav_msgs::Path>("/global_path", 1);
-    // mpcPathPub_ = nh_->advertise<nav_msgs::Path>("/local_path", 1);
-    // twistSub_ = nh_->subscribe(twistTopic, 1, &RosMpc::twistCallback, this);
-    // actualSteeringSub_ = nh_->subscribe(actualSteeringTopic, 1, &RosMpc::actualSteeringCallback, this);
-    // if (mode == Mode::Parking || mode == Mode::Slalom) {
-    //     poseSub_ = nh_->subscribe(parkingTopic, 1, &RosMpc::poseCallback, this);
-    // }
 }
 
 MPCReturn RosMpc::solve() {
-    static double prevSteering = 0;
     static double prevThrottle = 0;
 
     geometry_msgs::msg::TransformStamped tfCar;
@@ -93,7 +81,7 @@ MPCReturn RosMpc::solve() {
                 tfCar.transform.translation.y,
                 util::getYaw(tfCar.transform.rotation),
                 currentVel_,
-                prevSteering,
+                currentSteeringAngle_,
                 prevThrottle};
 
     // solve mpc
@@ -113,44 +101,36 @@ MPCReturn RosMpc::solve() {
     stopPub_->publish(stop);
 
     prevThrottle = msg.data;
-    prevSteering = result.mpcHorizon.at(1).x.delta;
     msg.data = result.mpcHorizon.at(1).x.delta * steeringRatio_;
     steeringPub_->publish(msg);
 
     mpcPathPub_->publish(util::getPathMsg(result, mapFrame_, carFrame_, *this));
     trackPub_->publish(util::getPathMsg(controlSys_.getTrack(), mapFrame_, carFrame_, *this));
-
-    // LOG_DEBUG_STREAM(state);
-    LOG_DEBUG_STREAM(std::fixed << std::setprecision(2) << result.mpcHorizon.at(1));
-
-    // LOG_DEBUG("Time: %i [ms]", (int)result.computeTime);
-    // LOG_DEBUG("carVel: %.2f, steering: %.2f [deg], throttle: %.2f", state.vel,
-    // result.mpcHorizon.at(1).x.delta * 180.0 / M_PI, result.mpcHorizon.at(1).x.throttle);
     return result;
 }
 
 bool RosMpc::verifyInputs() {
     std::chrono::seconds waitTime{10};
-    // rclcpp::Duration waitTime{10, 0};
+
     Mode mode = str2Mode(util::getParamError<std::string>(*this, "mode"));
     // check if twist publisher is publishing
     std::string twistTopic = util::getParamWarn<std::string>(*this, "twist_topic", "twist");
     auto waitNode = std::make_shared<rclcpp::Node>("mpc_wait_for_message");
-    // geometry_msgs::msg::TwistStamped twistMsg;
-    auto twistMsg = std::make_unique<geometry_msgs::msg::TwistStamped>();
+
+    auto twistMsg = std::make_shared<geometry_msgs::msg::TwistStamped>();
     while (!rclcpp::wait_for_message(*twistMsg, waitNode, twistTopic, waitTime)){
         RCLCPP_WARN_STREAM(this->get_logger(), "Waiting for twist message. Should be published at the topic: " << twistTopic);
     }
-    // twistCallback(twistMsg);
+    twistCallback(twistMsg);
 
     // check if actual steering angle is published
     std::string actualSteeringTopic = util::getParamWarn<std::string>(*this, "actual_steering_topic", "actual_steering_topic");
 
-    auto steeringMsg = std::make_unique<example_interfaces::msg::Float64>();
+    auto steeringMsg = std::make_shared<example_interfaces::msg::Float64>();
     while (!rclcpp::wait_for_message(*steeringMsg, waitNode, actualSteeringTopic, waitTime)){
         RCLCPP_WARN_STREAM(this->get_logger(), "Waiting for actual steering angle. Should be published at the topic: " << actualSteeringTopic);
     }
-    // actualSteeringCallback(steeringMsg);
+    actualSteeringCallback(steeringMsg);
 
     // if path topic parameter is provided. Get the intial path message.
     rclcpp::Parameter temp;
@@ -198,7 +178,6 @@ void RosMpc::actualSteeringCallback(const example_interfaces::msg::Float64::Shar
 void RosMpc::pathCallback(const nav_msgs::msg::Path::SharedPtr msg) {
     nav_msgs::msg::Path path = *msg;
     if (msg->header.frame_id != mapFrame_) {
-        // RCLCPP_WARN_STREAM_THROTTLE(this->get_logger(), this->get_clock(), 20, "Path has different frame than the MPC use. Therefore a transform will be done.");
         geometry_msgs::msg::TransformStamped tfStampedPathFrame;
         try {
             tfStampedPathFrame = tfBuffer_->lookupTransform(mapFrame_, path.header.frame_id, tf2::TimePointZero);

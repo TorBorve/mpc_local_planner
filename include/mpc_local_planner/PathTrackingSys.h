@@ -85,7 +85,6 @@ class PathTrackingSys {
     std::vector<Point> track_;
 
     /// @brief publisher for the interpolated polynomial.
-    // rclcpp::Node node_;
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr polynomPub_;
 };
 

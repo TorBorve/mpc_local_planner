@@ -1,11 +1,6 @@
 #ifndef MPC_UTILITIES_H_
 #define MPC_UTILITIES_H_
 
-// #include <geometry_msgs/Point.h>
-// #include <nav_msgs/Odometry.h>
-// #include <nav_msgs/Path.h>
-// #include <ros/ros.h>
-
 #include "nav_msgs/msg/odometry.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "geometry_msgs/msg/point.hpp"
@@ -15,6 +10,8 @@
 #include "mpc_local_planner/PathTrackingSys.h"
 #include "mpc_local_planner/bounds.h"
 
+// TODO: make more macros for logging
+/// @brief node used for logging
 extern rclcpp::Node::SharedPtr logNode;
 #define LOG_STREAM(...) RCLCPP_INFO_STREAM(logNode->get_logger(), __VA_ARGS__)
 #ifdef NDEBUG                                // true if the build type is not debug
@@ -28,6 +25,7 @@ extern rclcpp::Node::SharedPtr logNode;
 namespace mpc {
 namespace util {
 
+/// @brief initialises the logNode
 void initLogger();
 
 /// @brief convert State class to Pose message

@@ -12,7 +12,7 @@
 namespace mpc {
 
 PathTrackingSys::PathTrackingSys(const std::vector<Point> &track) : track_{track} {
-    // polynomPub_ = node_.create_publisher<nav_msgs::msg::Path>("interpolated_path", 1);
+    polynomPub_ = logNode->create_publisher<nav_msgs::msg::Path>("interpolated_path", 1);
 }
 
 MPCReturn PathTrackingSys::solve(const State &state, double pitch, double vRef) {
@@ -22,10 +22,7 @@ MPCReturn PathTrackingSys::solve(const State &state, double pitch, double vRef) 
     Acados::PathTrackingParams params{coeffs, pitch, vRef};
 
     State transformedState{0, 0, rotation, state.vel, state.delta, state.throttle};
-    // calcState(transformedState, coeffs);
-    // OptVariables transformedOptVar{transformedState, optVars.u};
-    LOG_DEBUG_STREAM("rot: " << rotation << ", coeffs: " << coeffs[0] << ", " << coeffs[1] << ", "
-                             << coeffs[2] << ", " << coeffs[3]);
+
     auto result = solve(transformedState, params);
 
     const double rotAngle = state.psi - rotation;
@@ -44,18 +41,18 @@ MPCReturn PathTrackingSys::solve(const State &state, double pitch, double vRef) 
         x[i].x.y += state.y;
     }
 
-    // auto polyPath = util::getPathMsg(coeffs, "odom", "base_footprint");
-    // auto &points = polyPath.poses;
-    // for (unsigned int i = 0; i < points.size(); i++) {
-    //     double dx = points[i].pose.position.x;
-    //     double dy = points[i].pose.position.y;
-    //     points[i].pose.position.x = dx * cosRot - dy * sinRot;
-    //     points[i].pose.position.y = dx * sinRot + dy * cosRot;
+    auto polyPath = util::getPathMsg(coeffs, "odom", "base_footprint", *logNode);
+    auto &points = polyPath.poses;
+    for (unsigned int i = 0; i < points.size(); i++) {
+        double dx = points[i].pose.position.x;
+        double dy = points[i].pose.position.y;
+        points[i].pose.position.x = dx * cosRot - dy * sinRot;
+        points[i].pose.position.y = dx * sinRot + dy * cosRot;
 
-    //     points[i].pose.position.x += state.x;
-    //     points[i].pose.position.y += state.y;
-    // }
-    // polynomPub_->publish(polyPath);  // TODO: Ideally this would be in RosMPC.cpp
+        points[i].pose.position.x += state.x;
+        points[i].pose.position.y += state.y;
+    }
+    polynomPub_->publish(polyPath);  // TODO: Ideally this would be in RosMPC.cpp
     return result;
 }
 
