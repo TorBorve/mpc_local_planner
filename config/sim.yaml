@@ -33,7 +33,7 @@
       # path_topic: "/path"
 
       # The ""global"" frame. Typically map or odom.
-      map_frame: "world"
+      map_frame: "odom"
 
       # The frame where the car is located. The mpc model assumes that this is the middel of the rear axle.
       car_frame: "base_footprint"
@@ -94,3 +94,7 @@
 
       # Ratio between angle on the wheels and the steering wheel. steering_ratio = "steering wheel angle" / "wheel angle"
       steering_ratio: 17.3
+  log_node:
+    ros__parameters:
+      use_sim_time: true
+

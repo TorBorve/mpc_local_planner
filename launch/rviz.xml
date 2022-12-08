@@ -1,5 +1,0 @@
-<!-- <?xml version="1.0"?> -->
-<launch>
-    <!-- start rviz with -d parameter -->
-    <node pkg="rviz2" exec="rviz2" name="rviz2" args="-d $(find-pkg-share mpc_local_planner)/rviz/mpc_viz.rviz" />
-</launch>
