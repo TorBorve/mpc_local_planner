@@ -55,6 +55,16 @@ RosMpc::RosMpc(ros::NodeHandle *nh)
 }
 
 MPCReturn RosMpc::solve() {
+    std::string modeStr = util::getParamError<std::string>(*nh_, "mode");
+    Mode mode = str2Mode(modeStr);
+    if (mode == Mode::Invalid) {
+        std::stringstream ss;
+        ss << "Invalid mode for mpc: " << modeStr << ". Valid modes are parking, slalom and path_tracking";
+        ROS_ERROR_STREAM(ss.str());
+        throw std::runtime_error{ss.str()};
+    }
+    controlSys_.setMode(mode);
+
     static double prevThrottle = 0;
     
     geometry_msgs::TransformStamped tfCar;
