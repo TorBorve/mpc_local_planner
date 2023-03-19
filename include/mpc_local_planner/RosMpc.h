@@ -8,6 +8,7 @@
 #include <std_msgs/Float64.h>
 #include <tf2_ros/transform_listener.h>
 
+#include "std_msgs/String.h"
 #include "mpc_local_planner/ControlSys.h"
 
 namespace mpc {
@@ -43,6 +44,10 @@ class RosMpc {
     /// @param[in] msg the new reference pose the car should move to.
     void poseCallback(const geometry_msgs::PoseStamped::ConstPtr &msg);
 
+    /// @brief callback function for subscriber to AUC_23 state topic
+    /// @param[in] msg the new reference to the state the car has.
+    void updateMpcMode(const std_msgs::String &msg);
+
     /// @brief mpc class that solves the problem given our state and desired trajectory.
     ControlSys controlSys_;
 
@@ -61,6 +66,9 @@ class RosMpc {
     /// @brief pulisher for the stop signal.
     ros::Publisher stopPub_;
 
+    /// @brief pulisher for the stopped signal. This is for the AUC_23 fsm.
+    ros::Publisher stoppedPub_;
+
     /// @brief subscriber to the twist message send by the car.
     ros::Subscriber twistSub_;
 
@@ -72,6 +80,9 @@ class RosMpc {
 
     /// @brief subscriber to the pose topic. The pose we want the car to move to.
     ros::Subscriber poseSub_;
+
+    /// @brief subscriber to the AUC_23 state topic. The current state of the car in the competition
+    ros::Subscriber stateSub_;
 
     /// @brief buffer for tf. Used to get the position of the car.
     tf2_ros::Buffer tfBuffer_;

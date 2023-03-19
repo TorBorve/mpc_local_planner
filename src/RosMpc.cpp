@@ -6,6 +6,7 @@
 #include <tf2/LinearMath/Transform.h>
 
 #include "mpc_local_planner/utilities.h"
+#include "std_msgs/String.h"
 
 namespace mpc {
 RosMpc::RosMpc(ros::NodeHandle *nh)
@@ -47,7 +48,9 @@ RosMpc::RosMpc(ros::NodeHandle *nh)
     steeringPub_ = nh_->advertise<std_msgs::Float64>(steeringTopic, 1);
     trackPub_ = nh_->advertise<nav_msgs::Path>("/global_path", 1);
     mpcPathPub_ = nh_->advertise<nav_msgs::Path>("/local_path", 1);
+    stoppedPub_ = nh_->advertise<std_msgs::String>("/mpc_stopped", 1);
     twistSub_ = nh_->subscribe(twistTopic, 1, &RosMpc::twistCallback, this);
+    stateSub_ = nh_->subscribe("/current_sector", 1, &RosMpc::updateMpcMode, this);
     actualSteeringSub_ = nh_->subscribe(actualSteeringTopic, 1, &RosMpc::actualSteeringCallback, this);
     if (mode == Mode::Parking || mode == Mode::Slalom) {
         poseSub_ = nh_->subscribe(parkingTopic, 1, &RosMpc::poseCallback, this);
@@ -105,6 +108,12 @@ MPCReturn RosMpc::solve() {
 
     mpcPathPub_.publish(util::getPathMsg(result, mapFrame_, carFrame_));
     trackPub_.publish(util::getPathMsg(controlSys_.getTrack(), mapFrame_, carFrame_));
+
+    if (currentVel_ == 0) {
+        std_msgs::String stoppedMsg;
+        stoppedMsg.data = "Stopped";
+        stoppedPub_.publish(stoppedMsg);
+    }
 
     // LOG_DEBUG_STREAM(state);
     LOG_DEBUG_STREAM(std::fixed << std::setprecision(2) << result.mpcHorizon.at(0));
@@ -251,4 +260,22 @@ void RosMpc::poseCallback(const geometry_msgs::PoseStamped::ConstPtr &msg) {
     }
     controlSys_.setRefPose(pose);
 }
+
+
+void RosMpc::updateMpcMode(const std_msgs::String &msg) {
+    if (msg.data == "Sector_1") {
+        ros::param::set("mode", "path_tracking");
+    }
+    else if (msg.data == "Sector_2") {
+        ros::param::set("mode", "slalom");
+    }
+     else if (msg.data == "Sector_3") {
+        ros::param::set("mode", "parking");
+    }
+    else if (msg.data == "Stopping") {
+        ros::param::set("mode", "parking");
+    }
+}
+
+
 }  // namespace mpc
