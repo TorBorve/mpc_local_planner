@@ -26,7 +26,7 @@ parking_topic: "/move_base_simple/goal"
 
 # Where tha global path should be published. The path we want to follow. If this parameter is not provided
 # the mpc will use a internal hard coded path.
-path_topic: "/path"
+#path_topic: "/path"
 
 # The ""global"" frame. Typically map or odom.
 map_frame: "odom"

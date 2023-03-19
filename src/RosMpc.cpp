@@ -50,7 +50,7 @@ RosMpc::RosMpc(ros::NodeHandle *nh)
     mpcPathPub_ = nh_->advertise<nav_msgs::Path>("/local_path", 1);
     stoppedPub_ = nh_->advertise<std_msgs::String>("/mpc_stopped", 1);
     twistSub_ = nh_->subscribe(twistTopic, 1, &RosMpc::twistCallback, this);
-    stateSub_ = nh_->subscribe("/current_sector", 1, &RosMpc::updateMpcMode, this);
+    stateSub_ = nh_->subscribe("/current_state", 1, &RosMpc::updateMpcMode, this);
     actualSteeringSub_ = nh_->subscribe(actualSteeringTopic, 1, &RosMpc::actualSteeringCallback, this);
     if (mode == Mode::Parking || mode == Mode::Slalom) {
         poseSub_ = nh_->subscribe(parkingTopic, 1, &RosMpc::poseCallback, this);
@@ -263,17 +263,20 @@ void RosMpc::poseCallback(const geometry_msgs::PoseStamped::ConstPtr &msg) {
 
 
 void RosMpc::updateMpcMode(const std_msgs::String &msg) {
+    ROS_INFO_STREAM("Entered updateMpcMpde callback with msg: " + msg.data);
+
     if (msg.data == "Sector_1") {
-        ros::param::set("mode", "path_tracking");
+        ros::param::set("/mpc/mode", "path_tracking");
+        ROS_INFO_STREAM("Setting mode to path tracking");
     }
     else if (msg.data == "Sector_2") {
-        ros::param::set("mode", "slalom");
+        ros::param::set("/mpc/mode", "slalom");
     }
      else if (msg.data == "Sector_3") {
-        ros::param::set("mode", "parking");
+        ros::param::set("/mpc/mode", "parking");
     }
     else if (msg.data == "Stopping") {
-        ros::param::set("mode", "parking");
+        ros::param::set("/mpc/mode", "parking");
     }
 }
 
