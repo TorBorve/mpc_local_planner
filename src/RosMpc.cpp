@@ -109,7 +109,7 @@ MPCReturn RosMpc::solve() {
     mpcPathPub_.publish(util::getPathMsg(result, mapFrame_, carFrame_));
     trackPub_.publish(util::getPathMsg(controlSys_.getTrack(), mapFrame_, carFrame_));
 
-    if (currentVel_ == 0) {
+    if (currentVel_ < 0.1) {
         std_msgs::String stoppedMsg;
         stoppedMsg.data = "Stopped";
         stoppedPub_.publish(stoppedMsg);
