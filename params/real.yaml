@@ -65,7 +65,7 @@ max_steering_angle: 0.4
 max_steering_rotation_speed: 0.4
 
 # Distance between front and rear wheels on the car.
-wheelbase: 1.8
+wheelbase: 1.9
 
 # Wheel radius
 radius: 0.225
@@ -80,10 +80,10 @@ mass_car: 70
 voltage: 48
 
 # Drag coefficient
-drag_coefficient: 0.218
+drag_coefficient: 0.22051
 
 # Frontal area of the car
-frontal_area: 1
+frontal_area: 0.766
 
 # Rolling resistance
 rolling_resistance: 0.015
