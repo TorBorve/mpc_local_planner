@@ -273,7 +273,7 @@ void RosMpc::updateMpcMode(const std_msgs::String &msg) {
         ros::param::set("/mpc/mode", "slalom");
     }
      else if (msg.data == "Sector_3") {
-        ros::param::set("/mpc/mode", "parking");
+        ros::param::set("/mpc/mode", "path_tracking");
     }
     else if (msg.data == "Stopping") {
         ros::param::set("/mpc/mode", "parking");
