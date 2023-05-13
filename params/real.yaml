@@ -44,10 +44,10 @@ nlp_solver_type: "SQP" #SQP or SQP_RTI
 mpc_dt: 0.25
 
 # The reference velocity when the car is following a path
-path_tracking_vel: 2.0
+path_tracking_vel: 1.0
 
 # The reference velocity when the car is in parking mode
-parking_vel: 2.0
+parking_vel: 1.0
 
 # Minimum value for throttle
 throttle_min: 0
@@ -59,7 +59,7 @@ throttle_max: 1.0
 throttle_dot_max: 0.33
 
 # Maximum steering angle of the car (to the left and right). Given in [rad]
-max_steering_angle: 0.4
+max_steering_angle: 0.35
 
 # Maximum rotation speed of the wheels. How fast the wheels can turn. Given in [rad/s]
 max_steering_rotation_speed: 0.4
