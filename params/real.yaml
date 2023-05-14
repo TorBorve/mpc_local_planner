@@ -32,7 +32,7 @@ path_topic: "/path"
 map_frame: "odom"
 
 # The frame where the car is located. The mpc model assumes that this is the middel of the rear axle.
-car_frame: "base_footprint"
+car_frame: "base_link"
 
 # Number of steps in the mpc horizon
 mpc_N: 30
