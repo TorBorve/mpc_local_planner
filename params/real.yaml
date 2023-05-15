@@ -32,7 +32,7 @@ path_topic: "/path"
 map_frame: "odom"
 
 # The frame where the car is located. The mpc model assumes that this is the middel of the rear axle.
-car_frame: "base_link"
+car_frame: "base_footprint"
 
 # Number of steps in the mpc horizon
 mpc_N: 30
@@ -44,7 +44,7 @@ nlp_solver_type: "SQP" #SQP or SQP_RTI
 mpc_dt: 0.25
 
 # The reference velocity when the car is following a path
-path_tracking_vel: 1.0
+path_tracking_vel: 2.0
 
 # The reference velocity when the car is in parking mode
 parking_vel: 1.0
