@@ -103,7 +103,17 @@ Eigen::Vector4d PathTrackingSys::interpolate(const State &state, double rotation
         yVals[i - start] = dx * sin(angle) + dy * cos(angle);
     }
 
+#ifdef LINEAR_POLY_FIT
+    auto coeffs1 = util::polyfit(xVals, yVals, 1);
+    Eigen::VectorXd coeffs(4);
+    coeffs[0] = coeffs1[0];
+    coeffs[1] = coeffs1[1];
+    coeffs[2] = 0;
+    coeffs[3] = 0;
+#else
     auto coeffs = util::polyfit(xVals, yVals, 3);
+#endif
+
     assert(coeffs.size() == 4);
 
     cost = 0;

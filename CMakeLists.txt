@@ -11,6 +11,9 @@ add_compile_options(-std=c++14)
 # Uncomment if you want debugging
 #set(CMAKE_BUILD_TYPE Debug)
 
+#If you want linear poly fit.
+add_compile_definitions(LINEAR_POLY_FIT)
+
 # Default build type
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
