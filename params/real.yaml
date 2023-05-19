@@ -44,7 +44,7 @@ nlp_solver_type: "SQP" #SQP or SQP_RTI
 mpc_dt: 0.25
 
 # The reference velocity when the car is following a path
-path_tracking_vel: 2.0
+path_tracking_vel: 1.0
 
 # The reference velocity when the car is in parking mode
 parking_vel: 1.0
