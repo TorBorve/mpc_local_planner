@@ -6,9 +6,8 @@
 #include "geometry_msgs/msg/point.hpp"
 #include "rclcpp/rclcpp.hpp"
 
-#include "mpc_local_planner/BezierCurve.h"
 #include "mpc_local_planner/PathTrackingSys.h"
-#include "mpc_local_planner/bounds.h"
+
 
 // TODO: make more macros for logging
 /// @brief node used for logging
@@ -156,19 +155,6 @@ std::vector<Point> toVector(const nav_msgs::msg::Path &path);
 /// @param[in] p the point message.
 /// @return mpc::Point object with the x and y values of p.
 Point toPoint(const geometry_msgs::msg::Point &p);
-
-/// @brief get path message from a bezier curve
-/// @param[in] curve the curve we want to convert to a path message
-/// @param[in] mapFrame global frame of path message
-/// @param[in] carFrame the frame of the car
-/// @return path message
-nav_msgs::msg::Path getPathMsg(const mpc::BezierCurve &curve, const std::string &mapFrame,
-                          const std::string &carFrame, rclcpp::Node& node);
-
-/// @brief convert bezier curve to vector with points
-/// @param[in] curve the bezier curve
-/// @return vector with points on the bezier curve
-std::vector<Point> getPath(const mpc::BezierCurve &curve);
 
 }  // namespace util
 }  // namespace mpc

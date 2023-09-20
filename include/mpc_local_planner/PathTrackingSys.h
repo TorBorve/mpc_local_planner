@@ -7,9 +7,7 @@
 
 #include <eigen3/Eigen/Core>
 
-#include "mpc_local_planner/AcadosPathTracking.h"
-#include "mpc_local_planner/AcadosPointStab.h"
-#include "mpc_local_planner/bounds.h"
+#include "mpc_local_planner/AcadosPathTracking.h"   
 #include "mpc_local_planner/types.h"
 
 namespace mpc {

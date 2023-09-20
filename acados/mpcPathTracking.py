@@ -7,14 +7,6 @@ def bicycleModel(params):
     modelName = "path_tracking"
     
     Lf = params["wheelbase"] #distance between front and rear axle
-    r = params["radius"] # Wheel radius
-    l = params["wheelbase"] # Distance between front wheel and rear wheel
-    G = params["gear_ratio"] # Gear ratio
-    m = params["mass_car"]# Mass of car
-    V = params["voltage"] # Voltage
-    Cd = params["drag_coefficient"] # Drag coefficient
-    rho = 1.2 # Air density [kg/m³]
-    A = params["frontal_area"]# Frontal area [m²]
 
     #states
     x1 = SX.sym("x1") # x position
@@ -71,14 +63,6 @@ def bicycleModel(params):
 
 def costFunc(model, params):
 
-    r = params["radius"] # Radius of wheel [m]
-    m = params["mass_car"] # Mass of vehicle [kg]
-    Cr = params["rolling_resistance"] # Rolling resistance
-    Cd = params["drag_coefficient"] # Drag coefficient
-    rho = 1.2 # Air density [kg/m³]
-    A = params["frontal_area"] # Frontal area [m²]
-    g = 9.81
-
     x1 = model.x[0]
     y1 = model.x[1]
     psi = model.x[2]
@@ -89,9 +73,6 @@ def costFunc(model, params):
     throttleDot = model.u[1]
     a = model.f_expl_expr[3]
     coeffs = model.p
-
-    Tm = r * (m*a + m*g*Cr + 1/2*rho*Cd*A*(v)**2)
-    energy = Tm * v/r
     
     pathYaw = atan(3*coeffs[3]*x1*x1 + 2*coeffs[2]*x1 + coeffs[1])
     epsi = psi - pathYaw

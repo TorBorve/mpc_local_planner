@@ -6,7 +6,6 @@
 #include <fstream>
 
 #include "mpc_local_planner/AcadosPathTracking.h"
-#include "mpc_local_planner/bounds.h"
 #include "mpc_local_planner/utilities.h"
 
 namespace mpc {

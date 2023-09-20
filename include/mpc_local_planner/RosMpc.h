@@ -10,7 +10,6 @@
 #include "tf2/exceptions.h"
 #include "tf2_ros/buffer.h"
 #include "tf2_ros/transform_listener.h"
-// #include "std_msgs/msg/float64.hpp"
 
 #include "mpc_local_planner/ControlSys.h"
 
@@ -43,10 +42,6 @@ class RosMpc : public rclcpp::Node {
     /// @param[in] msg the new path message. The path we want to follow.
     void pathCallback(const nav_msgs::msg::Path::SharedPtr msg);
 
-    /// @brief callback function for subscriber to pose topic
-    /// @param[in] msg the new reference pose the car should move to.
-    void poseCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
-
     /// @brief mpc class that solves the problem given our state and desired trajectory.
     ControlSys controlSys_;
 
@@ -62,9 +57,6 @@ class RosMpc : public rclcpp::Node {
     /// @brief publisher for the mpc trajectory solution
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr mpcPathPub_;
 
-    /// @brief pulisher for the stop signal.
-    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr stopPub_;
-
     /// @brief subscriber to the twist message send by the car.
     rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr twistSub_;
 
@@ -73,9 +65,6 @@ class RosMpc : public rclcpp::Node {
 
     /// @brief subscriber to path topic. The path we want to follow.
     rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr pathSub_;
-
-    /// @brief subscriber to the pose topic. The pose we want the car to move to.
-    rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr poseSub_;
 
     /// @brief buffer for tf. Used to get the position of the car.
     std::unique_ptr<tf2_ros::Buffer> tfBuffer_;

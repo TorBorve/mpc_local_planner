@@ -3,3 +3,4 @@ acados_python/
 **/__pycache__
 build/
 **/c_generated_code/
+notes.md

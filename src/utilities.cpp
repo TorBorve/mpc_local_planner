@@ -166,19 +166,5 @@ std::vector<Point> toVector(const nav_msgs::msg::Path &path) {
 
 Point toPoint(const geometry_msgs::msg::Point &p) { return Point{p.x, p.y}; }
 
-nav_msgs::msg::Path getPathMsg(const BezierCurve &curve, const std::string &mapFrame,
-                          const std::string &carFrame, rclcpp::Node& node) {
-    return getPathMsg(getPath(curve), mapFrame, carFrame, node);
-}
-
-std::vector<Point> getPath(const BezierCurve &curve) {
-    constexpr size_t n = 100;
-    std::vector<Point> path;
-    for (double t = 0; t <= 1; t += 1.0 / n) {
-        Point p = curve.calc(t);
-        path.push_back(p);
-    }
-    return path;
-}
 }  // namespace util
 }  // namespace mpc
