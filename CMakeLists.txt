@@ -6,8 +6,6 @@ option(MPC_PARAMS "mpc_params" OFF)
 
 set(ACADOS_LIB $ENV{ACADOS_SOURCE_DIR})
 
-# add_compile_options(-std=c++14)
-
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 14)
@@ -29,7 +27,7 @@ add_compile_definitions(__PATH__="${PROJECT_SOURCE_DIR}")
 
 # Check if MPC_PARAMS file is specified
 if (NOT MPC_PARAMS)
-  message(FATAL_ERROR "MPC_PARAMS option not set. Needed for determining what parameters the mpc should be compiled with. You can set it using cmake args. Example: catkin build --cmake-args -DMPC_PARMS=my_yaml_file.yaml")
+  message(FATAL_ERROR "MPC_PARAMS option not set. Needed for determining what parameters the mpc should be compiled with. You can set it using cmake args. Example: catkin build --cmake-args -DMPC_PARAMS=my_yaml_file.yaml")
 endif()
 
 # check that params file exists
@@ -45,10 +43,6 @@ add_custom_command(
   OUTPUT ${PROJECT_SOURCE_DIR}/build/path_tracking/
   COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/build/path_tracking/
 )
-add_custom_command(
-  OUTPUT ${PROJECT_SOURCE_DIR}/build/point_stab/
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/build/point_stab/
-)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -62,12 +56,6 @@ find_package(tf2_ros REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(example_interfaces REQUIRED)
 
-# catkin_package(
-# #  INCLUDE_DIRS include
-# #  LIBRARIES mpc_local_planner
-#    CATKIN_DEPENDS nav_msgs roscpp rospy std_msgs tf2 tf2_ros
-# #  DEPENDS system_lib
-# )
 
 include_directories(
   include
@@ -103,23 +91,6 @@ add_custom_target(
 add_library( path_tracking_mpc SHARED IMPORTED )
 set_target_properties( path_tracking_mpc PROPERTIES IMPORTED_LOCATION ${PROJECT_SOURCE_DIR}/build/path_tracking/c_generated_code/libacados_ocp_solver_path_tracking.so )
 
-########
-add_custom_command(
-  OUTPUT ${PROJECT_SOURCE_DIR}/build/point_stab/c_generated_code/main_point_stab.c
-  COMMAND ${ACADOS_LIB}/build/env/bin/python3 ${PROJECT_SOURCE_DIR}/acados/mpcPointStab.py
-  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/build/point_stab
-  DEPENDS acados/mpcPointStab.py ${PROJECT_SOURCE_DIR}/build/auto_gen.yaml ${PROJECT_SOURCE_DIR}/build/point_stab/
-)
-
-add_custom_target(
-  point_stab_lib
-  COMMAND $(MAKE) shared_lib
-  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/build/point_stab/c_generated_code/
-  DEPENDS ${PROJECT_SOURCE_DIR}/build/point_stab/c_generated_code/main_point_stab.c
-)
-
-add_library( point_stab_mpc SHARED IMPORTED )
-set_target_properties( point_stab_mpc PROPERTIES IMPORTED_LOCATION ${PROJECT_SOURCE_DIR}/build/point_stab/c_generated_code/libacados_ocp_solver_point_stab.so )
 
 FILE(GLOB SOURCES "src/*.cpp")
 
@@ -132,8 +103,8 @@ tf2
 tf2_ros
 example_interfaces
 )
-target_link_libraries(ff_mpc path_tracking_mpc point_stab_mpc acados hpipm blasfeo m)
-add_dependencies(ff_mpc path_tracking_lib point_stab_lib)
+target_link_libraries(ff_mpc path_tracking_mpc acados hpipm blasfeo m)
+add_dependencies(ff_mpc path_tracking_lib)
 
 install(TARGETS
   ff_mpc
@@ -144,9 +115,6 @@ install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME})
 
 install(DIRECTORY config
-DESTINATION share/${PROJECT_NAME})
-
-install(DIRECTORY rviz
 DESTINATION share/${PROJECT_NAME})
 
 install(DIRECTORY build/
