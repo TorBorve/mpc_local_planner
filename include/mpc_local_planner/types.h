@@ -1,5 +1,4 @@
-#ifndef MPC_TYPES_H_
-#define MPC_TYPES_H_
+#pragma once
 
 #include <eigen3/Eigen/Core>
 #include <iostream>
@@ -179,5 +178,3 @@ std::ostream &operator<<(std::ostream &os, const mpc::Input &input);
 
 /// @brief print operator for optVar
 std::ostream &operator<<(std::ostream &os, const mpc::OptVariables &optVar);
-
-#endif

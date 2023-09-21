@@ -1,5 +1,4 @@
-#ifndef MPC_MPC_H_
-#define MPC_MPC_H_
+#pragma once
 
 #include <geometry_msgs/msg/pose.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -87,5 +86,3 @@ class PathTrackingSys {
 };
 
 }  // namespace mpc
-
-#endif

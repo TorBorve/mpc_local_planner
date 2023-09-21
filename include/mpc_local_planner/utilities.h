@@ -1,5 +1,4 @@
-#ifndef MPC_UTILITIES_H_
-#define MPC_UTILITIES_H_
+#pragma once
 
 #include "nav_msgs/msg/odometry.hpp"
 #include "nav_msgs/msg/path.hpp"
@@ -158,4 +157,3 @@ Point toPoint(const geometry_msgs::msg::Point &p);
 
 }  // namespace util
 }  // namespace mpc
-#endif

@@ -1,5 +1,4 @@
-#ifndef MPC_ROS_MPC_H_
-#define MPC_ROS_MPC_H_
+#pragma once
 
 #include "example_interfaces/msg/float64.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
@@ -89,5 +88,3 @@ class RosMpc : public rclcpp::Node {
     double steeringRatio_;
 };
 }  // namespace mpc
-
-#endif
