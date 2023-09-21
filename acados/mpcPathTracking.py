@@ -57,7 +57,6 @@ def bicycleModel(params):
     model.x = x
     model.u = u
     model.p = p
-    # model.con_h_expr = vertcat(v)
 
     return model
 
@@ -101,31 +100,19 @@ def ocpSolver():
     ocp.cost.cost_type = "NONLINEAR_LS"
     ocp.cost.yref = np.array([0, 0, 0, 0, 0, 0, 0])
     ocp.model.cost_y_expr = costFunc(ocp.model, params)
-    # ocp.cost.W = np.diag([5, 35, 10, 0, 0, 0, 0, 0.00001]) # Energy Mode
-    ocp.cost.W = np.diag([5, 5, 10, 0.01, 0.1, 0.5, 0.1]) # Not Energy Mode
+    ocp.cost.W = np.diag([5, 5, 10, 0.01, 0.1, 0.5, 0.1])
 
-    deltaMax = params["max_steering_angle"]
-    deltaDotMax = params["max_steering_rotation_speed"]
-    throttleMin = params["throttle_min"]
-    throttleMax = params["throttle_max"]
-    throttleDotMax = params["throttle_dot_max"]   
+    deltaRange = params["steering_angle_range"]
+    deltaDotRange = params["steering_angle_dot_range"]
+    throttleRange = params["throttle_range"]
+    throttleDotRange = params["throttle_dot_range"]   
     ocp.constraints.constr_type = "BGH"
-    ocp.constraints.lbx = np.array([-deltaMax, throttleMin])
-    ocp.constraints.ubx = np.array([deltaMax, throttleMax])
+    ocp.constraints.lbx = np.array([deltaRange[0], throttleRange[0]])
+    ocp.constraints.ubx = np.array([deltaRange[1], throttleRange[1]])
     ocp.constraints.idxbx = np.array([4, 5])
-    ocp.constraints.lbu = np.array([-deltaDotMax, -throttleDotMax])
-    ocp.constraints.ubu = np.array([deltaDotMax, throttleDotMax])
+    ocp.constraints.lbu = np.array([deltaDotRange[0], throttleDotRange[0]])
+    ocp.constraints.ubu = np.array([deltaDotRange[1], throttleDotRange[1]])
     ocp.constraints.idxbu = np.array([0, 1])
-
-    # ocp.cost.zl = 1000 * np.ones((1,))
-    # ocp.cost.Zl = 0 * np.ones((1,))
-    # ocp.cost.zu = 1000 * np.ones((1,))
-    # ocp.cost.Zu = 0 * np.ones((1,))
-    # ocp.constraints.lh = np.array([0.0])
-    # ocp.constraints.uh = np.array([6.0])
-
-    # ocp.constraints.idxsh = np.array([0])
-
 
     x0 = np.array([-10, 0, 0, 0, 0, 0])
     ocp.constraints.x0 = x0
