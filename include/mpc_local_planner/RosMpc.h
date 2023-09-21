@@ -74,6 +74,9 @@ class RosMpc : public rclcpp::Node {
     /// @brief the latest velocity recived from car.
     double currentVel_ = 0;
 
+    /// @brief use current Steering angle topic
+    bool useActualSteeringTopic_; 
+
     /// @brief the latest steering angle recived from car
     double currentSteeringAngle_ = 0;
 

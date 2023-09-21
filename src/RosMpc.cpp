@@ -3,14 +3,13 @@
 #include <geometry_msgs/msg/twist.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <tf2/LinearMath/Transform.h>
+#include <rclcpp/wait_for_message.hpp>
 
 #include <chrono>
 #include <functional>
 #include <memory>
 #include <string>
 #include <iomanip>
-
-#include <rclcpp/wait_for_message.hpp>
 
 #include "mpc_local_planner/utilities.h"
 
@@ -23,7 +22,11 @@ RosMpc::RosMpc()
     tfListener_ = std::make_shared<tf2_ros::TransformListener>(*tfBuffer_);
 
     std::string twistTopic = util::getParamWarn<std::string>(*this, "twist_topic", "twist");
-    std::string actualSteeringTopic = util::getParamWarn<std::string>(*this, "actual_steering_topic", "actual_steering_angle");
+    useActualSteeringTopic_ = util::getParamWarn<bool>(*this, "use_actual_steering_topic", true);
+    std::string actualSteeringTopic = "";
+    if (useActualSteeringTopic_) {
+        actualSteeringTopic = util::getParamWarn<std::string>(*this, "actual_steering_topic", "actual_steering_angle");
+    }
     std::string steeringTopic = util::getParamWarn<std::string>(*this, "steering_topic", "steering_cmd");
     std::string throttleTopic = util::getParamWarn<std::string>(*this, "throttle_topic", "throttle_cmd");
     mapFrame_ = util::getParamWarn<std::string>(*this, "map_frame", "map");
@@ -44,7 +47,9 @@ RosMpc::RosMpc()
     trackPub_ = this->create_publisher<nav_msgs::msg::Path>("global_path", 1);
     mpcPathPub_ = this->create_publisher<nav_msgs::msg::Path>("local_path", 1);
     twistSub_ = this->create_subscription<geometry_msgs::msg::TwistStamped>(twistTopic, 1, std::bind(&RosMpc::twistCallback, this, _1));
-    actualSteeringSub_ = this->create_subscription<example_interfaces::msg::Float64>(actualSteeringTopic, 1, std::bind(&RosMpc::actualSteeringCallback, this, _1));
+    if (useActualSteeringTopic_) {
+        actualSteeringSub_ = this->create_subscription<example_interfaces::msg::Float64>(actualSteeringTopic, 1, std::bind(&RosMpc::actualSteeringCallback, this, _1));
+    }
 }
 
 MPCReturn RosMpc::solve() {
@@ -80,6 +85,10 @@ MPCReturn RosMpc::solve() {
     msg.data = result.mpcHorizon.at(1).x.delta * steeringRatio_;
     steeringPub_->publish(msg);
 
+    if (!useActualSteeringTopic_) {
+        currentSteeringAngle_ = msg.data / steeringRatio_;
+    }
+
     mpcPathPub_->publish(util::getPathMsg(result, mapFrame_, carFrame_, *this));
     trackPub_->publish(util::getPathMsg(controlSys_.getTrack(), mapFrame_, carFrame_, *this));
     return result;
@@ -93,19 +102,21 @@ bool RosMpc::verifyInputs() {
     auto waitNode = std::make_shared<rclcpp::Node>("mpc_wait_for_message");
 
     auto twistMsg = std::make_shared<geometry_msgs::msg::TwistStamped>();
-    while (!rclcpp::wait_for_message(*twistMsg, waitNode, twistTopic, waitTime)){
+    while (!rclcpp::wait_for_message(*twistMsg, waitNode, twistTopic, waitTime)) {
         RCLCPP_WARN_STREAM(this->get_logger(), "Waiting for twist message. Should be published at the topic: " << twistTopic);
     }
     twistCallback(twistMsg);
 
-    // check if actual steering angle is published
-    std::string actualSteeringTopic = util::getParamWarn<std::string>(*this, "actual_steering_topic", "actual_steering_topic");
+    if (useActualSteeringTopic_) {
+        // check if actual steering angle is published
+        std::string actualSteeringTopic = util::getParamWarn<std::string>(*this, "actual_steering_topic", "actual_steering_topic");
 
-    auto steeringMsg = std::make_shared<example_interfaces::msg::Float64>();
-    while (!rclcpp::wait_for_message(*steeringMsg, waitNode, actualSteeringTopic, waitTime)){
-        RCLCPP_WARN_STREAM(this->get_logger(), "Waiting for actual steering angle. Should be published at the topic: " << actualSteeringTopic);
+        auto steeringMsg = std::make_shared<example_interfaces::msg::Float64>();
+        while (!rclcpp::wait_for_message(*steeringMsg, waitNode, actualSteeringTopic, waitTime)) {
+            RCLCPP_WARN_STREAM(this->get_logger(), "Waiting for actual steering angle. Should be published at the topic: " << actualSteeringTopic);
+        }
+        actualSteeringCallback(steeringMsg);
     }
-    actualSteeringCallback(steeringMsg);
 
     // if path topic parameter is provided. Get the intial path message.
     rclcpp::Parameter temp;
@@ -113,7 +124,7 @@ bool RosMpc::verifyInputs() {
         std::string pathTopic = util::getParamWarn<std::string>(*this, "path_topic", "path");
         while (rclcpp::ok()) {
             nav_msgs::msg::Path firstPath;
-            if (rclcpp::wait_for_message(firstPath, waitNode, pathTopic, waitTime)){
+            if (rclcpp::wait_for_message(firstPath, waitNode, pathTopic, waitTime)) {
                 controlSys_.setTrack(util::toVector(firstPath));
                 break;
             }
@@ -146,7 +157,7 @@ void RosMpc::pathCallback(const nav_msgs::msg::Path::SharedPtr msg) {
             tfStampedPathFrame = tfBuffer_->lookupTransform(mapFrame_, path.header.frame_id, tf2::TimePointZero);
         } catch (tf2::TransformException &e) {
             RCLCPP_ERROR_STREAM(this->get_logger(), "Could not get transform from " << mapFrame_ << " to " << path.header.frame_id << ". Error thrown: "
-                                                             << e.what() << "\nNeed transform for calculating pose of path used in MPC.");
+                                                                                    << e.what() << "\nNeed transform for calculating pose of path used in MPC.");
             return;
         }
 

@@ -11,6 +11,7 @@
       # The topic where the linear and angular speed of the car is published. The message type should be twist.
       twist_topic: "/twist"
 
+      use_actual_steering_topic: False
       # The topic where the current steering angle of the car is published. The message type should be Float64
       actual_steering_topic: "/actual_steering_angle"
 
