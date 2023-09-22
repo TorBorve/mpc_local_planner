@@ -1,7 +1,5 @@
-#ifndef MPC_ACADOS_SOLVER_H_
-#define MPC_ACADOS_SOLVER_H_
+#pragma once
 
-#include <ros/ros.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -83,5 +81,3 @@ class Solver {
 };
 }  // namespace Acados
 }  // namespace mpc
-
-#endif

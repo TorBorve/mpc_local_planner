@@ -1,33 +1,27 @@
 #include "mpc_local_planner/PathTrackingSys.h"
 
-#include <ros/ros.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_ros/transform_broadcaster.h>
 
 #include <fstream>
 
 #include "mpc_local_planner/AcadosPathTracking.h"
-#include "mpc_local_planner/bounds.h"
 #include "mpc_local_planner/utilities.h"
 
 namespace mpc {
 
 PathTrackingSys::PathTrackingSys(const std::vector<Point> &track) : track_{track} {
-    ros::NodeHandle nh;
-    polynomPub_ = nh.advertise<nav_msgs::Path>("interpolated_path", 1);
+    polynomPub_ = logNode->create_publisher<nav_msgs::msg::Path>("interpolated_path", 1);
 }
 
 MPCReturn PathTrackingSys::solve(const State &state, double pitch, double vRef) {
-    double rotation;
+    double rotation = 0;
     Eigen::Vector4d coeffs;
     calcCoeffs(state, rotation, coeffs);
     Acados::PathTrackingParams params{coeffs, pitch, vRef};
 
     State transformedState{0, 0, rotation, state.vel, state.delta, state.throttle};
-    // calcState(transformedState, coeffs);
-    // OptVariables transformedOptVar{transformedState, optVars.u};
-    LOG_DEBUG_STREAM("rot: " << rotation << ", coeffs: " << coeffs[0] << ", " << coeffs[1] << ", "
-                             << coeffs[2] << ", " << coeffs[3]);
+
     auto result = solve(transformedState, params);
 
     const double rotAngle = state.psi - rotation;
@@ -46,7 +40,7 @@ MPCReturn PathTrackingSys::solve(const State &state, double pitch, double vRef) 
         x[i].x.y += state.y;
     }
 
-    auto polyPath = util::getPathMsg(coeffs, "odom", "base_footprint");
+    auto polyPath = util::getPathMsg(coeffs, "odom", "base_footprint", *logNode);
     auto &points = polyPath.poses;
     for (unsigned int i = 0; i < points.size(); i++) {
         double dx = points[i].pose.position.x;
@@ -57,7 +51,7 @@ MPCReturn PathTrackingSys::solve(const State &state, double pitch, double vRef) 
         points[i].pose.position.x += state.x;
         points[i].pose.position.y += state.y;
     }
-    polynomPub_.publish(polyPath);  // TODO: Ideally this would be in RosMPC.cpp
+    polynomPub_->publish(polyPath);  // TODO: Ideally this would be in RosMPC.cpp
     return result;
 }
 

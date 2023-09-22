@@ -1,30 +1,28 @@
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include "mpc_local_planner/RosMpc.h"
 #include "mpc_local_planner/utilities.h"
 
 int main(int argc, char **argv) {
-    ros::init(argc, argv, "MPC");
-    ROS_INFO("MPC node intitialized");
+    rclcpp::init(argc, argv);
+    mpc::util::initLogger();
 
-    ros::NodeHandle nh{"~"};
-    int rate = mpc::util::getParamWarn<int>(nh, "loop_Hz", 30);
+    auto mpcPtr = std::make_shared<mpc::RosMpc>();
+    mpcPtr->verifyInputs();
+    LOG_STREAM("Topics and transfroms are ok!");
+    rclcpp::sleep_for(std::chrono::seconds{2});
+    rclcpp::Rate rate{std::chrono::milliseconds{33}};
+    LOG_STREAM("Starting loop");
 
-    mpc::RosMpc mpc(&nh);
-    mpc.verifyInputs();
-    ROS_INFO("Topics and transfroms are ok!");
-    ros::Duration(2).sleep();  // sleep for two sec
-
-    ros::Rate loopRate(rate);
-    while (ros::ok()) {
-        ros::spinOnce();
+    while (rclcpp::ok()) {
+        rclcpp::spin_some(mpcPtr);
         auto start = std::chrono::high_resolution_clock::now();
-        auto ret = mpc.solve();
+        auto ret = mpcPtr->solve();
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
         LOG_DEBUG("Total time: %ld[ms]", duration.count());
         LOG_DEBUG("Time diff: %f[ms]", duration.count() - ret.computeTime);
-        loopRate.sleep();
+        rate.sleep();
     }
     return 0;
 }

@@ -1,14 +1,12 @@
-#ifndef MPC_MPC_H_
-#define MPC_MPC_H_
+#pragma once
 
-#include <geometry_msgs/Pose.h>
-#include <ros/ros.h>
+#include <geometry_msgs/msg/pose.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <nav_msgs/msg/path.hpp>
 
 #include <eigen3/Eigen/Core>
 
-#include "mpc_local_planner/AcadosPathTracking.h"
-#include "mpc_local_planner/AcadosPointStab.h"
-#include "mpc_local_planner/bounds.h"
+#include "mpc_local_planner/AcadosPathTracking.h"   
 #include "mpc_local_planner/types.h"
 
 namespace mpc {
@@ -84,9 +82,7 @@ class PathTrackingSys {
     std::vector<Point> track_;
 
     /// @brief publisher for the interpolated polynomial.
-    ros::Publisher polynomPub_;
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr polynomPub_;
 };
 
 }  // namespace mpc
-
-#endif

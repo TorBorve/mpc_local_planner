@@ -1,5 +1,4 @@
-#ifndef MPC_ACADOS_PATH_TRACKING_H_
-#define MPC_ACADOS_PATH_TRACKING_H_
+#pragma once
 
 #include "acados_solver_path_tracking.h"
 #include "mpc_local_planner/AcadosSolver.h"
@@ -78,5 +77,3 @@ class PathTracking : public Solver {
 
 }  // namespace Acados
 }  // namespace mpc
-
-#endif

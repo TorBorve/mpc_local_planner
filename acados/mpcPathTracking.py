@@ -7,14 +7,6 @@ def bicycleModel(params):
     modelName = "path_tracking"
     
     Lf = params["wheelbase"] #distance between front and rear axle
-    r = params["radius"] # Wheel radius
-    l = params["wheelbase"] # Distance between front wheel and rear wheel
-    G = params["gear_ratio"] # Gear ratio
-    m = params["mass_car"]# Mass of car
-    V = params["voltage"] # Voltage
-    Cd = params["drag_coefficient"] # Drag coefficient
-    rho = 1.2 # Air density [kg/m³]
-    A = params["frontal_area"]# Frontal area [m²]
 
     #states
     x1 = SX.sym("x1") # x position
@@ -65,19 +57,10 @@ def bicycleModel(params):
     model.x = x
     model.u = u
     model.p = p
-    # model.con_h_expr = vertcat(v)
 
     return model
 
 def costFunc(model, params):
-
-    r = params["radius"] # Radius of wheel [m]
-    m = params["mass_car"] # Mass of vehicle [kg]
-    Cr = params["rolling_resistance"] # Rolling resistance
-    Cd = params["drag_coefficient"] # Drag coefficient
-    rho = 1.2 # Air density [kg/m³]
-    A = params["frontal_area"] # Frontal area [m²]
-    g = 9.81
 
     x1 = model.x[0]
     y1 = model.x[1]
@@ -89,9 +72,6 @@ def costFunc(model, params):
     throttleDot = model.u[1]
     a = model.f_expl_expr[3]
     coeffs = model.p
-
-    Tm = r * (m*a + m*g*Cr + 1/2*rho*Cd*A*(v)**2)
-    energy = Tm * v/r
     
     pathYaw = atan(3*coeffs[3]*x1*x1 + 2*coeffs[2]*x1 + coeffs[1])
     epsi = psi - pathYaw
@@ -102,6 +82,8 @@ def costFunc(model, params):
 def ocpSolver():
     with open("../../build/auto_gen.yaml", "r") as paramFile:
             params = yaml.safe_load(paramFile)
+    params = params["/mpc_local_planner"]["mpc_local_planner"]["ros__parameters"]
+
 
     ocp = AcadosOcp()
     ocp.model = bicycleModel(params)
@@ -118,31 +100,19 @@ def ocpSolver():
     ocp.cost.cost_type = "NONLINEAR_LS"
     ocp.cost.yref = np.array([0, 0, 0, 0, 0, 0, 0])
     ocp.model.cost_y_expr = costFunc(ocp.model, params)
-    # ocp.cost.W = np.diag([5, 35, 10, 0, 0, 0, 0, 0.00001]) # Energy Mode
-    ocp.cost.W = np.diag([5, 5, 10, 0.01, 0.1, 0.5, 0.1]) # Not Energy Mode
+    ocp.cost.W = np.diag([5, 5, 10, 0.01, 0.1, 0.5, 0.1])
 
-    deltaMax = params["max_steering_angle"]
-    deltaDotMax = params["max_steering_rotation_speed"]
-    throttleMin = params["throttle_min"]
-    throttleMax = params["throttle_max"]
-    throttleDotMax = params["throttle_dot_max"]   
+    deltaRange = params["steering_angle_range"]
+    deltaDotRange = params["steering_angle_dot_range"]
+    throttleRange = params["throttle_range"]
+    throttleDotRange = params["throttle_dot_range"]   
     ocp.constraints.constr_type = "BGH"
-    ocp.constraints.lbx = np.array([-deltaMax, throttleMin])
-    ocp.constraints.ubx = np.array([deltaMax, throttleMax])
+    ocp.constraints.lbx = np.array([deltaRange[0], throttleRange[0]])
+    ocp.constraints.ubx = np.array([deltaRange[1], throttleRange[1]])
     ocp.constraints.idxbx = np.array([4, 5])
-    ocp.constraints.lbu = np.array([-deltaDotMax, -throttleDotMax])
-    ocp.constraints.ubu = np.array([deltaDotMax, throttleDotMax])
+    ocp.constraints.lbu = np.array([deltaDotRange[0], throttleDotRange[0]])
+    ocp.constraints.ubu = np.array([deltaDotRange[1], throttleDotRange[1]])
     ocp.constraints.idxbu = np.array([0, 1])
-
-    # ocp.cost.zl = 1000 * np.ones((1,))
-    # ocp.cost.Zl = 0 * np.ones((1,))
-    # ocp.cost.zu = 1000 * np.ones((1,))
-    # ocp.cost.Zu = 0 * np.ones((1,))
-    # ocp.constraints.lh = np.array([0.0])
-    # ocp.constraints.uh = np.array([6.0])
-
-    # ocp.constraints.idxsh = np.array([0])
-
 
     x0 = np.array([-10, 0, 0, 0, 0, 0])
     ocp.constraints.x0 = x0

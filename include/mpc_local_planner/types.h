@@ -1,5 +1,4 @@
-#ifndef MPC_TYPES_H_
-#define MPC_TYPES_H_
+#pragma once
 
 #include <eigen3/Eigen/Core>
 #include <iostream>
@@ -30,6 +29,7 @@ struct State {
     /// @param[in] arr pointer to start of array.
     /// @param[in] size size of array.
     State(double const *arr, size_t size) {
+        (void)size;
         assert(size == 6);
         *this = State{arr[0], arr[1], arr[2], arr[3], arr[4], arr[5]};
     }
@@ -72,6 +72,7 @@ struct Input {
     Input(const std::array<double, 2> &arr) : Input{&arr[0], 2} {}
 
     Input(double const *arr, size_t size) {
+        (void)size;
         assert(size == 2);
         *this = Input{arr[0], arr[1]};
     }
@@ -114,13 +115,12 @@ struct MPCReturn {
     /// @param[in] cost the cost of the mpc horizon.
     /// @param[in] success boolean for indicating if the solver managed to solve the problem.
     MPCReturn(const Input &u0, const std::vector<OptVariables> &mpcHorizon, double computeTime,
-              double cost, bool success, bool stop)
+              double cost, bool success)
         : u0{u0},
           mpcHorizon{mpcHorizon},
           computeTime{computeTime},
           cost{cost},
-          success{success},
-          stopSignal{stop} {}
+          success{success} {}
 
     /// @brief constructor with variables
     /// @param[in] mpcHorizon the calculated optimal variables from mpc. size = N
@@ -128,8 +128,8 @@ struct MPCReturn {
     /// @param[in] cost the cost of the mpc horizon.
     /// @param[in] success boolean for indicating if the solver managed to solve the problem.
     MPCReturn(const std::vector<OptVariables> &mpcHorizon, double computeTime, double cost,
-              bool success, bool stop)
-        : MPCReturn{mpcHorizon.at(0).u, mpcHorizon, computeTime, cost, success, stop} {}
+              bool success)
+        : MPCReturn{mpcHorizon.at(0).u, mpcHorizon, computeTime, cost, success} {}
 
     /// @brief the first input. u0 = mpcHorizon[0].u;
     Input u0;
@@ -145,9 +145,6 @@ struct MPCReturn {
 
     /// @brief boolean for indication if the solver manged to solve the problem
     bool success;
-
-    /// @brief boolean for indicating if we want the car to stop.
-    bool stopSignal = false;
 };
 
 /// @brief struct for point (x, y)
@@ -171,21 +168,6 @@ struct Point {
 struct Params {
     virtual std::vector<double> toVec() const = 0;
 };
-
-/// @brief modes the control system can be in.
-enum class Mode { PathTracking, Parking, Slalom, Invalid };
-
-Mode str2Mode(const std::string &str);
-
-constexpr const char* toString(Mode mode) {
-    switch (mode) {
-        case Mode::PathTracking: return "path_tracking";
-        case Mode::Parking: return "parking";
-        case Mode::Slalom: return "slalom";
-        case Mode::Invalid: return "invalid";
-        default: throw std::invalid_argument{"Not implemented toString for this item"};
-    }
-}
 }  // namespace mpc
 
 /// @brief print operator for state
@@ -196,5 +178,3 @@ std::ostream &operator<<(std::ostream &os, const mpc::Input &input);
 
 /// @brief print operator for optVar
 std::ostream &operator<<(std::ostream &os, const mpc::OptVariables &optVar);
-
-#endif

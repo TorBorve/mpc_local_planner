@@ -1,6 +1,6 @@
 #include "mpc_local_planner/AcadosSolver.h"
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 namespace mpc {
 namespace Acados {
@@ -16,7 +16,7 @@ void Solver::setInitCondition(const State &state) {
     // initial condition
     auto x0 = state.toArray();
     std::vector<int> idxbx0(x0.size());
-    for (int i = 0; i < x0.size(); i++) {
+    for (unsigned int i = 0; i < x0.size(); i++) {
         idxbx0[i] = i;
     }
 
@@ -54,7 +54,7 @@ MPCReturn Solver::solve(const State &state, const Params &params) {
         ocp_nlp_out_get(config_, dims_, out_, ii, "u", &utraj[ii * nu_]);
 
     if (status != ACADOS_SUCCESS) {
-        ROS_ERROR("acados_solve() failed with status %d.\n", status);
+        std::cout << "ERROS: acados_solve() failed with status " << status << std::endl;
         reInit(state);
     }
 
@@ -80,7 +80,7 @@ void Solver::setInitGuess(const State &state) {
     assert(x_init.size() == nx_);
     // initial value for control input
     std::vector<double> u0(nu_);
-    for (int i = 0; i < nu_; i++) {
+    for (unsigned int i = 0; i < nu_; i++) {
         u0[0] = 0;
     }
 
