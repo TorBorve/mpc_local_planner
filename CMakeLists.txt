@@ -27,7 +27,8 @@ add_compile_definitions(__PATH__="${PROJECT_SOURCE_DIR}")
 
 # Check if MPC_PARAMS file is specified
 if (NOT MPC_PARAMS)
-  message(FATAL_ERROR "MPC_PARAMS option not set. Needed for determining what parameters the mpc should be compiled with. You can set it using cmake args. Example: catkin build --cmake-args -DMPC_PARAMS=my_yaml_file.yaml")
+  set(MPC_PARAMS "mpc_params.yaml")
+  # message(FATAL_ERROR "MPC_PARAMS option not set. Needed for determining what parameters the mpc should be compiled with. You can set it using cmake args. Example: catkin build --cmake-args -DMPC_PARAMS=my_yaml_file.yaml")
 endif()
 
 # check that params file exists
